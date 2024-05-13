@@ -1,0 +1,39 @@
+{% extends 'tom_common/base.html' %}
+
+{% load static %}
+
+{% block content %}
+
+
+  <!-- <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Upload</button>
+  </form> -->
+
+  <!-- <form accept-charset="UTF-8" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="myfile">
+    <button type="submit" class="btn btn-primary" name="run_script">Upload</button>
+  </form> -->
+
+
+  <!-- <form accept-charset="UTF-8" method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="form-group mt-3">
+          <label class="mr-2"> <h6> Upload a BlackGEM file here: </h6> </label>
+          <input type="file" name="file">
+      </div>
+      <button type="submit" class="btn btn-primary" name="simple_upload">Upload</button>
+  </form>
+
+
+  {% if uploaded_file_url %}
+    <p>File uploaded at: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a></p>
+  {% endif %}
+
+  <p><a href="{% url 'home' %}">Return to home</a></p> -->
+
+
+{% endblock %}

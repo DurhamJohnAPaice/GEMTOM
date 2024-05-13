@@ -1,0 +1,28 @@
+{% load bootstrap4 static %}
+<h4>Upload a data product</h4>
+<p>
+  For example CSVs, see the <a href="{% static 'tom_dataproducts/photometry_sample.csv' %}">photometry</a> and <a href="{% static 'tom_dataproducts/spectrum_sample.csv' %}">spectroscopy</a> sample files. FITS is supported for spectra.
+  <br>
+  For Photometry, the following fields are required:
+  <br>
+  <ul>
+    <li><b><mark>time</mark></b> - Either 'time' or 'mjd' (in MJD format), or 'jd' (in JD format).</li>
+    <li><b><mark>magnitude</mark></b></li>
+  </ul>
+  In addition, the following fields are supported:
+  <ul>
+    <li><mark>error</mark> (in magnitude)</li>
+    <li><mark>limit</mark> (limiting magnitude for a non-detection)</li>
+    <li><mark>telescope</mark> (e.g. NTT, ZTF)</li>
+    <li><mark>source</mark></li>
+    <li><mark>filter</mark> (e.g. r, V, B)</li>
+  </ul>
+  Additional columns are saved but not shown. Column names are not case-sensitive.
+</p>
+<form method="POST" action="{% url 'tom_dataproducts:upload' %}" enctype="multipart/form-data">
+  {% csrf_token %}
+  {% bootstrap_form data_product_form %}
+  {% buttons %}
+  <input type="submit" class="btn btn-primary" value="Upload" name="upload_dataproduct_form">
+  {% endbuttons %}
+</form>

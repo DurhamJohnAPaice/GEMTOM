@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<p>Click to get started!</p>
+
+<button onclick="addPoints()">Add points</button>
+
+<button id="btn_multiply" onclick="firstx2()" style="display:none;">x2 Multiplier. Cost: 100</button>
+
+<button id="firstbuild" onclick="build1()" style="display:none;">Building 1. Cost 200</button>
+<script>
+
+var points = 98;
+var pointMulti = 1;
+var buyupgrade = 0;
+var currentpoints = setInterval(pointupdate, 1000);
+function addPoints() {
+    points += pointMulti;
+    var pointsArea = document.getElementById("pointdisplay");
+    pointsArea.innerHTML = "You have " + points + " points!";
+        if(points >= 100 && buyupgrade == 0) {
+        var multiply_button = document.getElementById("btn_multiply");
+        multiply_button.style.display = "inline";
+    }
+}
+
+function firstx2() {
+  if (buyupgrade == 0) {
+    pointMulti *= 2;
+    buyupgrade++;
+    points -= 100;
+    var multiplierArea = document.getElementById("multidisplay");
+    multiplierArea.innerHTML = "Your multiplier is: " + pointMulti + "!";
+    var multiply_button = document.getElementById("btn_multiply");
+    multiply_button.style.display = "none";
+  }
+}
+
+if (buyupgrade == 1) {
+  document.getElementById("firstbuild");
+  firstbuild.style.display = "inline";
+  function build1() {
+
+  }
+}
+function pointupdate() {
+  document.getElementById("pointdisplay").innerHTML = "You have " + points + " points!";
+}
+</script>
+
+<p id="pointdisplay"></p>
+<p id="multidisplay"></p>
+</body>
+</html>
