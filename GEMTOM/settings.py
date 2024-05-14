@@ -241,13 +241,18 @@ DATA_PRODUCT_TYPES = {
     'fits_file': ('fits_file', 'FITS File'),
     'spectroscopy': ('spectroscopy', 'Spectroscopy'),
     'image_file': ('image_file', 'Image File'),
+    # 'new_photometry': ('photometry', 'New Photometry'),
     # 'test_type': ('test_type', 'Test Type')
 }
 
 DATA_PROCESSORS = {
-    'photometry': 'tom_dataproducts.processors.photometry_processor.PhotometryProcessor',
+    # 'photometry': 'tom_dataproducts.processors.photometry_processor.PhotometryProcessor',
+    # 'new_photometry': 'processors.photometry_processor.NewPhotometryProcessor',
+    # 'photometry': 'GEMTOM.new_photometry_processor.NewPhotometryProcessor',
+    # 'photometry': 'new_dataproducts.processors.photometry_processor.PhotometryProcessor',
+    'photometry': 'new_photometry_processor.NewPhotometryProcessor',
     'spectroscopy': 'tom_dataproducts.processors.spectroscopy_processor.SpectroscopyProcessor',
-    'ztf': 'tom_dataproducts.processors.ztf_processor.ZTFProcessor',
+    # 'ztf': 'processors.ztf_processor.ZTFProcessor',
 }
 
 TOM_FACILITY_CLASSES = [

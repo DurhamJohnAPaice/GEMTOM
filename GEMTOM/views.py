@@ -19,6 +19,11 @@ from ztfquery import lightcurve    ## <≈- Uncomment if using ZTF
 import plotly.express as px
 from dash import Dash, dcc, html, Input, Output
 
+## Data Products
+from new_dataproducts.processors.ztf_processor import ZTFProcessor
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic.base import RedirectView
+
 class AboutView(TemplateView):
     template_name = 'about.html'
 
@@ -196,3 +201,80 @@ class BlackGEMView(TemplateView):
             # print(file_data)
             # # f = ContactFormWithMugshot(data, file_data)
             # # f = ContactFormWithMugshot(request.POST, request.FILE)
+
+
+class UpdateZTFView(LoginRequiredMixin, RedirectView):
+    """
+    View that handles the updating of ZTF data. Requires authentication.
+    """
+
+    def get(self, request, *args, **kwargs):
+        """
+        Method that handles the GET requests for this view. Calls the management command to update the reduced data and
+        adds a hint using the messages framework about automation.
+        """
+
+
+
+        # print(form.cleaned_data)
+        print(request)
+        # QueryDict is immutable, and we want to append the remaining params to the redirect URL
+        # print(target)
+        query_params = request.GET.copy()
+        print(query_params)
+        target     = query_params.pop('target', None)
+        target_id  = query_params.pop('target_id', None)
+        target_ra  = query_params.pop('target_ra', None)
+        target_dec = query_params.pop('target_dec', None)
+        # print(target_id)
+        out = StringIO()
+        print(query_params)
+        print(len(query_params))
+
+        # if target_id:
+        if isinstance(target, list):     target     = target[-1]
+        if isinstance(target_id, list):  target_id  = target_id[-1]
+        if isinstance(target_ra, list):  target_ra  = target_ra[-1]
+        if isinstance(target_dec, list): target_dec = target_dec[-1]
+
+
+        form = { \
+            'observation_record': None, \
+            'target': target, \
+            'files': "./data/GEMTOM_ZTF_Test.csv", \
+            'data_product_type': 'photometry', \
+            'referrer': '/targets/' + target_id + '/?tab=manage-data'}
+
+        print(form)
+
+
+        # try:
+        ZTFProcessor(target, target_id, target_ra, target_dec)
+        # except:
+        #     messages.info(request, out.getvalue())
+        #     messages.error(request, 'Exception: No ZTF lightcurve found.')
+
+        # else:
+        #     ZTFProcessor(target, target_id, target_ra, target_dec)
+        #     # call_command('updatereduceddata', stdout=out)
+        messages.info(request, out.getvalue())
+        add_hint(request, mark_safe(
+                          'Did you know updating observation statuses can be automated? Learn how in '
+                          '<a href=https://tom-toolkit.readthedocs.io/en/stable/customization/automation.html>'
+                          'the docs.</a>'))
+        if len(query_params) == 0:
+            return HttpResponseRedirect(f'{self.get_redirect_url(*args, **kwargs)}')
+        else:
+            return HttpResponseRedirect(f'{self.get_redirect_url(*args, **kwargs)}?{urlencode(query_params)}')
+
+    def get_redirect_url(self, *args, **kwargs):
+        """
+        Returns redirect URL as specified in the HTTP_REFERER field of the request.
+
+        :returns: referer
+        :rtype: str
+        """
+        referer = self.request.META.get('HTTP_REFERER', '/')
+        print("Bark!")
+        print(referer)
+        return referer
