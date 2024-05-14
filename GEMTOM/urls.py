@@ -21,5 +21,6 @@ urlpatterns = [
     path('about/', AboutView.as_view(), name='about'),
     path('blackGEM/', BlackGEMView.as_view(), name='blackGEM'),
     path('django_plotly_dash/', include('django_plotly_dash.urls')),
+    path('data/reduced/update/', UpdateZTFView.as_view(), name='update-ZTF-data'),
     # path('upload/', UploadView.as_view(), name='upload'),
 ]

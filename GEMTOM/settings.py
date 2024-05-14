@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'tom_observations',
     'tom_dataproducts',
     'tom_setup',
+    'extras',
     'django_plotly_dash.apps.DjangoPlotlyDashConfig',
 ]
 

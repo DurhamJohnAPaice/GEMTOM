@@ -3,7 +3,7 @@
     <h4>ZTF Lightcurve</h4>
   </div>
   <div class="col-md-4">
-    <a href="{% url 'dataproducts:update-ZTF-data' %}?target_id={{ target.id }}&target_ra={{ target.ra }}&target_dec={{ target.dec }}&target={{ target }}" class="btn btn-primary" title="Update Targets">Check for new ZTF data</a>
+    <a href="{% url 'update-ZTF-data' %}?target_id={{ target.id }}&target_ra={{ target.ra }}&target_dec={{ target.dec }}&target={{ target }}" class="btn btn-primary" title="Update Targets">Check for new ZTF data</a>
   </div>
 </div>
 <div class="light-curve">
