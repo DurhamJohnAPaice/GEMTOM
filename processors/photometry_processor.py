@@ -91,24 +91,16 @@ class PhotometryProcessor(DataProcessor):
             s           *= len(data)
             data["source"] = s
 
-        # if 'limit' not in data.colnames:
-        #     print("Test!")
-        #     s           = [None]
-        #     s           *= len(data)
-        #     data["limit"] = s
-
-
-
         for datum in data:
-            # print(datum.colnames)
             if 'time' in datum.colnames:
-                time = Time(float(datum['time']), format='mjd')
+                if float(datum['time']) > 2400000:
+                    time = Time(float(datum['time']), format='jd')
+                else:
+                    time = Time(float(datum['time']), format='mjd')
             if 'mjd' in datum.colnames:
                 time = Time(float(datum['mjd']), format='mjd')
             if 'jd' in datum.colnames:
                 time = Time(float(datum['jd']), format='jd')
-            # if datum['magnitude'] == None and datum['limit'] == '':
-            #     datum['limit'] = None
             if np.ma.is_masked(datum['magnitude']) and 'limit' not in datum.colnames:
                 raise OtherException("One or more Magnitude values missing. Please check and re-upload.")
             utc = TimezoneInfo(utc_offset=0*units.hour)

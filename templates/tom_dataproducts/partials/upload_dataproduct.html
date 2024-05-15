@@ -3,13 +3,13 @@
 <p>
   For example CSVs, see the <a href="{% static 'tom_dataproducts/photometry_sample.csv' %}">photometry</a> and <a href="{% static 'tom_dataproducts/spectrum_sample.csv' %}">spectroscopy</a> sample files. FITS is supported for spectra.
   <br>
-  For Photometry, the following fields are required:
+  For Photometry, the following columns are required:
   <br>
   <ul>
-    <li><b><mark>time</mark></b> - Either 'time' or 'mjd' (in MJD format), or 'jd' (in JD format).</li>
+    <li><b><mark>time</mark></b> - Can be named 'mjd' (in MJD format), 'jd' (in JD format), or 'time' (in either MJD or JD format).</li>
     <li><b><mark>magnitude</mark></b></li>
   </ul>
-  In addition, the following fields are supported:
+  In addition, the following columns are supported:
   <ul>
     <li><mark>error</mark> (in magnitude)</li>
     <li><mark>limit</mark> (limiting magnitude for a non-detection)</li>

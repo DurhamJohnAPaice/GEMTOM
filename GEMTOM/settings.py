@@ -242,6 +242,7 @@ DATA_PRODUCT_TYPES = {
     'fits_file': ('fits_file', 'FITS File'),
     'spectroscopy': ('spectroscopy', 'Spectroscopy'),
     'image_file': ('image_file', 'Image File'),
+    'ztf_data': ('ztf_data', 'Manual ZTF Photometry'),
     # 'new_photometry': ('photometry', 'New Photometry'),
     # 'test_type': ('test_type', 'Test Type')
 }
@@ -252,6 +253,7 @@ DATA_PROCESSORS = {
     # 'photometry': 'GEMTOM.new_photometry_processor.NewPhotometryProcessor',
     # 'photometry': 'new_dataproducts.processors.photometry_processor.PhotometryProcessor',
     'photometry': 'processors.photometry_processor.PhotometryProcessor',
+    'ztf_data': 'processors.ztf_processor.ZTFProcessor',
     # 'photometry': 'processors.new_photometry_processor.NewPhotometryProcessor',
     'spectroscopy': 'tom_dataproducts.processors.spectroscopy_processor.SpectroscopyProcessor',
     # 'ztf': 'processors.ztf_processor.ZTFProcessor',
