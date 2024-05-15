@@ -1,28 +1,38 @@
-from django.views.generic import TemplateView
-from tom_observations.models import Target
-from django.http import HttpResponse, HttpResponseRedirect, FileResponse
-from django.urls import reverse
-from django.shortcuts import render
 # from .forms import UploadFileForm
 # from django.core.files.uploadedfile import SimpleUploadedFile
-from django.conf import settings
-from django.core.files.storage import FileSystemStorage
+
 import os
 import sys
 import pandas as pd
 from astropy.coordinates import SkyCoord, Galactocentric
 from astropy import units as u
+import plotly.express as px
+from dash import Dash, dcc, html, Input, Output
+from io import StringIO
+
+from django.views.generic import TemplateView
+from django.http import HttpResponse, HttpResponseRedirect, FileResponse
+from django.urls import reverse
+from django.shortcuts import render
+from django.contrib import messages
+from django.conf import settings
+from django.utils.safestring import mark_safe
+from django.core.files.storage import FileSystemStorage
+
 from .BlackGEM_to_GEMTOM import *
 from . import plotly_test
 from . import plotly_app
 from ztfquery import lightcurve    ## <≈- Uncomment if using ZTF
-import plotly.express as px
-from dash import Dash, dcc, html, Input, Output
+
+from tom_observations.models import Target
+from tom_common.hints import add_hint
 
 ## Data Products
 from processors.ztf_processor import ZTFProcessor
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.base import RedirectView
+from tom_dataproducts.data_processor import run_data_processor
+from tom_dataproducts.models import DataProduct, DataProductGroup, ReducedDatum
 
 class AboutView(TemplateView):
     template_name = 'about.html'
@@ -215,21 +225,26 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
         """
 
 
+        print("\n\n\n\n\n ===== Running UpdateZTFView... ===== \n\n")
 
         # print(form.cleaned_data)
-        print(request)
+        # print(request)
         # QueryDict is immutable, and we want to append the remaining params to the redirect URL
         # print(target)
         query_params = request.GET.copy()
         print(query_params)
+
         target     = query_params.pop('target', None)
         target_id  = query_params.pop('target_id', None)
         target_ra  = query_params.pop('target_ra', None)
         target_dec = query_params.pop('target_dec', None)
-        # print(target_id)
+        print(target_id[0])
+        print(target_ra[0])
+        print(target_dec[0])
+
         out = StringIO()
-        print(query_params)
-        print(len(query_params))
+        # print(query_params)
+        # print(len(query_params))
 
         # if target_id:
         if isinstance(target, list):     target     = target[-1]
@@ -242,14 +257,62 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
             'observation_record': None, \
             'target': target, \
             'files': "./data/GEMTOM_ZTF_Test.csv", \
-            'data_product_type': 'photometry', \
+            'data_product_type': 'ztf_data', \
             'referrer': '/targets/' + target_id + '/?tab=manage-data'}
 
         print(form)
 
 
+        print("ZTF Bark!")
+        print(target)
+        print(target_id)
+        print(target_ra)
+        print(target_dec)
+
+        print("-- ZTF: Looking for target...", end="\r")
+        lcq = lightcurve.LCQuery.from_position(target_ra, target_dec, 5)
+        ZTF_data_full = pd.DataFrame(lcq.data)
+        ZTF_data = pd.DataFrame({'JD' : lcq.data.mjd+2400000.5, 'Magnitude' : lcq.data.mag, 'Magnitude_Error' : lcq.data.magerr})
+
+        if len(ZTF_data) == 0:
+            raise Exception("-- ZTF: Target not found. Try AAVSO instead?")
+
+        print("-- ZTF: Looking for target... target found.")
+        print(lcq.__dict__)
+
+        df = ZTF_data
+
+        dp = DataProduct(
+            target=target,
+            observation_record=None,
+            data=df,
+            product_id=None,
+            data_product_type='ztf_data'
+        )
+        dp.save()
+        print(dp)
+        try:
+            run_hook('data_product_post_upload', dp)
+            reduced_data = run_data_processor(dp)
+        except Exception as e:
+            print(e)
+
+        # form = { \
+        #     'observation_record': None, \
+        #     'target': target, \
+        #     'files': "./data/GEMTOM_ZTF_Test.csv", \
+        #     'data_product_type': 'ztf_data', \
+        #     'referrer': '/targets/' + target_id + '/?tab=manage-data'}
+
+        ## Now let's try to ingest it...
+        # reduced_data = run_data_processor(df)
+
+        # print(os.getcwd())
+
+        df.to_csv("./data/GEMTOM_ZTF_Test.csv")
+
         # try:
-        ZTFProcessor(target, target_id, target_ra, target_dec)
+        # ZTFProcessor(target, target_id, target_ra, target_dec)
         # except:
         #     messages.info(request, out.getvalue())
         #     messages.error(request, 'Exception: No ZTF lightcurve found.')
@@ -275,6 +338,6 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
         :rtype: str
         """
         referer = self.request.META.get('HTTP_REFERER', '/')
-        print("Bark!")
+        print("Redirecting Bark!")
         print(referer)
         return referer
