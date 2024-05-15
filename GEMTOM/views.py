@@ -20,7 +20,7 @@ import plotly.express as px
 from dash import Dash, dcc, html, Input, Output
 
 ## Data Products
-from new_dataproducts.processors.ztf_processor import ZTFProcessor
+from processors.ztf_processor import ZTFProcessor
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.base import RedirectView
 
