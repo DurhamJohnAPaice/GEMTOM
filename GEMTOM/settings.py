@@ -248,10 +248,11 @@ DATA_PRODUCT_TYPES = {
 
 DATA_PROCESSORS = {
     # 'photometry': 'tom_dataproducts.processors.photometry_processor.PhotometryProcessor',
-    # 'new_photometry': 'processors.photometry_processor.NewPhotometryProcessor',
+    # 'photometry': 'processors.photometry_processor.PhotometryProcessor',
     # 'photometry': 'GEMTOM.new_photometry_processor.NewPhotometryProcessor',
     # 'photometry': 'new_dataproducts.processors.photometry_processor.PhotometryProcessor',
-    'photometry': 'new_photometry_processor.NewPhotometryProcessor',
+    'photometry': 'processors.photometry_processor.PhotometryProcessor',
+    # 'photometry': 'processors.new_photometry_processor.NewPhotometryProcessor',
     'spectroscopy': 'tom_dataproducts.processors.spectroscopy_processor.SpectroscopyProcessor',
     # 'ztf': 'processors.ztf_processor.ZTFProcessor',
 }

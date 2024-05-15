@@ -8,14 +8,9 @@ import numpy as np
 from tom_dataproducts.data_processor import DataProcessor
 from exceptions import InvalidFileFormatException, OtherException
 
-# from data_processor import DataProcessor
-# from exceptions import InvalidFileFormatException, OtherException
+# print("Photometry Initialisation Bark!")
 
-print("Test!")
-
-class NewPhotometryProcessor(DataProcessor):
-    print("Test?")
-
+class PhotometryProcessor(DataProcessor):
     def process_data(self, data_product):
         """
         Routes a photometry processing call to a method specific to a file-format.
@@ -27,7 +22,7 @@ class NewPhotometryProcessor(DataProcessor):
         :returns: python list of 2-tuples, each with a timestamp and corresponding data
         :rtype: list
         """
-        print("Test1!")
+        print("Bark!")
 
         mimetype = mimetypes.guess_type(data_product.data.path)[0]
         if mimetype in self.PLAINTEXT_MIMETYPES:
@@ -50,37 +45,25 @@ class NewPhotometryProcessor(DataProcessor):
         :rtype: list
         """
 
+        # print("Processing Bark 1!")
         photometry = []
-        print("Test2!")
+        # print("Test2!")
 
         data = astropy_ascii.read(data_product.data.path)
         if len(data) < 1:
             raise InvalidFileFormatException('Empty table or invalid file type')
 
-        # print(data)
-        # print(data[0])
-        # print(data.colnames)
+        ## Set all column names to lowercase
         for column_name in data.colnames:
             data[column_name].name = column_name.lower()
-            # if (column_name.lower() == "magnitude_error"):
-            #     data[column_name].name = "error"
 
-            # if \
-            # (column_name.lower() == "time") or \
-            # (column_name.lower() == "mjd") or \
-            # (column_name.lower() == "jd"):
-            #     print("Renaming...")
-            #     data[column_name].name = column_name.lower()
-
-
-        # if 'index' in data.colnames:
-        #     print("Test!")
-        #     data.remove_column('index')
-
-
+        ## --- Deal with column names ---
+        ## Step 1: Time...
         if ('time' not in data.colnames) and ('mjd' not in data.colnames) and ('jd' not in data.colnames):
             raise OtherException("No time column found in file; Photometry requires a time column with the name 'time', 'mjd', or 'jd'.")
+        ## Step 2: Magnitude...
         if 'magnitude' not in data.colnames: raise OtherException("No 'magnitude' column found in file; Photometry only supports magnitude.")
+        ## Step 2: Error...
         if 'magnitude_error' in data.colnames and 'error' not in data.colnames:
             data['magnitude_error'].name ='error'
 
@@ -89,9 +72,7 @@ class NewPhotometryProcessor(DataProcessor):
             if column_name not in ['time', 'mjd', 'jd', 'telescope', 'magnitude', 'error', 'limit', 'source', 'filter']:
                 data.remove_column(column_name)
 
-        # print(data.colnames)
-
-
+        ## If Telescope, Filter, and Source columns aren't present, then create and fill in.
         if 'telescope' not in data.colnames:
             # print("Test!")
             s           = ['Unknown Telescope']
@@ -148,10 +129,22 @@ class NewPhotometryProcessor(DataProcessor):
         return photometry
 
 
-# from tom_dataproducts.data_processor import DataProcessor
-#
-# class MyDataProcessor(DataProcessor):
-#
-#     def process_data(self, data_product):
-#         # custom data processing here
-#         print("Processed Test!")
+        # photometry = []
+        #
+        # data = astropy_ascii.read(data_product.data.path)
+        # if len(data) < 1:
+        #     raise InvalidFileFormatException('Empty table or invalid file type')
+        #
+        # for datum in data:
+        #     time = Time(float(datum['time']), format='mjd')
+        #     utc = TimezoneInfo(utc_offset=0*units.hour)
+        #     time.format = 'datetime'
+        #     value = {
+        #         'timestamp': time.to_datetime(timezone=utc),
+        #     }
+        #     for column_name in datum.colnames:
+        #         if not np.ma.is_masked(datum[column_name]):
+        #             value[column_name] = datum[column_name]
+        #     photometry.append(value)
+
+        return photometry
