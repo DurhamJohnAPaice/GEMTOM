@@ -13,19 +13,22 @@ from io import StringIO
 from django.views.generic import TemplateView
 from django.http import HttpResponse, HttpResponseRedirect, FileResponse
 from django.urls import reverse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.conf import settings
 from django.utils.safestring import mark_safe
 from django.core.files.storage import FileSystemStorage
+from guardian.shortcuts import assign_perm, get_objects_for_user
 
 from .BlackGEM_to_GEMTOM import *
 from . import plotly_test
 from . import plotly_app
 from ztfquery import lightcurve    ## <≈- Uncomment if using ZTF
 
+from tom_common.hooks import run_hook
 from tom_observations.models import Target
 from tom_common.hints import add_hint
+from exceptions import InvalidFileFormatException, OtherException
 
 ## Data Products
 from processors.ztf_processor import ZTFProcessor
@@ -225,49 +228,37 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
         """
 
 
-        print("\n\n\n\n\n ===== Running UpdateZTFView... ===== \n\n")
+        print("\n\n ===== Running UpdateZTFView... ===== \n")
 
-        # print(form.cleaned_data)
-        # print(request)
         # QueryDict is immutable, and we want to append the remaining params to the redirect URL
-        # print(target)
         query_params = request.GET.copy()
+        print("Fetching ZTF data:")
         print(query_params)
 
-        target     = query_params.pop('target', None)
-        target_id  = query_params.pop('target_id', None)
-        target_ra  = query_params.pop('target_ra', None)
-        target_dec = query_params.pop('target_dec', None)
-        print(target_id[0])
-        print(target_ra[0])
-        print(target_dec[0])
+        target_name = query_params.pop('target', None)
+        target_id   = query_params.pop('target_id', None)
+        target_ra   = query_params.pop('target_ra', None)
+        target_dec  = query_params.pop('target_dec', None)
+        # print(target_id[0])
+        # print(target_ra[0])
+        # print(target_dec[0])
 
         out = StringIO()
-        # print(query_params)
-        # print(len(query_params))
 
         # if target_id:
-        if isinstance(target, list):     target     = target[-1]
-        if isinstance(target_id, list):  target_id  = target_id[-1]
-        if isinstance(target_ra, list):  target_ra  = target_ra[-1]
-        if isinstance(target_dec, list): target_dec = target_dec[-1]
-
+        if isinstance(target_name, list):   target_name    = target_name[-1]
+        if isinstance(target_id, list):     target_id      = target_id[-1]
+        if isinstance(target_ra, list):     target_ra      = target_ra[-1]
+        if isinstance(target_dec, list):    target_dec     = target_dec[-1]
 
         form = { \
             'observation_record': None, \
-            'target': target, \
+            'target': target_name, \
             'files': "./data/GEMTOM_ZTF_Test.csv", \
             'data_product_type': 'ztf_data', \
-            'referrer': '/targets/' + target_id + '/?tab=manage-data'}
+            'referrer': '/targets/' + target_id + '/?tab=ztf'}
 
-        print(form)
-
-
-        print("ZTF Bark!")
-        print(target)
-        print(target_id)
-        print(target_ra)
-        print(target_dec)
+        # print(form)
 
         print("-- ZTF: Looking for target...", end="\r")
         lcq = lightcurve.LCQuery.from_position(target_ra, target_dec, 5)
@@ -280,64 +271,71 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
         print("-- ZTF: Looking for target... target found.")
         print(lcq.__dict__)
 
+        ## Save ZTF Data
         df = ZTF_data
+        # print(df)
+
+        filepath = "./data/" + target_name + "/none/" + target_name + "_ZTF_Data.csv"
+        df.to_csv(filepath)
+
+        target_instance = Target.objects.get(pk=target_id)
 
         dp = DataProduct(
-            target=target,
+            target=target_instance,
             observation_record=None,
-            data=df,
+            data=target_name + "/none/" + target_name + "_ZTF_Data.csv",
             product_id=None,
             data_product_type='ztf_data'
         )
+        # print(dp)
         dp.save()
-        print(dp)
+
+        ## Ingest the data
+        successful_uploads = []
+
         try:
             run_hook('data_product_post_upload', dp)
             reduced_data = run_data_processor(dp)
-        except Exception as e:
-            print(e)
 
-        # form = { \
-        #     'observation_record': None, \
-        #     'target': target, \
-        #     'files': "./data/GEMTOM_ZTF_Test.csv", \
-        #     'data_product_type': 'ztf_data', \
-        #     'referrer': '/targets/' + target_id + '/?tab=manage-data'}
+            if not settings.TARGET_PERMISSIONS_ONLY:
+                for group in form.cleaned_data['groups']:
+                    assign_perm('tom_dataproducts.view_dataproduct', group, dp)
+                    assign_perm('tom_dataproducts.delete_dataproduct', group, dp)
+                    assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
+            successful_uploads.append(str(dp))
 
-        ## Now let's try to ingest it...
-        # reduced_data = run_data_processor(df)
+        except OtherException as iffe:
+            print("Other Exception!")
+            print(iffe)
+            ReducedDatum.objects.filter(data_product=dp).delete()
+            dp.delete()
+            messages.error(
+                self.request,
+                'Error in file {0} -- Error: {1}'.format(str(dp), iffe)
+            )
+        except InvalidFileFormatException as iffe:
+            print("Invalid File Format Exception!")
+            print(iffe)
+            ReducedDatum.objects.filter(data_product=dp).delete()
+            dp.delete()
+            messages.error(
+                self.request,
+                'File format invalid for file {0} -- Error: {1}'.format(str(dp), iffe)
+            )
+        except Exception as iffe:
+            print("Exception!")
+            print(iffe)
+            ReducedDatum.objects.filter(data_product=dp).delete()
+            dp.delete()
+            messages.error(self.request, 'There was a problem processing your file: {0}'.format(str(dp)))
 
-        # print(os.getcwd())
-
-        df.to_csv("./data/GEMTOM_ZTF_Test.csv")
-
-        # try:
-        # ZTFProcessor(target, target_id, target_ra, target_dec)
-        # except:
-        #     messages.info(request, out.getvalue())
-        #     messages.error(request, 'Exception: No ZTF lightcurve found.')
-
-        # else:
-        #     ZTFProcessor(target, target_id, target_ra, target_dec)
-        #     # call_command('updatereduceddata', stdout=out)
-        messages.info(request, out.getvalue())
-        add_hint(request, mark_safe(
-                          'Did you know updating observation statuses can be automated? Learn how in '
-                          '<a href=https://tom-toolkit.readthedocs.io/en/stable/customization/automation.html>'
-                          'the docs.</a>'))
-        if len(query_params) == 0:
-            return HttpResponseRedirect(f'{self.get_redirect_url(*args, **kwargs)}')
+        if successful_uploads:
+            print("Successful upload!")
+            messages.success(
+                self.request,
+                'Successfully uploaded: {0}'.format('\n'.join([p for p in successful_uploads]))
+            )
         else:
-            return HttpResponseRedirect(f'{self.get_redirect_url(*args, **kwargs)}?{urlencode(query_params)}')
+            print("Upload unsuccessful!")
 
-    def get_redirect_url(self, *args, **kwargs):
-        """
-        Returns redirect URL as specified in the HTTP_REFERER field of the request.
-
-        :returns: referer
-        :rtype: str
-        """
-        referer = self.request.META.get('HTTP_REFERER', '/')
-        print("Redirecting Bark!")
-        print(referer)
-        return referer
+        return redirect(form.get('referrer', '/'))

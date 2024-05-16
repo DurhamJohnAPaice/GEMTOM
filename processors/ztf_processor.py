@@ -51,10 +51,9 @@ class ZTFProcessor(DataProcessor):
         :returns: python list of 2-tuples, each with a timestamp and corresponding data
         :rtype: list
         """
-        print("Process_Data Bark!")
-        print(data_product.data.path)
+        # print(data_product.data.path)
         mimetype = mimetypes.guess_type(data_product.data.path)[0]
-        print(mimetype)
+        # print(mimetype)
         if mimetype in self.PLAINTEXT_MIMETYPES:
             photometry = self._process_photometry_from_plaintext(data_product)
             return [(datum.pop('timestamp'), datum, datum.pop('source', '')) for datum in photometry]
@@ -76,56 +75,35 @@ class ZTFProcessor(DataProcessor):
             :rtype: list
             """
 
-            print("Processing Photometry Bark 1!")
+            print("Processing ZTF Photometry...")
             photometry = []
-            print("Test2!")
+
 
             data = astropy_ascii.read(data_product.data.path)
             if len(data) < 1:
                 raise InvalidFileFormatException('Empty table or invalid file type')
 
-            print("Test3!")
+            if data.colnames[0] == "col1":
+                data['col1'].name = 'index'
+                data['col2'].name = 'jd'
+                data['col3'].name = 'magnitude'
+                data['col4'].name = 'error'
+                data.remove_row(0)
+
+            # print(data)
+            # print("Test3!")
 
             ## Set all column names to lowercase
             for column_name in data.colnames:
                 data[column_name].name = column_name.lower()
 
-            # ## --- Deal with column names ---
-            # ## Step 1: Time...
-            # if ('time' not in data.colnames) and ('mjd' not in data.colnames) and ('jd' not in data.colnames):
-            #     raise OtherException("No time column found in file; Photometry requires a time column with the name 'time', 'mjd', or 'jd'.")
-            # ## Step 2: Magnitude...
-            # if 'magnitude' not in data.colnames: raise OtherException("No 'magnitude' column found in file; Photometry only supports magnitude.")
-            # ## Step 2: Error...
-            # if 'magnitude_error' in data.colnames and 'error' not in data.colnames:
-            #     data['magnitude_error'].name ='error'
-            #
             ## Remove superfluous columns:
             for column_name in data.colnames:
                 if column_name not in ['jd', 'magnitude', 'error']:
                     data.remove_column(column_name)
 
-            # ## If Telescope, Filter, and Source columns aren't present, then create and fill in.
-            # if 'telescope' not in data.colnames:
-            #     # print("Test!")
-            #     s           = ['Unknown Telescope']
-            #     s           *= len(data)
-            #     data["telescope"] = s
-            #
-            # if 'filter' not in data.colnames:
-            #     # print("Test!")
-            #     s           = ['Unknown Filter']
-            #     s           *= len(data)
-            #     data["filter"] = s
-            #
-            # if 'source' not in data.colnames:
-            #     # print("Test!")
-            #     s           = ['Unknown Source']
-            #     s           *= len(data)
-            #     data["source"] = s
-
             print("Considering datapoints...")
-            print(data.colnames)
+            # print(data.colnames)
             for datum in data:
                 if 'jd' in datum.colnames:
                     time = Time(float(datum['jd']), format='jd')
@@ -139,33 +117,10 @@ class ZTFProcessor(DataProcessor):
                         value[column_name] = datum[column_name]
                 photometry.append(value)
 
-            # print(len(data))
-
-
-            # print(photometry[0])
-
             print("Photometry done!")
 
             return photometry
 
-
-            # photometry = []
-            #
-            # data = astropy_ascii.read(data_product.data.path)
-            # if len(data) < 1:
-            #     raise InvalidFileFormatException('Empty table or invalid file type')
-            #
-            # for datum in data:
-            #     time = Time(float(datum['time']), format='mjd')
-            #     utc = TimezoneInfo(utc_offset=0*units.hour)
-            #     time.format = 'datetime'
-            #     value = {
-            #         'timestamp': time.to_datetime(timezone=utc),
-            #     }
-            #     for column_name in datum.colnames:
-            #         if not np.ma.is_masked(datum[column_name]):
-            #             value[column_name] = datum[column_name]
-            #     photometry.append(value)
         except Exception as e:
             print(e)
 

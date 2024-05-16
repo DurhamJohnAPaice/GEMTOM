@@ -237,7 +237,12 @@ def ztf_for_target(context, target, width=700, height=600, background=None, labe
     plot_data = []
     all_ydata = []
 
+
     if len(photometry_data) > 0:
+
+        photometry_data['magnitude'] = [float(i) for i in photometry_data['magnitude']]
+        photometry_data['error'] = [float(i) for i in photometry_data['error']]
+
         # print("\n\n\n\n\n\n\n")
         # print(photometry_data['jd'])
         # print(photometry_data['magnitude'])

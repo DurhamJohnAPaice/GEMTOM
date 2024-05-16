@@ -242,7 +242,7 @@ DATA_PRODUCT_TYPES = {
     'fits_file': ('fits_file', 'FITS File'),
     'spectroscopy': ('spectroscopy', 'Spectroscopy'),
     'image_file': ('image_file', 'Image File'),
-    'ztf_data': ('ztf_data', 'Manual ZTF Photometry'),
+    'ztf_data': ('ztf_data', 'ZTF Photometry'),
     # 'new_photometry': ('photometry', 'New Photometry'),
     # 'test_type': ('test_type', 'Test Type')
 }
