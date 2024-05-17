@@ -25,6 +25,8 @@ def run_data_processor(dp):
     :rtype: `QuerySet` of `ReducedDatum`
     """
 
+    print("Running new Data Processor!")
+
     try:
         processor_class = settings.DATA_PROCESSORS[dp.data_product_type]
     except Exception:

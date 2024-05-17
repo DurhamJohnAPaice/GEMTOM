@@ -10,7 +10,7 @@ import plotly.express as px
 from dash import Dash, dcc, html, Input, Output
 from io import StringIO
 
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, FormView
 from django.http import HttpResponse, HttpResponseRedirect, FileResponse
 from django.urls import reverse
 from django.shortcuts import render, redirect
@@ -34,8 +34,9 @@ from exceptions import InvalidFileFormatException, OtherException
 from processors.ztf_processor import ZTFProcessor
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.base import RedirectView
-from tom_dataproducts.data_processor import run_data_processor
+from data_processor import run_data_processor
 from tom_dataproducts.models import DataProduct, DataProductGroup, ReducedDatum
+from forms import DataProductUploadForm
 
 class AboutView(TemplateView):
     template_name = 'about.html'
@@ -261,81 +262,177 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
         # print(form)
 
         print("-- ZTF: Looking for target...", end="\r")
-        lcq = lightcurve.LCQuery.from_position(target_ra, target_dec, 5)
-        ZTF_data_full = pd.DataFrame(lcq.data)
-        ZTF_data = pd.DataFrame({'JD' : lcq.data.mjd+2400000.5, 'Magnitude' : lcq.data.mag, 'Magnitude_Error' : lcq.data.magerr})
-
-        if len(ZTF_data) == 0:
-            raise Exception("-- ZTF: Target not found. Try AAVSO instead?")
-
-        print("-- ZTF: Looking for target... target found.")
-        print(lcq.__dict__)
-
-        ## Save ZTF Data
-        df = ZTF_data
-        # print(df)
-
-        filepath = "./data/" + target_name + "/none/" + target_name + "_ZTF_Data.csv"
-        df.to_csv(filepath)
-
-        target_instance = Target.objects.get(pk=target_id)
-
-        dp = DataProduct(
-            target=target_instance,
-            observation_record=None,
-            data=target_name + "/none/" + target_name + "_ZTF_Data.csv",
-            product_id=None,
-            data_product_type='ztf_data'
-        )
-        # print(dp)
-        dp.save()
-
-        ## Ingest the data
-        successful_uploads = []
-
         try:
-            run_hook('data_product_post_upload', dp)
-            reduced_data = run_data_processor(dp)
+            lcq = lightcurve.LCQuery.from_position(target_ra, target_dec, 5)
 
-            if not settings.TARGET_PERMISSIONS_ONLY:
-                for group in form.cleaned_data['groups']:
-                    assign_perm('tom_dataproducts.view_dataproduct', group, dp)
-                    assign_perm('tom_dataproducts.delete_dataproduct', group, dp)
-                    assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
-            successful_uploads.append(str(dp))
+            ZTF_data_full = pd.DataFrame(lcq.data)
+            ZTF_data = pd.DataFrame({'JD' : lcq.data.mjd+2400000.5, 'Magnitude' : lcq.data.mag, 'Magnitude_Error' : lcq.data.magerr})
 
-        except OtherException as iffe:
-            print("Other Exception!")
-            print(iffe)
-            ReducedDatum.objects.filter(data_product=dp).delete()
-            dp.delete()
+            if len(ZTF_data) == 0:
+                raise Exception("No ZTF data found within 5 arcseconds of given RA/Dec.")
+
+            print("-- ZTF: Looking for target... target found.")
+            print(lcq.__dict__)
+
+            ## Save ZTF Data
+            df = ZTF_data
+            # print(df)
+            if not os.path.exists("./data/" + target_name + "/none/"):
+                os.makedirs("./data/" + target_name + "/none/")
+            filepath = "./data/" + target_name + "/none/" + target_name + "_ZTF_Data.csv"
+            df.to_csv(filepath)
+
+            target_instance = Target.objects.get(pk=target_id)
+
+            dp = DataProduct(
+                target=target_instance,
+                observation_record=None,
+                data=target_name + "/none/" + target_name + "_ZTF_Data.csv",
+                product_id=None,
+                data_product_type='ztf_data'
+            )
+            # print(dp)
+            dp.save()
+
+            ## Ingest the data
+            successful_uploads = []
+
+            try:
+                run_hook('data_product_post_upload', dp)
+                reduced_data = run_data_processor(dp)
+
+                if not settings.TARGET_PERMISSIONS_ONLY:
+                    for group in form.cleaned_data['groups']:
+                        assign_perm('tom_dataproducts.view_dataproduct', group, dp)
+                        assign_perm('tom_dataproducts.delete_dataproduct', group, dp)
+                        assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
+                successful_uploads.append(str(dp))
+
+            except OtherException as iffe:
+                print("Other Exception!")
+                print(iffe)
+                ReducedDatum.objects.filter(data_product=dp).delete()
+                dp.delete()
+                messages.error(
+                    self.request,
+                    'Error in file {0} -- Error: {1}'.format(str(dp), iffe)
+                )
+            except InvalidFileFormatException as iffe:
+                print("Invalid File Format Exception!")
+                print(iffe)
+                ReducedDatum.objects.filter(data_product=dp).delete()
+                dp.delete()
+                messages.error(
+                    self.request,
+                    'File format invalid for file {0} -- Error: {1}'.format(str(dp), iffe)
+                )
+            except Exception as iffe:
+                print("Exception!")
+                print(iffe)
+                ReducedDatum.objects.filter(data_product=dp).delete()
+                dp.delete()
+                messages.error(self.request, 'There was a problem processing your file: {0}'.format(str(dp)))
+
+            if successful_uploads:
+                print("Successful upload!")
+                messages.success(
+                    self.request,
+                    'Successfully uploaded: {0}'.format('\n'.join([p for p in successful_uploads]))
+                )
+            else:
+                print("Upload unsuccessful!")
+
+
+        except Exception as e:
             messages.error(
                 self.request,
-                'Error in file {0} -- Error: {1}'.format(str(dp), iffe)
+                'Error while fetching ZTF data; ' + str(e)
             )
-        except InvalidFileFormatException as iffe:
-            print("Invalid File Format Exception!")
-            print(iffe)
-            ReducedDatum.objects.filter(data_product=dp).delete()
-            dp.delete()
-            messages.error(
-                self.request,
-                'File format invalid for file {0} -- Error: {1}'.format(str(dp), iffe)
-            )
-        except Exception as iffe:
-            print("Exception!")
-            print(iffe)
-            ReducedDatum.objects.filter(data_product=dp).delete()
-            dp.delete()
-            messages.error(self.request, 'There was a problem processing your file: {0}'.format(str(dp)))
 
+
+
+        return redirect(form.get('referrer', '/'))
+
+
+
+class DataProductUploadView(LoginRequiredMixin, FormView):
+    """
+    View that handles manual upload of DataProducts. Requires authentication.
+    """
+    form_class = DataProductUploadForm
+
+    def get_form(self, *args, **kwargs):
+        form = super().get_form(*args, **kwargs)
+        if not settings.TARGET_PERMISSIONS_ONLY:
+            if self.request.user.is_superuser:
+                form.fields['groups'].queryset = Group.objects.all()
+            else:
+                form.fields['groups'].queryset = self.request.user.groups.all()
+        return form
+
+    def form_valid(self, form):
+        print(form.cleaned_data)
+        """
+        Runs after ``DataProductUploadForm`` is validated. Saves each ``DataProduct`` and calls ``run_data_processor``
+        on each saved file. Redirects to the previous page.
+        """
+        target = form.cleaned_data['target']
+        if not target:
+            observation_record = form.cleaned_data['observation_record']
+            target = observation_record.target
+        else:
+            observation_record = None
+        dp_type = form.cleaned_data['data_product_type']
+        data_product_files = self.request.FILES.getlist('files')
+        successful_uploads = []
+        for f in data_product_files:
+            dp = DataProduct(
+                target=target,
+                observation_record=observation_record,
+                data=f,
+                product_id=None,
+                data_product_type=dp_type
+            )
+            dp.save()
+            try:
+                run_hook('data_product_post_upload', dp)
+                reduced_data = run_data_processor(dp)
+                if not settings.TARGET_PERMISSIONS_ONLY:
+                    for group in form.cleaned_data['groups']:
+                        assign_perm('tom_dataproducts.view_dataproduct', group, dp)
+                        assign_perm('tom_dataproducts.delete_dataproduct', group, dp)
+                        assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
+                successful_uploads.append(str(dp))
+            except OtherException as iffe:
+                ReducedDatum.objects.filter(data_product=dp).delete()
+                dp.delete()
+                messages.error(
+                    self.request,
+                    'Error in file {0} -- Error: {1}'.format(str(dp), iffe)
+                )
+            except InvalidFileFormatException as iffe:
+                ReducedDatum.objects.filter(data_product=dp).delete()
+                dp.delete()
+                messages.error(
+                    self.request,
+                    'File format invalid for file {0} -- Error: {1}'.format(str(dp), iffe)
+                )
+            except Exception:
+                ReducedDatum.objects.filter(data_product=dp).delete()
+                dp.delete()
+                messages.error(self.request, 'There was a problem processing your file: {0}'.format(str(dp)))
         if successful_uploads:
-            print("Successful upload!")
             messages.success(
                 self.request,
                 'Successfully uploaded: {0}'.format('\n'.join([p for p in successful_uploads]))
             )
-        else:
-            print("Upload unsuccessful!")
 
-        return redirect(form.get('referrer', '/'))
+        return redirect(form.cleaned_data.get('referrer', '/'))
+
+    def form_invalid(self, form):
+        """
+        Adds errors to Django messaging framework in the case of an invalid form and redirects to the previous page.
+        """
+        # TODO: Format error messages in a more human-readable way
+        messages.error(self.request, 'There was a problem uploading your file: {}'.format(form.errors.as_json()))
+        return redirect(form.cleaned_data.get('referrer', '/'))

@@ -6,6 +6,7 @@ from astropy.time import Time, TimezoneInfo
 import numpy as np
 #
 # from tom_dataproducts.data_processor import DataProcessor
+from django.contrib import messages
 from exceptions import InvalidFileFormatException, OtherException
 import pandas as pd
 from ztfquery import lightcurve
@@ -97,14 +98,36 @@ class ZTFProcessor(DataProcessor):
             for column_name in data.colnames:
                 data[column_name].name = column_name.lower()
 
+            ## --- Deal with column names ---
+            ## Step 1: Time...
+            if ('time' not in data.colnames) and ('mjd' not in data.colnames) and ('jd' not in data.colnames):
+                # messages.error(None,
+                #     'Error while fetching ZTF data; '
+                # )
+                raise Exception("No time column found in file; Photometry requires a time column with the name 'time', 'mjd', or 'jd'.")
+                return redirect('/targets/104/?tab=manage-data', '/')
+
+            ## Step 2: Magnitude...
+            if 'magnitude' not in data.colnames: raise OtherException("No 'magnitude' column found in file; Photometry only supports magnitude.")
+            ## Step 2: Error...
+            if 'magnitude_error' in data.colnames and 'error' not in data.colnames:
+                data['magnitude_error'].name ='error'
+
             ## Remove superfluous columns:
             for column_name in data.colnames:
-                if column_name not in ['jd', 'magnitude', 'error']:
+                if column_name not in ['time', 'mjd', 'jd', 'magnitude', 'error']:
                     data.remove_column(column_name)
 
             print("Considering datapoints...")
             # print(data.colnames)
             for datum in data:
+                if 'time' in datum.colnames:
+                    if float(datum['time']) > 2400000:
+                        time = Time(float(datum['time']), format='jd')
+                    else:
+                        time = Time(float(datum['time']), format='mjd')
+                if 'mjd' in datum.colnames:
+                    time = Time(float(datum['mjd']), format='mjd')
                 if 'jd' in datum.colnames:
                     time = Time(float(datum['jd']), format='jd')
                 utc = TimezoneInfo(utc_offset=0*units.hour)
