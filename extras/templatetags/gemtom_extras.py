@@ -23,7 +23,7 @@ from tom_dataproducts.models import ReducedDatum
 # from tom_dataproducts.processors.data_serializers import SpectrumSerializer
 # from tom_dataproducts.forced_photometry.forced_photometry_service import get_service_classes
 # from tom_observations.models import ObservationRecord
-# from tom_targets.models import Target
+from tom_targets.models import Target
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -228,20 +228,29 @@ def ztf_for_target(context, target, width=700, height=600, background=None, labe
                                       klass=ReducedDatum.objects.filter(
                                         target=target,
                                         data_type=photometry_data_type))
-
-    for datum in datums:
-        photometry_data.setdefault('jd', []).append(datum.timestamp)
-        photometry_data.setdefault('magnitude', []).append(datum.value.get('magnitude'))
-        photometry_data.setdefault('error', []).append(datum.value.get('error'))
-
     plot_data = []
     all_ydata = []
 
+    if len(datums) > 0:
+        for datum in datums:
+            photometry_data.setdefault('jd', []).append(datum.timestamp)
+            photometry_data.setdefault('magnitude', []).append(datum.value.get('magnitude'))
+            photometry_data.setdefault('error', []).append(datum.value.get('error'))
 
-    if len(photometry_data) > 0:
+
+
+        # print(photometry_data['jd'])
+        # print(photometry_data['magnitude'])
+        # print(photometry_data['error'])
+        # print(photometry_data['error'][0] != None)
 
         photometry_data['magnitude'] = [float(i) for i in photometry_data['magnitude']]
-        photometry_data['error'] = [float(i) for i in photometry_data['error']]
+        for i in range(0, len(photometry_data['error'])):
+            if photometry_data['error'][i] == None:
+                photometry_data['error'][i] = 0
+            else:
+                photometry_data['error'][i] = float(photometry_data['error'][i])
+        # photometry_data['error'] = [float(i) for i in photometry_data['error']]
 
         # print("\n\n\n\n\n\n\n")
         # print(photometry_data['jd'])
