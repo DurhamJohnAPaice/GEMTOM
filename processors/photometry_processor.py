@@ -6,7 +6,7 @@ from astropy.time import Time, TimezoneInfo
 import numpy as np
 
 from tom_dataproducts.data_processor import DataProcessor
-from exceptions import InvalidFileFormatException, OtherException
+from tom_dataproducts.exceptions import InvalidFileFormatException
 
 # print("Photometry Initialisation Bark!")
 
@@ -60,9 +60,10 @@ class PhotometryProcessor(DataProcessor):
         ## --- Deal with column names ---
         ## Step 1: Time...
         if ('time' not in data.colnames) and ('mjd' not in data.colnames) and ('jd' not in data.colnames):
-            raise OtherException("No time column found in file; Photometry requires a time column with the name 'time', 'mjd', or 'jd'.")
+            print("Bad time column!")
+            raise InvalidFileFormatException("No time column found in file; Photometry requires a time column with the name 'time', 'mjd', or 'jd'.")
         ## Step 2: Magnitude...
-        if 'magnitude' not in data.colnames: raise OtherException("No 'magnitude' column found in file; Photometry only supports magnitude.")
+        if 'magnitude' not in data.colnames: raise InvalidFileFormatException("No 'magnitude' column found in file; Photometry only supports magnitude.")
         ## Step 2: Error...
         if 'magnitude_error' in data.colnames and 'error' not in data.colnames:
             data['magnitude_error'].name ='error'
@@ -102,7 +103,7 @@ class PhotometryProcessor(DataProcessor):
             if 'jd' in datum.colnames:
                 time = Time(float(datum['jd']), format='jd')
             if np.ma.is_masked(datum['magnitude']) and 'limit' not in datum.colnames:
-                raise OtherException("One or more Magnitude values missing. Please check and re-upload.")
+                raise InvalidFileFormatException("One or more Magnitude values missing. Please check and re-upload.")
             utc = TimezoneInfo(utc_offset=0*units.hour)
             time.format = 'datetime'
             value = {
@@ -112,31 +113,5 @@ class PhotometryProcessor(DataProcessor):
                 if not np.ma.is_masked(datum[column_name]):
                     value[column_name] = datum[column_name]
             photometry.append(value)
-
-        # print(len(data))
-
-
-        # print(photometry[0])
-
-        return photometry
-
-
-        # photometry = []
-        #
-        # data = astropy_ascii.read(data_product.data.path)
-        # if len(data) < 1:
-        #     raise InvalidFileFormatException('Empty table or invalid file type')
-        #
-        # for datum in data:
-        #     time = Time(float(datum['time']), format='mjd')
-        #     utc = TimezoneInfo(utc_offset=0*units.hour)
-        #     time.format = 'datetime'
-        #     value = {
-        #         'timestamp': time.to_datetime(timezone=utc),
-        #     }
-        #     for column_name in datum.colnames:
-        #         if not np.ma.is_masked(datum[column_name]):
-        #             value[column_name] = datum[column_name]
-        #     photometry.append(value)
 
         return photometry

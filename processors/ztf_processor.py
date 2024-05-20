@@ -7,7 +7,7 @@ import numpy as np
 #
 # from tom_dataproducts.data_processor import DataProcessor
 from django.contrib import messages
-from exceptions import InvalidFileFormatException, OtherException
+from tom_dataproducts.exceptions import InvalidFileFormatException
 import pandas as pd
 from ztfquery import lightcurve
 import os
@@ -62,89 +62,80 @@ class ZTFProcessor(DataProcessor):
             raise InvalidFileFormatException('Unsupported file type')
 
     def _process_photometry_from_plaintext(self, data_product):
-        try:
-            """
-            Processes the photometric data from a plaintext file into a list of dicts. File is read using astropy as
-            specified in the below documentation. The file is expected to be a multi-column delimited file, with headers for
-            time, magnitude, filter, and error.
-            # http://docs.astropy.org/en/stable/io/ascii/read.html
+        """
+        Processes the photometric data from a plaintext file into a list of dicts. File is read using astropy as
+        specified in the below documentation. The file is expected to be a multi-column delimited file, with headers for
+        time, magnitude, filter, and error.
+        # http://docs.astropy.org/en/stable/io/ascii/read.html
 
-            :param data_product: Photometric DataProduct which will be processed into a list of dicts
-            :type data_product: DataProduct
+        :param data_product: Photometric DataProduct which will be processed into a list of dicts
+        :type data_product: DataProduct
 
-            :returns: python list containing the photometric data from the DataProduct
-            :rtype: list
-            """
+        :returns: python list containing the photometric data from the DataProduct
+        :rtype: list
+        """
 
-            print("Processing ZTF Photometry...")
-            photometry = []
+        print("Processing ZTF Photometry...")
+        photometry = []
 
 
-            data = astropy_ascii.read(data_product.data.path)
-            if len(data) < 1:
-                raise InvalidFileFormatException('Empty table or invalid file type')
+        data = astropy_ascii.read(data_product.data.path)
+        if len(data) < 1:
+            raise InvalidFileFormatException('Empty table or invalid file type')
 
-            if data.colnames[0] == "col1":
-                data['col1'].name = 'index'
-                data['col2'].name = 'jd'
-                data['col3'].name = 'magnitude'
-                data['col4'].name = 'error'
-                data.remove_row(0)
+        if data.colnames[0] == "col1":
+            data['col1'].name = 'index'
+            data['col2'].name = 'jd'
+            data['col3'].name = 'magnitude'
+            data['col4'].name = 'error'
+            data.remove_row(0)
 
-            # print(data)
-            # print("Test3!")
+        # print(data)
+        # print("Test3!")
 
-            ## Set all column names to lowercase
-            for column_name in data.colnames:
-                data[column_name].name = column_name.lower()
+        ## Set all column names to lowercase
+        for column_name in data.colnames:
+            data[column_name].name = column_name.lower()
 
-            ## --- Deal with column names ---
-            ## Step 1: Time...
-            if ('time' not in data.colnames) and ('mjd' not in data.colnames) and ('jd' not in data.colnames):
-                # messages.error(None,
-                #     'Error while fetching ZTF data; '
-                # )
-                raise Exception("No time column found in file; Photometry requires a time column with the name 'time', 'mjd', or 'jd'.")
-                return redirect('/targets/104/?tab=manage-data', '/')
+        ## --- Deal with column names ---
+        ## Step 1: Time...
+        if ('time' not in data.colnames) and ('mjd' not in data.colnames) and ('jd' not in data.colnames):
+            raise InvalidFileFormatException("as follows: No time column found in file; Photometry requires a time column with the name 'time', 'mjd', or 'jd'.")
+            return redirect('/targets/104/?tab=manage-data', '/')
 
-            ## Step 2: Magnitude...
-            if 'magnitude' not in data.colnames: raise OtherException("No 'magnitude' column found in file; Photometry only supports magnitude.")
-            ## Step 2: Error...
-            if 'magnitude_error' in data.colnames and 'error' not in data.colnames:
-                data['magnitude_error'].name ='error'
+        ## Step 2: Magnitude...
+        if 'magnitude' not in data.colnames: raise InvalidFileFormatException("No 'magnitude' column found in file; Photometry only supports magnitude.")
+        ## Step 2: Error...
+        if 'magnitude_error' in data.colnames and 'error' not in data.colnames:
+            data['magnitude_error'].name ='error'
 
-            ## Remove superfluous columns:
-            for column_name in data.colnames:
-                if column_name not in ['time', 'mjd', 'jd', 'magnitude', 'error']:
-                    data.remove_column(column_name)
+        ## Remove superfluous columns:
+        for column_name in data.colnames:
+            if column_name not in ['time', 'mjd', 'jd', 'magnitude', 'error']:
+                data.remove_column(column_name)
 
-            print("Considering datapoints...")
-            # print(data.colnames)
-            for datum in data:
-                if 'time' in datum.colnames:
-                    if float(datum['time']) > 2400000:
-                        time = Time(float(datum['time']), format='jd')
-                    else:
-                        time = Time(float(datum['time']), format='mjd')
-                if 'mjd' in datum.colnames:
-                    time = Time(float(datum['mjd']), format='mjd')
-                if 'jd' in datum.colnames:
-                    time = Time(float(datum['jd']), format='jd')
-                utc = TimezoneInfo(utc_offset=0*units.hour)
-                time.format = 'datetime'
-                value = {
-                    'timestamp': time.to_datetime(timezone=utc),
-                }
-                for column_name in datum.colnames:
-                    if not np.ma.is_masked(datum[column_name]):
-                        value[column_name] = datum[column_name]
-                photometry.append(value)
+        print("Considering datapoints...")
+        # print(data.colnames)
+        for datum in data:
+            if 'time' in datum.colnames:
+                if float(datum['time']) > 2400000:
+                    time = Time(float(datum['time']), format='jd')
+                else:
+                    time = Time(float(datum['time']), format='mjd')
+            if 'mjd' in datum.colnames:
+                time = Time(float(datum['mjd']), format='mjd')
+            if 'jd' in datum.colnames:
+                time = Time(float(datum['jd']), format='jd')
+            utc = TimezoneInfo(utc_offset=0*units.hour)
+            time.format = 'datetime'
+            value = {
+                'timestamp': time.to_datetime(timezone=utc),
+            }
+            for column_name in datum.colnames:
+                if not np.ma.is_masked(datum[column_name]):
+                    value[column_name] = datum[column_name]
+            photometry.append(value)
 
-            print("Photometry done!")
-
-            return photometry
-
-        except Exception as e:
-            print(e)
+        print("Photometry done!")
 
         return photometry

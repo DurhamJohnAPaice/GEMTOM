@@ -28,7 +28,7 @@ from ztfquery import lightcurve    ## <≈- Uncomment if using ZTF
 from tom_common.hooks import run_hook
 from tom_observations.models import Target
 from tom_common.hints import add_hint
-from exceptions import InvalidFileFormatException, OtherException
+from tom_dataproducts.exceptions import InvalidFileFormatException
 
 ## Data Products
 from processors.ztf_processor import ZTFProcessor
@@ -36,7 +36,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.base import RedirectView
 from data_processor import run_data_processor
 from tom_dataproducts.models import DataProduct, DataProductGroup, ReducedDatum
-from forms import DataProductUploadForm
+from tom_dataproducts.forms import DataProductUploadForm
 
 class AboutView(TemplateView):
     template_name = 'about.html'
@@ -308,15 +308,6 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
                         assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
                 successful_uploads.append(str(dp))
 
-            except OtherException as iffe:
-                print("Other Exception!")
-                print(iffe)
-                ReducedDatum.objects.filter(data_product=dp).delete()
-                dp.delete()
-                messages.error(
-                    self.request,
-                    'Error in file {0} -- Error: {1}'.format(str(dp), iffe)
-                )
             except InvalidFileFormatException as iffe:
                 print("Invalid File Format Exception!")
                 print(iffe)
@@ -352,87 +343,3 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
 
 
         return redirect(form.get('referrer', '/'))
-
-
-
-class DataProductUploadView(LoginRequiredMixin, FormView):
-    """
-    View that handles manual upload of DataProducts. Requires authentication.
-    """
-    form_class = DataProductUploadForm
-
-    def get_form(self, *args, **kwargs):
-        form = super().get_form(*args, **kwargs)
-        if not settings.TARGET_PERMISSIONS_ONLY:
-            if self.request.user.is_superuser:
-                form.fields['groups'].queryset = Group.objects.all()
-            else:
-                form.fields['groups'].queryset = self.request.user.groups.all()
-        return form
-
-    def form_valid(self, form):
-        print(form.cleaned_data)
-        """
-        Runs after ``DataProductUploadForm`` is validated. Saves each ``DataProduct`` and calls ``run_data_processor``
-        on each saved file. Redirects to the previous page.
-        """
-        target = form.cleaned_data['target']
-        if not target:
-            observation_record = form.cleaned_data['observation_record']
-            target = observation_record.target
-        else:
-            observation_record = None
-        dp_type = form.cleaned_data['data_product_type']
-        data_product_files = self.request.FILES.getlist('files')
-        successful_uploads = []
-        for f in data_product_files:
-            dp = DataProduct(
-                target=target,
-                observation_record=observation_record,
-                data=f,
-                product_id=None,
-                data_product_type=dp_type
-            )
-            dp.save()
-            try:
-                run_hook('data_product_post_upload', dp)
-                reduced_data = run_data_processor(dp)
-                if not settings.TARGET_PERMISSIONS_ONLY:
-                    for group in form.cleaned_data['groups']:
-                        assign_perm('tom_dataproducts.view_dataproduct', group, dp)
-                        assign_perm('tom_dataproducts.delete_dataproduct', group, dp)
-                        assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
-                successful_uploads.append(str(dp))
-            except OtherException as iffe:
-                ReducedDatum.objects.filter(data_product=dp).delete()
-                dp.delete()
-                messages.error(
-                    self.request,
-                    'Error in file {0} -- Error: {1}'.format(str(dp), iffe)
-                )
-            except InvalidFileFormatException as iffe:
-                ReducedDatum.objects.filter(data_product=dp).delete()
-                dp.delete()
-                messages.error(
-                    self.request,
-                    'File format invalid for file {0} -- Error: {1}'.format(str(dp), iffe)
-                )
-            except Exception:
-                ReducedDatum.objects.filter(data_product=dp).delete()
-                dp.delete()
-                messages.error(self.request, 'There was a problem processing your file: {0}'.format(str(dp)))
-        if successful_uploads:
-            messages.success(
-                self.request,
-                'Successfully uploaded: {0}'.format('\n'.join([p for p in successful_uploads]))
-            )
-
-        return redirect(form.cleaned_data.get('referrer', '/'))
-
-    def form_invalid(self, form):
-        """
-        Adds errors to Django messaging framework in the case of an invalid form and redirects to the previous page.
-        """
-        # TODO: Format error messages in a more human-readable way
-        messages.error(self.request, 'There was a problem uploading your file: {}'.format(form.errors.as_json()))
-        return redirect(form.cleaned_data.get('referrer', '/'))

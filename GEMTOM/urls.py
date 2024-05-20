@@ -23,6 +23,5 @@ urlpatterns = [
     path('blackGEM/', BlackGEMView.as_view(), name='blackGEM'),
     path('django_plotly_dash/', include('django_plotly_dash.urls')),
     path('ztf_upload/', UpdateZTFView.as_view(), name='update-ZTF-data'),
-    path('data/upload/', DataProductUploadView.as_view(), name='upload'),
     # path('upload/', UploadView.as_view(), name='upload'),
 ]
