@@ -23,7 +23,12 @@ from guardian.shortcuts import assign_perm, get_objects_for_user
 from .BlackGEM_to_GEMTOM import *
 from . import plotly_test
 from . import plotly_app
-from ztfquery import lightcurve    ## <≈- Uncomment if using ZTF
+from ztfquery import lightcurve
+
+## For the Status View
+import requests
+from astropy.time import Time
+from bs4 import BeautifulSoup
 
 from tom_common.hooks import run_hook
 from tom_observations.models import Target
@@ -118,6 +123,103 @@ class AboutView(TemplateView):
     #         # return FileResponse(text, as_attachment=True)
     #         # return HttpResponse(text)
     #         # return HttpResponseRedirect(reverse('about'))
+
+
+
+class StatusView(TemplateView):
+    template_name = 'status.html'
+
+
+    def get_context_data(self, **kwargs):
+        return {'targets': Target.objects.all()}
+
+    # def post(self, request, **kwargs):
+    #     ra  = float(request.POST['num1'])
+    #     dec = float(request.POST['num2'])
+    #     ra  *= 2
+    #     dec *= 3
+    #     # return HttpResponse('entered text:' + request.POST['text'])
+    #     return HttpResponse('Chosen RA x2: ' + str(ra) + '  |  Chosen Dec x3: ' + str(dec))
+
+    def post(self, request, **kwargs):
+        # source_ra  = float(request.POST['num1'])
+        # source_dec = float(request.POST['num2'])
+
+        # import urllib.request
+
+        # date = '20240424'
+        date  = request.POST['date']
+
+        extended_date = date[:4] + "-" + date[4:6] + "-" + date[6:]
+
+        try:
+            mjd = int(Time(extended_date + "T00:00:00.00", scale='utc').mjd)
+        except:
+            raise RuntimeError("Inputted date is not valid!")
+
+        print("")
+        print("Hello! Welcome to the BlackGEM Transient fetcher.")
+        print("Looking for data from ", extended_date, "...", sep="")
+        print("")
+
+        base_url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/'
+
+        try:
+            # urllib.request.urlretrieve(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients.csv", "../Data/BlackGEM/testdata_"+date+".csv")
+            data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients.csv")
+            # data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv")
+            # data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv")
+            print("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + str(len(data)) + " sources.")
+
+
+            page = requests.get(base_url + date).text
+            page2 = page.split("\n")
+            # print(page2)
+
+            unique_sources = []
+            for line in page2:
+                if ".png" in line:
+                    if line[82:90] not in unique_sources:
+                        unique_sources.append(line[82:90])
+
+            print("BlackGEM recorded pictures of the following " + str(len(unique_sources)) + " unique sources:")
+            print(unique_sources)
+
+            unique_sources_string = ""
+            for source in unique_sources:
+                unique_sources_string += source + ", "
+
+            return HttpResponse("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + str(len(data)) + " sources. \n" +
+             "BlackGEM recorded pictures of the following " + str(len(unique_sources)) + " unique sources: \n " + unique_sources_string[:-2])
+
+
+
+        except Exception as e:
+            print(e)
+            # print("Try another date, perhaps?")
+            print("BlackGEM did not observe on " + extended_date + " (MJD " + str(mjd) + ").")
+            # raise RuntimeError("Error getting file!")
+            return HttpResponse("BlackGEM did not observe on " + extended_date + " (MJD " + str(mjd) + ").")
+
+
+        # print("-- ZTF: Looking for target...", end="\r")
+        # lcq = lightcurve.LCQuery.from_position(source_ra, source_dec, 5)
+        # ZTF_data_full = pd.DataFrame(lcq.data)
+        # ZTF_data = pd.DataFrame({'JD' : lcq.data.mjd, 'Magnitude' : lcq.data.mag, 'Magnitude_Error' : lcq.data.magerr})
+        #
+        # if len(ZTF_data) == 0:
+        #     raise Exception("-- ZTF: Target not found. Try AAVSO instead?")
+        #
+        # print("-- ZTF: Looking for target... target found.")
+        # print(lcq.__dict__)
+        #
+        # df = ZTF_data # replace with your own data source
+        #
+        # fig = px.scatter(df, x='JD', y='Magnitude')
+        # fig.update_layout(
+        #     yaxis = dict(autorange="reversed")
+        # )
+
 
 
 
@@ -220,6 +322,133 @@ class BlackGEMView(TemplateView):
 class UpdateZTFView(LoginRequiredMixin, RedirectView):
     """
     View that handles the updating of ZTF data. Requires authentication.
+    """
+
+    def get(self, request, *args, **kwargs):
+        """
+        Method that handles the GET requests for this view. Calls the management command to update the reduced data and
+        adds a hint using the messages framework about automation.
+        """
+
+
+        print("\n\n ===== Running UpdateZTFView... ===== \n")
+
+        # QueryDict is immutable, and we want to append the remaining params to the redirect URL
+        query_params = request.GET.copy()
+        print("Fetching ZTF data:")
+        print(query_params)
+
+        target_name = query_params.pop('target', None)
+        target_id   = query_params.pop('target_id', None)
+        target_ra   = query_params.pop('target_ra', None)
+        target_dec  = query_params.pop('target_dec', None)
+        # print(target_id[0])
+        # print(target_ra[0])
+        # print(target_dec[0])
+
+        out = StringIO()
+
+        # if target_id:
+        if isinstance(target_name, list):   target_name    = target_name[-1]
+        if isinstance(target_id, list):     target_id      = target_id[-1]
+        if isinstance(target_ra, list):     target_ra      = target_ra[-1]
+        if isinstance(target_dec, list):    target_dec     = target_dec[-1]
+
+        form = { \
+            'observation_record': None, \
+            'target': target_name, \
+            'files': "./data/GEMTOM_ZTF_Test.csv", \
+            'data_product_type': 'ztf_data', \
+            'referrer': '/targets/' + target_id + '/?tab=ztf'}
+
+        # print(form)
+
+        print("-- ZTF: Looking for target...", end="\r")
+        try:
+            lcq = lightcurve.LCQuery.from_position(target_ra, target_dec, 5)
+
+            ZTF_data_full = pd.DataFrame(lcq.data)
+            ZTF_data = pd.DataFrame({'JD' : lcq.data.mjd+2400000.5, 'Magnitude' : lcq.data.mag, 'Magnitude_Error' : lcq.data.magerr})
+
+            if len(ZTF_data) == 0:
+                raise Exception("No ZTF data found within 5 arcseconds of given RA/Dec.")
+
+            print("-- ZTF: Looking for target... target found.")
+            print(lcq.__dict__)
+
+            ## Save ZTF Data
+            df = ZTF_data
+            # print(df)
+            if not os.path.exists("./data/" + target_name + "/none/"):
+                os.makedirs("./data/" + target_name + "/none/")
+            filepath = "./data/" + target_name + "/none/" + target_name + "_ZTF_Data.csv"
+            df.to_csv(filepath)
+
+            target_instance = Target.objects.get(pk=target_id)
+
+            dp = DataProduct(
+                target=target_instance,
+                observation_record=None,
+                data=target_name + "/none/" + target_name + "_ZTF_Data.csv",
+                product_id=None,
+                data_product_type='ztf_data'
+            )
+            # print(dp)
+            dp.save()
+
+            ## Ingest the data
+            successful_uploads = []
+
+            try:
+                run_hook('data_product_post_upload', dp)
+                reduced_data = run_data_processor(dp)
+
+                if not settings.TARGET_PERMISSIONS_ONLY:
+                    for group in form.cleaned_data['groups']:
+                        assign_perm('tom_dataproducts.view_dataproduct', group, dp)
+                        assign_perm('tom_dataproducts.delete_dataproduct', group, dp)
+                        assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
+                successful_uploads.append(str(dp))
+
+            except InvalidFileFormatException as iffe:
+                print("Invalid File Format Exception!")
+                print(iffe)
+                ReducedDatum.objects.filter(data_product=dp).delete()
+                dp.delete()
+                messages.error(
+                    self.request,
+                    'File format invalid for file {0} -- Error: {1}'.format(str(dp), iffe)
+                )
+            except Exception as iffe:
+                print("Exception!")
+                print(iffe)
+                ReducedDatum.objects.filter(data_product=dp).delete()
+                dp.delete()
+                messages.error(self.request, 'There was a problem processing your file: {0}'.format(str(dp)))
+
+            if successful_uploads:
+                print("Successful upload!")
+                messages.success(
+                    self.request,
+                    'Successfully uploaded: {0}'.format('\n'.join([p for p in successful_uploads]))
+                )
+            else:
+                print("Upload unsuccessful!")
+
+
+        except Exception as e:
+            messages.error(
+                self.request,
+                'Error while fetching ZTF data; ' + str(e)
+            )
+
+
+
+        return redirect(form.get('referrer', '/'))
+
+class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):
+    """
+    View that handles the updating of BlackGEM data. Requires authentication.
     """
 
     def get(self, request, *args, **kwargs):

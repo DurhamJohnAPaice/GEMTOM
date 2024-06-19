@@ -1,0 +1,181 @@
+{% extends 'tom_common/base.html' %}
+{% block content %}
+<!-- --------------------------- -->
+
+<p>
+BlackGEM is located in La Silla, Chile. On this page, you can find the status of the telescope and recent observations.
+</p>
+<hr>
+<p>
+<!-- <strong>Status ground:</strong> -->
+</p>
+
+
+<!-- <hr> -->
+<head>
+<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<!-- <body>
+  <h1>Here's a Plotly graph!</h1>
+  <p>And here's some text after the graph.</p>
+</body> -->
+
+<!-- <hr> -->
+
+<p>Enter date here to find out if BlackGEM observed on a certain night:
+Try:<br>
+Date   = 20240424</p>
+
+<form accept-charset="UTF-8" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label for="date">Date:  </label>
+    <input type="string" id="date" name="date">
+    <br>
+    <button type="submit" class="btn btn-primary" name="process_targets">Query BlackGEM</button>
+</form>
+
+<hr>
+
+
+<!-- <div id="CSVTable"></div>
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/jquerycsvtotable/jquery.csvToTable.js"></script>
+
+<script>
+$(function() {
+  $('#CSVTable').CSVToTable('../data/BlackGEM_History.csv');
+});
+</script> -->
+
+
+<h2>BlackGEM History:</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>MJD</th>
+            <th>Observed</th>
+            <th>Number Of Sources</th>
+            <th>Number Of Images</th>
+        </tr>
+    </thead>
+    <tbody id="tableBody">
+    </tbody>
+</table>
+
+<script>
+  // JavaScript code for inserting data into the table
+  var data = $.csv.toObjects('../data/BlackGEM_History.csv'):
+  // var data = [
+  //   { date: "2024-04-25", mjd: 60425, observed: "Yes", sources: "148", images: "3" },
+  //   { date: "2024-04-24", mjd: 60424, observed: "Yes", sources: "373", images: "21" },
+  // ];
+
+  var tableBody = document.getElementById("tableBody");
+
+  data.forEach(function(item) {
+    var row = document.createElement("tr");
+
+    var dateCell = document.createElement("td");
+    dateCell.textContent = item.date;
+    row.appendChild(dateCell);
+
+    var mjdCell = document.createElement("td");
+    mjdCell.textContent = item.mjd;
+    row.appendChild(mjdCell);
+
+    var observedCell = document.createElement("td");
+    observedCell.textContent = item.observed;
+    row.appendChild(observedCell);
+
+    var sourcesCell = document.createElement("td");
+    sourcesCell.textContent = item.sources;
+    row.appendChild(sourcesCell);
+
+    var imagesCell = document.createElement("td");
+    imagesCell.textContent = item.images;
+    row.appendChild(imagesCell);
+
+    tableBody.appendChild(row);
+  });
+</script>
+
+<br>
+<hr>
+<hr>
+<hr>
+<br>
+
+<head>
+<meta charset="utf-8">
+<title></title>
+<script>
+window.onload=function(){ with (new XMLHttpRequest()) {
+  onreadystatechange=cb; open('GET','../data/BlackGEM_History.csv',true); responseType='text';send();
+}}
+function cb(){if(this.readyState===4)document.getElementById('main')
+                                             .innerHTML=tbl(this.responseText); }
+function tbl(csv){ // do whatever is necessary to create your table here ...
+ return csv.split('\n')
+           .map(function(tr,i){return '<tr><td> '
+                                     +tr.replace(/\t/g,'</td><td>')
+                                     +'</td></tr>';})
+           .join('\n'); }
+</script>
+</head>
+<body>
+<h2>BlackGEM History:</h2>
+<table id="main">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>MJD</th>
+            <th>Observed</th>
+            <th>Number Of Sources</th>
+            <th>Number Of Images</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+</body>
+
+<br>
+<hr>
+<hr>
+<hr>
+<br>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>MJD</th>
+            <th>Observed</th>
+            <th>Number Of Sources</th>
+            <th>Number Of Images</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for datum in main %}
+        <tr>
+            <td>{{ datum.timestamp }}</td>
+            <td>
+                <!-- prepend greater-than sign if this is a magnitude limit -->
+                {% if datum.limit %}>{% endif %}
+                {{ datum.magnitude}}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="2">No recent photometry.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+<!-- --------------------------- -->
+{% endblock %}

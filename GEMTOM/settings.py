@@ -243,6 +243,7 @@ DATA_PRODUCT_TYPES = {
     'spectroscopy': ('spectroscopy', 'Spectroscopy'),
     'image_file': ('image_file', 'Image File'),
     'ztf_data': ('ztf_data', 'ZTF Photometry'),
+    'blackgem_data': ('blackgem_data', 'BlackGEM Photometry'),
     # 'new_photometry': ('photometry', 'New Photometry'),
     # 'test_type': ('test_type', 'Test Type')
 }
@@ -254,6 +255,7 @@ DATA_PROCESSORS = {
     # 'photometry': 'new_dataproducts.processors.photometry_processor.PhotometryProcessor',
     'photometry': 'processors.photometry_processor.PhotometryProcessor',
     'ztf_data': 'processors.ztf_processor.ZTFProcessor',
+    'blackgem_data': 'processors.photometry_processor.PhotometryProcessor',
     # 'photometry': 'processors.new_photometry_processor.NewPhotometryProcessor',
     'spectroscopy': 'tom_dataproducts.processors.spectroscopy_processor.SpectroscopyProcessor',
     # 'ztf': 'processors.ztf_processor.ZTFProcessor',
@@ -308,11 +310,11 @@ HARVESTERS = {
 #     {'name': 'eligible', 'type': 'boolean'},
 #     {'name': 'dicovery_date', 'type': 'datetime'}
 # ]
-# EXTRA_FIELDS = [
-#     {'name': 'Object Type', 'type': 'string'},
-#     # {'name': 'Bark', 'type': 'string'}
-# ]
-EXTRA_FIELDS = []
+EXTRA_FIELDS = [
+    {'name': 'BlackGEM ID', 'type': 'number'},
+    # {'name': 'Bark', 'type': 'string'}
+]
+# EXTRA_FIELDS = []
 
 # Authentication strategy can either be LOCKED (required login for all views)
 # or READ_ONLY (read only access to views)
