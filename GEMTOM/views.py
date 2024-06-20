@@ -29,6 +29,7 @@ from ztfquery import lightcurve
 import requests
 from astropy.time import Time
 from bs4 import BeautifulSoup
+from datetime import date, timedelta
 
 from tom_common.hooks import run_hook
 from tom_observations.models import Target
@@ -126,12 +127,59 @@ class AboutView(TemplateView):
 
 
 
+def get_blackgem_stats(obs_date):
+
+    extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
+    mjd = int(Time(extended_date + "T00:00:00.00", scale='utc').mjd)
+    base_url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/'
+
+    try:
+        data = pd.read_csv(base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients.csv")
+    except:
+        try:
+            data = pd.read_csv(base_url + obs_date + "/"+extended_date+"_BlackGEM_transients.csv")
+        except:
+            return "0", "0", "", ""
+
+    # data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv")
+    # data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv")
+    print("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + str(len(data)) + " sources.")
+
+    page = requests.get(base_url + obs_date).text
+    page2 = page.split("\n")
+    # print(page2)
+
+    unique_sources = []
+    images_urls = []
+    for line in page2:
+        if ".png" in line:
+            # print(base_url + date + "/" + line[82:114])
+            images_urls.append(base_url + obs_date + "/" + line[82:114])
+            if line[82:90] not in unique_sources:
+                unique_sources.append(line[82:90])
+
+    # print("BlackGEM recorded pictures of the following " + str(len(unique_sources)) + " unique sources:")
+    # print(unique_sources)
+
+    unique_sources_string = ""
+    for source in unique_sources:
+        unique_sources_string += source + ", "
+
+
+    images_urls_string = ""
+    for image in images_urls:
+        images_urls_string += "<a href=\"" + image + "\">" + image + "</a><br>"
+    # print(images_urls_string)
+
+    return str(len(data)), str(len(unique_sources)), unique_sources_string[:-2], images_urls_string[:-2]
+
+
 class StatusView(TemplateView):
     template_name = 'status.html'
 
 
-    def get_context_data(self, **kwargs):
-        return {'targets': Target.objects.all()}
+    # def get_context_data(self, **kwargs):
+    #     return {'targets': Target.objects.all()}
 
     # def post(self, request, **kwargs):
     #     ra  = float(request.POST['num1'])
@@ -142,15 +190,10 @@ class StatusView(TemplateView):
     #     return HttpResponse('Chosen RA x2: ' + str(ra) + '  |  Chosen Dec x3: ' + str(dec))
 
     def post(self, request, **kwargs):
-        # source_ra  = float(request.POST['num1'])
-        # source_dec = float(request.POST['num2'])
-
-        # import urllib.request
-
         # date = '20240424'
-        date  = request.POST['date']
+        obs_date  = request.POST['obs_date']
 
-        extended_date = date[:4] + "-" + date[4:6] + "-" + date[6:]
+        extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
 
         try:
             mjd = int(Time(extended_date + "T00:00:00.00", scale='utc').mjd)
@@ -162,64 +205,113 @@ class StatusView(TemplateView):
         print("Looking for data from ", extended_date, "...", sep="")
         print("")
 
-        base_url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/'
 
         try:
-            # urllib.request.urlretrieve(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients.csv", "../Data/BlackGEM/testdata_"+date+".csv")
-            data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients.csv")
-            # data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv")
-            # data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv")
-            print("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + str(len(data)) + " sources.")
+            data_length, unique_sources_length, unique_sources_string, images_urls_string = get_blackgem_stats(obs_date)
 
+            # # urllib.request.urlretrieve(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients.csv", "../Data/BlackGEM/testdata_"+date+".csv")
+            # data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients.csv")
+            # # data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv")
+            # # data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv")
+            # print("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + str(len(data)) + " sources.")
+            #
+            #
+            # page = requests.get(base_url + date).text
+            # page2 = page.split("\n")
+            # # print(page2)
+            #
+            # unique_sources = []
+            # images_urls = []
+            # for line in page2:
+            #     if ".png" in line:
+            #         # print(base_url + date + "/" + line[82:114])
+            #         images_urls.append(base_url + date + "/" + line[82:114])
+            #         if line[82:90] not in unique_sources:
+            #             unique_sources.append(line[82:90])
+            #
+            # print("BlackGEM recorded pictures of the following " + str(len(unique_sources)) + " unique sources:")
+            # print(unique_sources)
+            #
+            # unique_sources_string = ""
+            # for source in unique_sources:
+            #     unique_sources_string += source + ", "
+            #
+            #
+            # images_urls_string = ""
+            # for image in images_urls:
+            #     images_urls_string += "<a href=\"" + image + "\">" + image + "</a><br>"
+            # print(images_urls_string)
 
-            page = requests.get(base_url + date).text
-            page2 = page.split("\n")
-            # print(page2)
+            # return HttpResponse("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + str(len(data)) + " sources. <br>" +
+            #  "BlackGEM recorded pictures of the following " + str(len(unique_sources)) + " unique sources: <br> " +
+            #  unique_sources_string[:-2] + "<br>" +
+            #  images_urls_string[:-2])
 
-            unique_sources = []
-            for line in page2:
-                if ".png" in line:
-                    if line[82:90] not in unique_sources:
-                        unique_sources.append(line[82:90])
-
-            print("BlackGEM recorded pictures of the following " + str(len(unique_sources)) + " unique sources:")
-            print(unique_sources)
-
-            unique_sources_string = ""
-            for source in unique_sources:
-                unique_sources_string += source + ", "
-
-            return HttpResponse("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + str(len(data)) + " sources. \n" +
-             "BlackGEM recorded pictures of the following " + str(len(unique_sources)) + " unique sources: \n " + unique_sources_string[:-2])
-
+            return HttpResponse("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " sources. <br>" +
+             "BlackGEM recorded pictures of the following " + unique_sources_length + " unique sources: <br> " +
+             unique_sources_string + "<br>" +
+             images_urls_string)
 
 
         except Exception as e:
-            print(e)
+            # print(str(e))
+            if '404' in str(e):
+                print("BlackGEM did not observe on " + extended_date + " (MJD " + str(mjd) + ").")
+                return HttpResponse("BlackGEM did not observe on " + extended_date + " (MJD " + str(mjd) + ").")
             # print("Try another date, perhaps?")
-            print("BlackGEM did not observe on " + extended_date + " (MJD " + str(mjd) + ").")
             # raise RuntimeError("Error getting file!")
-            return HttpResponse("BlackGEM did not observe on " + extended_date + " (MJD " + str(mjd) + ").")
+            # return HttpResponse("BlackGEM did not observe on " + extended_date + " (MJD " + str(mjd) + ").")
+            else:
+                return HttpResponse(e)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # context['status_daily_text_1'] = status_daily()[0]
+        # context['status_daily_text_2'] = status_daily()[1]
+        # context['status_daily_text_3'] = status_daily()[2]
+        # context['status_daily_text_4'] = status_daily()[3]
+        context['status_daily_text_1'], \
+            context['status_daily_text_2'], \
+            context['status_daily_text_3'], \
+            context['status_daily_text_4']  = status_daily()
+        return context
 
 
-        # print("-- ZTF: Looking for target...", end="\r")
-        # lcq = lightcurve.LCQuery.from_position(source_ra, source_dec, 5)
-        # ZTF_data_full = pd.DataFrame(lcq.data)
-        # ZTF_data = pd.DataFrame({'JD' : lcq.data.mjd, 'Magnitude' : lcq.data.mag, 'Magnitude_Error' : lcq.data.magerr})
-        #
-        # if len(ZTF_data) == 0:
-        #     raise Exception("-- ZTF: Target not found. Try AAVSO instead?")
-        #
-        # print("-- ZTF: Looking for target... target found.")
-        # print(lcq.__dict__)
-        #
-        # df = ZTF_data # replace with your own data source
-        #
-        # fig = px.scatter(df, x='JD', y='Magnitude')
-        # fig.update_layout(
-        #     yaxis = dict(autorange="reversed")
-        # )
+def status_daily():
 
+    yesterday = date.today() - timedelta(1)
+    yesterday_date = yesterday.strftime("%Y%m%d")
+    extended_yesterday_date = yesterday.strftime("%Y-%m-%d")
+    mjd = int(Time(extended_yesterday_date + "T00:00:00.00", scale='utc').mjd)
+
+    barking = "woofing"
+
+    url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/' + yesterday_date + "/"+extended_yesterday_date+"_gw_BlackGEM_transients.csv"
+    url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/' + yesterday_date + "/"
+
+    print(url)
+    r = requests.get(url)
+    if r.status_code != 404:
+        result = "BlackGEM observed last night!"
+
+        data_length, unique_sources_length, unique_sources_string, images_urls_string = get_blackgem_stats(yesterday_date)
+
+        status_daily_text_1 = "Yes!"
+        status_daily_text_2 = "On " + extended_yesterday_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " sources."
+        status_daily_text_3 = "BlackGEM recorded pictures of " + unique_sources_length + " unique sources."
+        status_daily_text_4 = unique_sources_string
+
+    else:
+        status_daily_text_1 = "BlackGEM did not observe last night."
+        status_daily_text_2 = ""
+        status_daily_text_3 = ""
+        status_daily_text_4 = ""
+
+    return status_daily_text_1, status_daily_text_2, status_daily_text_3, status_daily_text_4
+
+# class StatusDailyView(TemplateView):
+#     template_name = 'status_daily.html'
+#     # status_daily(request)
 
 
 

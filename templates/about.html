@@ -11,7 +11,7 @@ we've inputted into the system, because a tutorial told me to.
 <strong>Testing ground:</strong>
 </p>
 
-<!-- <form method="get" id="form1">
+<form method="get" id="form1">
 <label for="num1"></label>
 <input type="number" id="num1" name="num1">
 <label for="num2">x</label>
@@ -31,7 +31,7 @@ function multiply_nums() {
 </script>
 <p id="pointdisplay"></p>
 
-<hr> -->
+<hr>
 
 <hr>
 <head>
@@ -43,6 +43,14 @@ function multiply_nums() {
   <h1>Here's a Plotly graph!</h1>
   <p>And here's some text after the graph.</p>
 </body>
+
+<hr>
+
+<h3>Click here to test BlackGEM's current status.</h3>
+<form accept-charset="UTF-8" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary" name="check_status">Check Status</button>
+</form>
 
 <hr>
 

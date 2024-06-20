@@ -18,9 +18,11 @@ from .views import *
 
 
 urlpatterns = [
+    # path("status_daily/", views.status_daily, name='status_daily'),
     path('', include('tom_common.urls')),
     path('about/', AboutView.as_view(), name='about'),
     path('status/', StatusView.as_view(), name='status'),
+    # path('status_daily/', status_daily, name='status_daily'),
     path('blackGEM/', BlackGEMView.as_view(), name='blackGEM'),
     path('django_plotly_dash/', include('django_plotly_dash.urls')),
     path('ztf_upload/', UpdateZTFView.as_view(), name='update-ZTF-data'),

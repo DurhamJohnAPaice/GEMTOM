@@ -10,6 +10,18 @@ BlackGEM is located in La Silla, Chile. On this page, you can find the status of
 <!-- <strong>Status ground:</strong> -->
 </p>
 
+<div style="text-align:center">
+
+<h4>Did BlackGEM observe last night?<br></h4>
+<h3>{{ status_daily_text_1 }} </h3>
+<p>{{ status_daily_text_2 }}<br>
+{{ status_daily_text_3 }}</p>
+</div>
+<!-- <p>{{ status_daily_text_4 }}</p> -->
+<!-- <p>{{ other_data }}</p> -->
+
+<hr>
+
 
 <!-- <hr> -->
 <head>
@@ -24,20 +36,108 @@ BlackGEM is located in La Silla, Chile. On this page, you can find the status of
 
 <!-- <hr> -->
 
-<p>Enter date here to find out if BlackGEM observed on a certain night:
-Try:<br>
-Date   = 20240424</p>
+<div style="text-align:center">
+
+<h5>Did BlackGEM observe on a certain night?</h5>
 
 <form accept-charset="UTF-8" method="POST" enctype="multipart/form-data">
     {% csrf_token %}
-    <label for="date">Date:  </label>
-    <input type="string" id="date" name="date">
-    <br>
+    <label for="obs_date">Input Date (YYYYMMDD):</label><br>
+    <input type="string" id="obs_date" name="obs_date">
     <button type="submit" class="btn btn-primary" name="process_targets">Query BlackGEM</button>
 </form>
 
+<em>Try 20240424</em>
+
+</div>
+
+
+<hr>
+<br>
+
+<div style="text-align:center">
+<h5>Most Recent Pictures:</h5>
+
+<p>{{ status_daily_text_3 }}</p>
+</div>
+
+
+
+
+
+
+<hr>
+<hr>
+<br>
+<br>
+<br>
+
+<h1>Testing Ground</h1>
+<h2>NOTE: Everything below here is just for testing purposes. Assume all information is incorrect!</h2>
+
+<hr>
 <hr>
 
+<!-- <p>Did BlackGEM observe last night?<br></p>
+<!-- <p>{{ result }}</p> -->
+<!-- <p>{{ status_daily_text_1 }}</p> -->
+<!-- <p>{{ status_daily_text_2 }}</p> -->
+<!-- <p>{{ status_daily_text_3 }}</p> -->
+<!-- <p>{{ status_daily_text_4 }}</p> -->
+<!-- <p>{{ other_data }}</p> -->
+
+
+<!-- <hr>
+<hr>
+
+<h2>BlackGEM Status:</h2>
+
+<div id='if-part1' style='visibility: hidden;'>BlackGEM Observed last night!</div>
+<div id='else-part1' style='visibility: hidden'>BlackGEM did not observe last night.</div>
+
+<script>
+    var node;
+    if(true) {
+        node = document.getElementById('if-part1');
+    }
+    else {
+        node = document.getElementById('else-part1');
+    }
+    node.style.visibility = 'visible';
+</script>
+
+<hr>
+<hr>
+
+<hr>
+<hr>
+
+<h2>BlackGEM Status 2:</h2>
+
+<div id='if-part2' style='visibility: hidden;'>BlackGEM Observed last night!</div>
+<div id='else-part2' style='visibility: hidden'>BlackGEM did not observe last night.</div>
+<div id='checker' style='visibility: hidden'>Code is running!</div>
+
+<script>
+    var node2;
+    node2 = document.getElementById('checker');
+    node2.style.visibility = 'visible';
+
+    var node;
+    var http = new XMLHttpRequest();
+    http.open('HEAD', 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/20240424/', false);
+    http.send();
+    if (http.status != 404)
+        node = document.getElementById('if-part2');
+    }
+    else {
+        node = document.getElementById('else-part2');
+    }
+    node.style.visibility = 'visible';
+</script>
+
+<hr>
+<hr> -->
 
 <!-- <div id="CSVTable"></div>
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
@@ -66,13 +166,18 @@ $(function() {
 </table>
 
 <script>
-  // JavaScript code for inserting data into the table
-  var data = $.csv.toObjects('../data/BlackGEM_History.csv'):
-  // var data = [
-  //   { date: "2024-04-25", mjd: 60425, observed: "Yes", sources: "148", images: "3" },
-  //   { date: "2024-04-24", mjd: 60424, observed: "Yes", sources: "373", images: "21" },
-  // ];
 
+
+  // JavaScript code for inserting data into the table
+  // var data = $.csv.toObjects(csv):
+  // var data = $('#CSVTable').CSVToTable('../data/BlackGEM_History.csv')
+  var data = [
+    { date: "2024-04-25", mjd: 60425, observed: "Yes", sources: "148", images: "3" },
+    { date: "2024-04-24", mjd: 60424, observed: "Yes", sources: "373", images: "21" },
+  ];
+  // var data = $.csv.toObjects('../data/BlackGEM_History.csv'):
+  // // document.write(data)
+  //
   var tableBody = document.getElementById("tableBody");
 
   data.forEach(function(item) {
@@ -112,18 +217,21 @@ $(function() {
 <meta charset="utf-8">
 <title></title>
 <script>
-window.onload=function(){ with (new XMLHttpRequest()) {
-  onreadystatechange=cb; open('GET','../data/BlackGEM_History.csv',true); responseType='text';send();
-}}
-function cb(){if(this.readyState===4)document.getElementById('main')
-                                             .innerHTML=tbl(this.responseText); }
-function tbl(csv){ // do whatever is necessary to create your table here ...
- return csv.split('\n')
-           .map(function(tr,i){return '<tr><td> '
-                                     +tr.replace(/\t/g,'</td><td>')
-                                     +'</td></tr>';})
-           .join('\n'); }
-</script>
+    window.onload=function(){ with (new XMLHttpRequest()) {
+      onreadystatechange=cb; open('GET','../data/BlackGEM_History.csv',true); responseType='text';send();
+    }}
+    function cb(){if(this.readyState===4)document.getElementById('main')
+                                                 .innerHTML=tbl(this.responseText); }
+    function tbl(csv){ // do whatever is necessary to create your table here ...
+        return csv.split('\n')
+               .map(function(tr,i){return '<tr><td> '
+                                         +tr.replace(/\t/g,'</td><td>')
+                                         +'</td></tr>';})
+               .join('\n'); }
+    // var tableBody = document.getElementById("tableBody");
+
+
+<!-- </script>
 </head>
 <body>
 <h2>BlackGEM History:</h2>
@@ -142,7 +250,7 @@ function tbl(csv){ // do whatever is necessary to create your table here ...
 </table>
 </body>
 
-<br>
+<!-- <br>
 <hr>
 <hr>
 <hr>
@@ -164,7 +272,7 @@ function tbl(csv){ // do whatever is necessary to create your table here ...
             <td>{{ datum.timestamp }}</td>
             <td>
                 <!-- prepend greater-than sign if this is a magnitude limit -->
-                {% if datum.limit %}>{% endif %}
+                <!-- {% if datum.limit %}>{% endif %}
                 {{ datum.magnitude}}
             </td>
         </tr>
@@ -174,7 +282,7 @@ function tbl(csv){ // do whatever is necessary to create your table here ...
         </tr>
         {% endfor %}
     </tbody>
-</table>
+</table> -->
 
 
 <!-- --------------------------- -->
