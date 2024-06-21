@@ -56,7 +56,7 @@ On this page, you can find the status of the telescope and recent observations.
 <br>
 
 <div style="text-align:center">
-<h5>Most Recent Pictures:</h5>
+<h5>Last Night's Extragalactic Transients:</h5>
 
  <!-- /* Crop images... */ -->
 <style>
@@ -66,8 +66,8 @@ On this page, you can find the status of the telescope and recent observations.
         overflow: hidden;
     }
     .image-container img {
-        width: 100%;
-        height: 100%;
+        width: 105%;
+        height: 107%;
         object-fit: cover; /* Ensures the image covers the container */
         object-position: center; /* Centers the image */
     }
@@ -80,7 +80,7 @@ On this page, you can find the status of the telescope and recent observations.
 <!-- <p>{{ images_daily_text_1 }}</p> -->
 {% if images_daily_text_1 %}
     {% for image_url, source_id in images_daily_text_1 %}
-        <h6> {{ source_id }} </h6>
+        <h6> BlackGEM ID = {{ source_id }} </h6>
         <div class="image-row">
             {% for url in image_url %}
                 {% if url %}
@@ -191,6 +191,7 @@ $(function() {
             <th>MJD</th>
             <th>Observed</th>
             <th>Number Of Sources</th>
+            <th>Number In Gaia</th>
             <th>Number Of Images</th>
         </tr>
     </thead>
@@ -205,8 +206,8 @@ $(function() {
   // var data = $.csv.toObjects(csv):
   // var data = $('#CSVTable').CSVToTable('../data/BlackGEM_History.csv')
   var data = [
-    { date: "2024-04-25", mjd: 60425, observed: "Yes", sources: "148", images: "3" },
-    { date: "2024-04-24", mjd: 60424, observed: "Yes", sources: "373", images: "21" },
+    { date: "2024-04-25", mjd: 60425, observed: "Yes", sources: "148", gaia: "59",   images: "3"  },
+    { date: "2024-04-24", mjd: 60424, observed: "Yes", sources: "373", gaia: "3369", images: "21" },
   ];
   // var data = $.csv.toObjects('../data/BlackGEM_History.csv'):
   // // document.write(data)
@@ -231,6 +232,10 @@ $(function() {
     var sourcesCell = document.createElement("td");
     sourcesCell.textContent = item.sources;
     row.appendChild(sourcesCell);
+
+    var gaiaCell = document.createElement("td");
+    gaiaCell.textContent = item.gaia;
+    row.appendChild(gaiaCell);
 
     var imagesCell = document.createElement("td");
     imagesCell.textContent = item.images;
@@ -275,6 +280,7 @@ $(function() {
             <th>MJD</th>
             <th>Observed</th>
             <th>Number Of Sources</th>
+            <th>Number in Gaia</th>
             <th>Number Of Images</th>
         </tr>
     </thead>
