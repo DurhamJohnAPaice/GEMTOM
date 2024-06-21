@@ -158,6 +158,16 @@ def get_blackgem_stats(obs_date):
             if line[82:90] not in unique_sources:
                 unique_sources.append(line[82:90])
 
+    images_urls_sorted = []
+    for this_source in unique_sources:
+        matching = [url for url in images_urls if this_source in url]
+        images_urls_sorted.append(matching)
+
+    # print(unique_sources)
+    # print(images_urls_sorted)
+
+
+
     # print("BlackGEM recorded pictures of the following " + str(len(unique_sources)) + " unique sources:")
     # print(unique_sources)
 
@@ -171,7 +181,7 @@ def get_blackgem_stats(obs_date):
         images_urls_string += "<a href=\"" + image + "\">" + image + "</a><br>"
     # print(images_urls_string)
 
-    return str(len(data)), str(len(unique_sources)), unique_sources_string[:-2], images_urls_string[:-2]
+    return str(len(data)), str(len(unique_sources)), unique_sources_string[:-2], images_urls_string[:-2], unique_sources, images_urls_sorted
 
 
 class StatusView(TemplateView):
@@ -195,7 +205,7 @@ class StatusView(TemplateView):
 
 
         try:
-            data_length, unique_sources_length, unique_sources_string, images_urls_string = get_blackgem_stats(obs_date)
+            data_length, unique_sources_length, unique_sources_string, images_urls_string, unique_sources, images_urls_sorted = get_blackgem_stats(obs_date)
 
             return HttpResponse("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " sources. <br>" +
              "BlackGEM recorded pictures of the following " + unique_sources_length + " unique sources: <br> " +
@@ -239,7 +249,7 @@ def status_daily():
     if r.status_code != 404:
         result = "BlackGEM observed last night!"
 
-        data_length, unique_sources_length, unique_sources_string, images_urls_string = get_blackgem_stats(yesterday_date)
+        data_length, unique_sources_length, unique_sources_string, images_urls_string, unique_sources, images_urls_sorted = get_blackgem_stats(yesterday_date)
 
         status_daily_text_1 = "Yes!"
         if data_length == "1": data_length_plural = ""
@@ -261,7 +271,7 @@ def status_daily():
 
 def images_daily():
 
-    yesterday = date.today() - timedelta(3)
+    yesterday = date.today() - timedelta(5)
     yesterday_date = yesterday.strftime("%Y%m%d")
     extended_yesterday_date = yesterday.strftime("%Y-%m-%d")
     mjd = int(Time(extended_yesterday_date + "T00:00:00.00", scale='utc').mjd)
@@ -273,7 +283,7 @@ def images_daily():
     if r.status_code != 404:
         result = "BlackGEM observed last night!"
 
-        data_length, unique_sources_length, unique_sources_string, images_urls_string = get_blackgem_stats(yesterday_date)
+        data_length, unique_sources_length, unique_sources_string, images_urls_string, unique_sources, images_urls_sorted = get_blackgem_stats(yesterday_date)
 
         images_urls_string = images_urls_string.replace("<a href=\"", "")
         images_urls_string = images_urls_string.replace("\">", "BARK")
@@ -282,7 +292,9 @@ def images_daily():
         images_urls_string = images_urls_string[::2]
         images_urls_names  = [i[54:62] for i in images_urls_string]
 
-        images_daily_text_1 = zip(images_urls_string, images_urls_names)
+        # images_daily_text_1 = zip(images_urls_string, images_urls_names)
+        images_daily_text_1 = zip(images_urls_sorted, unique_sources)
+
 
         # status_daily_text_1 = "Yes!"
         # if data_length == "1": data_length_plural = ""
@@ -300,6 +312,8 @@ def images_daily():
         # images_daily_text_3 = ""
         # images_daily_text_4 = ""
 
+    print(unique_sources)
+    print(images_urls_sorted)
     return images_daily_text_1#, images_daily_text_2
 
 

@@ -78,21 +78,21 @@ On this page, you can find the status of the telescope and recent observations.
 </style>
 
 <!-- <p>{{ images_daily_text_1 }}</p> -->
-<div class="image-row">
-    {% if images_daily_text_1 %}
-        {% for image_url, source_id in images_daily_text_1 %}
-            {% if image_url %}
-                <div class="image-container">
-                    <img src="{{ image_url }}" alt="image_url">
-                </div>
-                <p> < {{ source_id }} </p>
-            {% endif %}
-        {% endfor %}
-    {% endif %}
-</div>
-
-
-</div>
+{% if images_daily_text_1 %}
+    {% for image_url, source_id in images_daily_text_1 %}
+        <h6> {{ source_id }} </h6>
+        <div class="image-row">
+            {% for url in image_url %}
+                {% if url %}
+                    <div class="image-container">
+                        <img src="{{ url }}" alt="url">
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <hr>
+    {% endfor %}
+{% endif %}
 
 
 
