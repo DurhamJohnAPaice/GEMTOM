@@ -3,7 +3,7 @@
 <!-- --------------------------- -->
 
 <p>
-BlackGEM is located in La Silla, Chile. On this page, you can find the status of the telescope and recent observations.
+On this page, you can find the status of the telescope and recent observations.
 </p>
 <hr>
 <p>
@@ -58,7 +58,40 @@ BlackGEM is located in La Silla, Chile. On this page, you can find the status of
 <div style="text-align:center">
 <h5>Most Recent Pictures:</h5>
 
-<p>{{ status_daily_text_3 }}</p>
+ <!-- /* Crop images... */ -->
+<style>
+    .image-container {
+        width: 200px; /* Desired width */
+        height: 200px; /* Desired height */
+        overflow: hidden;
+    }
+    .image-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Ensures the image covers the container */
+        object-position: center; /* Centers the image */
+    }
+    .image-row {
+        display: flex;
+        flex-wrap: wrap; /* Allows wrapping to the next line if there are too many images for one row */
+    }
+</style>
+
+<!-- <p>{{ images_daily_text_1 }}</p> -->
+<div class="image-row">
+    {% if images_daily_text_1 %}
+        {% for image_url, source_id in images_daily_text_1 %}
+            {% if image_url %}
+                <div class="image-container">
+                    <img src="{{ image_url }}" alt="image_url">
+                </div>
+                <p> < {{ source_id }} </p>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+</div>
+
+
 </div>
 
 

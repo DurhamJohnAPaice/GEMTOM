@@ -177,18 +177,6 @@ def get_blackgem_stats(obs_date):
 class StatusView(TemplateView):
     template_name = 'status.html'
 
-
-    # def get_context_data(self, **kwargs):
-    #     return {'targets': Target.objects.all()}
-
-    # def post(self, request, **kwargs):
-    #     ra  = float(request.POST['num1'])
-    #     dec = float(request.POST['num2'])
-    #     ra  *= 2
-    #     dec *= 3
-    #     # return HttpResponse('entered text:' + request.POST['text'])
-    #     return HttpResponse('Chosen RA x2: ' + str(ra) + '  |  Chosen Dec x3: ' + str(dec))
-
     def post(self, request, **kwargs):
         # date = '20240424'
         obs_date  = request.POST['obs_date']
@@ -209,44 +197,6 @@ class StatusView(TemplateView):
         try:
             data_length, unique_sources_length, unique_sources_string, images_urls_string = get_blackgem_stats(obs_date)
 
-            # # urllib.request.urlretrieve(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients.csv", "../Data/BlackGEM/testdata_"+date+".csv")
-            # data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients.csv")
-            # # data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv")
-            # # data = pd.read_csv(base_url + date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv")
-            # print("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + str(len(data)) + " sources.")
-            #
-            #
-            # page = requests.get(base_url + date).text
-            # page2 = page.split("\n")
-            # # print(page2)
-            #
-            # unique_sources = []
-            # images_urls = []
-            # for line in page2:
-            #     if ".png" in line:
-            #         # print(base_url + date + "/" + line[82:114])
-            #         images_urls.append(base_url + date + "/" + line[82:114])
-            #         if line[82:90] not in unique_sources:
-            #             unique_sources.append(line[82:90])
-            #
-            # print("BlackGEM recorded pictures of the following " + str(len(unique_sources)) + " unique sources:")
-            # print(unique_sources)
-            #
-            # unique_sources_string = ""
-            # for source in unique_sources:
-            #     unique_sources_string += source + ", "
-            #
-            #
-            # images_urls_string = ""
-            # for image in images_urls:
-            #     images_urls_string += "<a href=\"" + image + "\">" + image + "</a><br>"
-            # print(images_urls_string)
-
-            # return HttpResponse("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + str(len(data)) + " sources. <br>" +
-            #  "BlackGEM recorded pictures of the following " + str(len(unique_sources)) + " unique sources: <br> " +
-            #  unique_sources_string[:-2] + "<br>" +
-            #  images_urls_string[:-2])
-
             return HttpResponse("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " sources. <br>" +
              "BlackGEM recorded pictures of the following " + unique_sources_length + " unique sources: <br> " +
              unique_sources_string + "<br>" +
@@ -254,29 +204,26 @@ class StatusView(TemplateView):
 
 
         except Exception as e:
-            # print(str(e))
             if '404' in str(e):
                 print("BlackGEM did not observe on " + extended_date + " (MJD " + str(mjd) + ").")
                 return HttpResponse("BlackGEM did not observe on " + extended_date + " (MJD " + str(mjd) + ").")
-            # print("Try another date, perhaps?")
-            # raise RuntimeError("Error getting file!")
-            # return HttpResponse("BlackGEM did not observe on " + extended_date + " (MJD " + str(mjd) + ").")
+
             else:
                 return HttpResponse(e)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # context['status_daily_text_1'] = status_daily()[0]
-        # context['status_daily_text_2'] = status_daily()[1]
-        # context['status_daily_text_3'] = status_daily()[2]
-        # context['status_daily_text_4'] = status_daily()[3]
         context['status_daily_text_1'], \
             context['status_daily_text_2'], \
             context['status_daily_text_3'], \
             context['status_daily_text_4']  = status_daily()
+        context['images_daily_text_1'] = images_daily()
+        # context['images_daily_text_1'], \
+        #     context['images_daily_text_2']  = images_daily()
         return context
 
 
+## Function for checking last night's BlackGEM status.
 def status_daily():
 
     yesterday = date.today() - timedelta(1)
@@ -284,9 +231,7 @@ def status_daily():
     extended_yesterday_date = yesterday.strftime("%Y-%m-%d")
     mjd = int(Time(extended_yesterday_date + "T00:00:00.00", scale='utc').mjd)
 
-    barking = "woofing"
-
-    url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/' + yesterday_date + "/"+extended_yesterday_date+"_gw_BlackGEM_transients.csv"
+    # url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/' + yesterday_date + "/"+extended_yesterday_date+"_gw_BlackGEM_transients.csv"
     url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/' + yesterday_date + "/"
 
     print(url)
@@ -297,8 +242,13 @@ def status_daily():
         data_length, unique_sources_length, unique_sources_string, images_urls_string = get_blackgem_stats(yesterday_date)
 
         status_daily_text_1 = "Yes!"
-        status_daily_text_2 = "On " + extended_yesterday_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " sources."
-        status_daily_text_3 = "BlackGEM recorded pictures of " + unique_sources_length + " unique sources."
+        if data_length == "1": data_length_plural = ""
+        else: data_length_plural = "s"
+        if unique_sources_length == "1": unique_sources_plural = ""
+        else: unique_sources_plural = "s"
+
+        status_daily_text_2 = "On " + extended_yesterday_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " source" + data_length_plural + "."
+        status_daily_text_3 = "BlackGEM recorded pictures of " + unique_sources_length + " unique source" + unique_sources_plural + "."
         status_daily_text_4 = unique_sources_string
 
     else:
@@ -308,6 +258,51 @@ def status_daily():
         status_daily_text_4 = ""
 
     return status_daily_text_1, status_daily_text_2, status_daily_text_3, status_daily_text_4
+
+def images_daily():
+
+    yesterday = date.today() - timedelta(3)
+    yesterday_date = yesterday.strftime("%Y%m%d")
+    extended_yesterday_date = yesterday.strftime("%Y-%m-%d")
+    mjd = int(Time(extended_yesterday_date + "T00:00:00.00", scale='utc').mjd)
+
+    url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/' + yesterday_date + "/"
+
+    print(url)
+    r = requests.get(url)
+    if r.status_code != 404:
+        result = "BlackGEM observed last night!"
+
+        data_length, unique_sources_length, unique_sources_string, images_urls_string = get_blackgem_stats(yesterday_date)
+
+        images_urls_string = images_urls_string.replace("<a href=\"", "")
+        images_urls_string = images_urls_string.replace("\">", "BARK")
+        images_urls_string = images_urls_string.replace("</a><br>", "BARK")
+        images_urls_string = images_urls_string.split("BARK")
+        images_urls_string = images_urls_string[::2]
+        images_urls_names  = [i[54:62] for i in images_urls_string]
+
+        images_daily_text_1 = zip(images_urls_string, images_urls_names)
+
+        # status_daily_text_1 = "Yes!"
+        # if data_length == "1": data_length_plural = ""
+        # else: data_length_plural = "s"
+        # if unique_sources_length == "1": unique_sources_plural = ""
+        # else: unique_sources_plural = "s"
+        #
+        # status_daily_text_2 = "On " + extended_yesterday_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " source" + data_length_plural + "."
+        # status_daily_text_3 = "BlackGEM recorded pictures of " + unique_sources_length + " unique source" + unique_sources_plural + "."
+        # status_daily_text_4 = unique_sources_string
+
+    else:
+        images_daily_text_1 = zip([], ["BlackGEM did not observe last night."])
+        # images_daily_text_2 = ""
+        # images_daily_text_3 = ""
+        # images_daily_text_4 = ""
+
+    return images_daily_text_1#, images_daily_text_2
+
+
 
 # class StatusDailyView(TemplateView):
 #     template_name = 'status_daily.html'
