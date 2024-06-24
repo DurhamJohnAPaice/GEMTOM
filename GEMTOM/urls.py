@@ -22,6 +22,8 @@ urlpatterns = [
     path('', include('tom_common.urls')),
     path('about/', AboutView.as_view(), name='about'),
     path('status/', StatusView.as_view(), name='status'),
+    path('status/<int:obs_date>/', NightView, name='night'),
+    path('handle_input/', handle_input, name='handle_input'),
     # path('status_daily/', status_daily, name='status_daily'),
     path('blackGEM/', BlackGEMView.as_view(), name='blackGEM'),
     path('django_plotly_dash/', include('django_plotly_dash.urls')),

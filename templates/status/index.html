@@ -1,0 +1,162 @@
+{% extends 'tom_common/base.html' %}
+{% block content %}
+<!-- --------------------------- -->
+
+
+
+<p>
+On this page, you can find the data for a certain observation date.
+</p>
+<hr>
+<p>
+<!-- <strong>Status ground:</strong> -->
+</p>
+
+<div style="text-align:center">
+
+<h4>Did BlackGEM observe on {{ extended_date }}?<br></h4>
+<h3>{{ observed }} </h3>
+
+On {{ extended_date }} (MJD {{ mjd }}), BlackGEM observed {{ data_length }} transients, which have {{ num_in_gaia }} crossmatches in Gaia (radius 1 arcsec). <br>
+BlackGEM recorded pictures of the following {{ unique_sources_length }} possible extragalactic transients: <br><br>
+{% for source in unique_sources_id %}
+    {{ source }},
+{% endfor %}
+
+
+
+
+<!-- {{ images_urls_sorted }} -->
+
+<!-- {{ data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec). <br>" +
+"BlackGEM recorded pictures of the following " + unique_sources_length + " possible extragalactic transient" + unique_sources_plural + ": <br> " +
+unique_sources_string + "<br>" + -->
+<!-- images_urls_string -->
+
+</div>
+<!-- <p>{{ status_daily_text_4 }}</p> -->
+<!-- <p>{{ other_data }}</p> -->
+
+<hr>
+
+<div style="text-align:center">
+<h5>Files:</h5>
+
+<!-- {% if unique_sources %}
+    <a href= {{ transients_filename }}>Transients File</a> <br>
+    <a href= {{ gaia_filename }}>Gaia Crossmatched File</a> <br>
+    <a href= {{ extragalactic_filename }}>Extragalactic Transients File</a> <br>
+{% else %}
+    <p> No files to download.</p>
+{% endif %} -->
+
+{% if transients_filename %}
+    <a href= {{ transients_filename }}>Transients File</a> <br>
+{% else %}
+    <em>No Transients file to download</em> <br>
+{% endif %}
+
+{% if gaia_filename %}
+    <a href= {{ gaia_filename }}>Gaia Crossmatched File</a> <br>
+{% else %}
+    <em>No Gaia Crossmatched file to download</em> <br>
+{% endif %}
+
+{% if extragalactic_filename %}
+    <a href= {{ extragalactic_filename }}>Extragalactic Transients File</a> <br>
+{% else %}
+    <em>No Extragalactic file to download</em>
+{% endif %}
+
+</div>
+
+
+<hr>
+
+
+<!-- <hr> -->
+<head>
+<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<div style="text-align:center">
+<h5>Images:</h5>
+
+ <!-- /* Crop images... */ -->
+<style>
+    .image-container {
+        width: 200px; /* Desired width */
+        height: 200px; /* Desired height */
+        overflow: hidden;
+    }
+    .image-container img {
+        width: 105%;
+        height: 107%;
+        object-fit: cover; /* Ensures the image covers the container */
+        object-position: center; /* Centers the image */
+    }
+    .image-container2 {
+        width: 800px; /* Desired width */
+        height: 300px; /* Desired height */
+        overflow: hidden;
+        margin: 10px; /* Optional spacing between images */
+        display: flex; /* Make the container a flexbox */
+        justify-content: center; /* Center the content horizontally */
+        align-items: center; /* Center the content vertically */
+    }
+    .image-container2 img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Ensures the image covers the container */
+        object-position: center; /* Centers the image */
+    }
+    .image-row {
+        display: flex;
+        flex-wrap: wrap; /* Allows wrapping to the next line if there are too many images for one row */
+        justify-content: center; /* Center the flex items horizontally */
+    }
+</style>
+
+<!-- <p>{{ images_daily_text_1 }}</p> -->
+{% if unique_sources_id %}
+    {% for image_url, source_id, source_name, source_ra, source_dec, source_jpg in images_daily_text_1 %}
+        <h6> BlackGEM ID = {{ source_id }} ({{source_name}})</h6>
+        <div class="image-row">
+            {% for url in image_url %}
+                {% if url %}
+                    <div class="image-container">
+                        <img src="{{ url }}" alt="url">
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        RA = {{source_ra}}  ;  Dec = {{source_dec}}<br>
+        {% if source_jpg %}
+            <div class="image-row">
+                <div class="image-container2">
+                    <img src="{{ source_jpg }}" alt="source_jpg">
+                </div>
+            </div>
+            <em><a href="#" onclick='window.open("http://bgtom:BG_t0m!@xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid={{source_id}}");return false;'>Request Lightcurve Update</a></em><br>
+            <small><em>(Requesting a Lightcurve will send a request to an external server. Refresh the page in ~5 minutes to see the result!)</em></small>
+        {% else %}
+            <em><a href="#" onclick='window.open("http://bgtom:BG_t0m!@xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid={{source_id}}");return false;'>Request Lightcurve</a></em><br>
+            <small><em>(Requesting a Lightcurve will send a request to an external server. Refresh the page in ~5 minutes to see the result!)</em></small>
+        {% endif %}
+        <hr>
+    {% endfor %}
+{% else %}
+    <p> No images to display.</p>
+    <br>
+    <hr>
+{% endif %}
+
+
+<br>
+
+
+
+
+<!-- --------------------------- -->
+{% endblock %}
