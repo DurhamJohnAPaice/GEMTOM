@@ -2,15 +2,16 @@
 {% block content %}
 <!-- --------------------------- -->
 
+<head>
+<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
 
 
 <p>
-On this page, you can find the data for a certain observation date.
+On this page, you can find the data for a specific observation date.
 </p>
 <hr>
-<p>
-<!-- <strong>Status ground:</strong> -->
-</p>
 
 <div style="text-align:center">
 
@@ -18,37 +19,13 @@ On this page, you can find the data for a certain observation date.
 <h3>{{ observed }} </h3>
 
 On {{ extended_date }} (MJD {{ mjd }}), BlackGEM observed {{ data_length }} transients, which have {{ num_in_gaia }} crossmatches in Gaia (radius 1 arcsec). <br>
-BlackGEM recorded pictures of the following {{ unique_sources_length }} possible extragalactic transients: <br><br>
-{% for source in unique_sources_id %}
+BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extragalactic transients. <br><br>
+<!-- {% for source in extragalactic_sources_id %}
     {{ source }},
-{% endfor %}
-
-
-
-
-<!-- {{ images_urls_sorted }} -->
-
-<!-- {{ data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec). <br>" +
-"BlackGEM recorded pictures of the following " + unique_sources_length + " possible extragalactic transient" + unique_sources_plural + ": <br> " +
-unique_sources_string + "<br>" + -->
-<!-- images_urls_string -->
-
-</div>
-<!-- <p>{{ status_daily_text_4 }}</p> -->
-<!-- <p>{{ other_data }}</p> -->
+{% endfor %} -->
 
 <hr>
-
-<div style="text-align:center">
 <h5>Files:</h5>
-
-<!-- {% if unique_sources %}
-    <a href= {{ transients_filename }}>Transients File</a> <br>
-    <a href= {{ gaia_filename }}>Gaia Crossmatched File</a> <br>
-    <a href= {{ extragalactic_filename }}>Extragalactic Transients File</a> <br>
-{% else %}
-    <p> No files to download.</p>
-{% endif %} -->
 
 {% if transients_filename %}
     <a href= {{ transients_filename }}>Transients File</a> <br>
@@ -68,22 +45,12 @@ unique_sources_string + "<br>" + -->
     <em>No Extragalactic file to download</em>
 {% endif %}
 
-</div>
-
 
 <hr>
 
-
-<!-- <hr> -->
-<head>
-<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-</head>
-
-<div style="text-align:center">
 <h5>Images:</h5>
 
- <!-- /* Crop images... */ -->
+ <!-- /* Create containers for the small images, then the lightcurves. */ -->
 <style>
     .image-container {
         width: 200px; /* Desired width */
@@ -118,8 +85,7 @@ unique_sources_string + "<br>" + -->
     }
 </style>
 
-<!-- <p>{{ images_daily_text_1 }}</p> -->
-{% if unique_sources_id %}
+{% if extragalactic_sources_id %}
     {% for image_url, source_id, source_name, source_ra, source_dec, source_jpg in images_daily_text_1 %}
         <h6> BlackGEM ID = {{ source_id }} ({{source_name}})</h6>
         <div class="image-row">
