@@ -1,6 +1,11 @@
 {% extends 'tom_common/base.html' %}
 {% block content %}
 <!-- --------------------------- -->
+<head>
+<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
 
 <p>
 On this page, you can find the status of the telescope and recent observations.
@@ -16,47 +21,8 @@ On this page, you can find the status of the telescope and recent observations.
 <h3>{{ status_daily_text_1 }} </h3>
 <p>{{ status_daily_text_2 }}<br>
 {{ status_daily_text_3 }}</p>
-</div>
-<!-- <p>{{ status_daily_text_4 }}</p> -->
-<!-- <p>{{ other_data }}</p> -->
 
 <hr>
-
-
-<!-- <hr> -->
-<head>
-<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-</head>
-
-<!-- <body>
-  <h1>Here's a Plotly graph!</h1>
-  <p>And here's some text after the graph.</p>
-</body> -->
-
-<!-- <hr> -->
-
-<!-- <div style="text-align:center">
-
-<h5>Did BlackGEM observe on a certain night?</h5>
-
-<form accept-charset="UTF-8" method="POST" enctype="multipart/form-data">
-    {% csrf_token %}
-    <label for="obs_date">Input Date (YYYYMMDD):</label><br>
-    <input type="string" id="obs_date" name="obs_date">
-    <button type="submit" class="btn btn-primary" name="process_targets">Query BlackGEM</button>
-</form>
-
-<em>Try 20240424</em>
-
-</div> -->
-
-
-<!-- <hr>
-<br> -->
-
-
-<div style="text-align:center">
 
 <h5>Did BlackGEM observe on a certain night?</h5>
 
@@ -68,17 +34,42 @@ On this page, you can find the status of the telescope and recent observations.
 
 <em>Try 20240424</em>
 
-</div>
 
+<br>
+<br>
+<hr>
+<hr>
+<br>
 
+<h5>Last Night's Files:</h5>
+
+{% if transients_filename %}
+    <a href= {{ transients_filename }}>Transients File</a> <br>
+{% else %}
+    <em>No Transients file to download</em> <br>
+{% endif %}
+
+{% if gaia_filename %}
+    <a href= {{ gaia_filename }}>Gaia Crossmatched File</a> <br>
+{% else %}
+    <em>No Gaia Crossmatched file to download</em> <br>
+{% endif %}
+
+{% if extragalactic_filename %}
+    <a href= {{ extragalactic_filename }}>Extragalactic Transients File</a> <br>
+{% else %}
+    <em>No Extragalactic file to download</em>
+{% endif %}
+
+<br>
 <hr>
 
 
 
-<div style="text-align:center">
 <h5>Last Night's Extragalactic Transients:</h5>
 
  <!-- /* Crop images... */ -->
+ <!-- /* Create containers for the small images, then the lightcurves. */ -->
 <style>
     .image-container {
         width: 200px; /* Desired width */
@@ -91,16 +82,32 @@ On this page, you can find the status of the telescope and recent observations.
         object-fit: cover; /* Ensures the image covers the container */
         object-position: center; /* Centers the image */
     }
+    .image-container2 {
+        width: 800px; /* Desired width */
+        height: 300px; /* Desired height */
+        overflow: hidden;
+        margin: 10px; /* Optional spacing between images */
+        display: flex; /* Make the container a flexbox */
+        justify-content: center; /* Center the content horizontally */
+        align-items: center; /* Center the content vertically */
+    }
+    .image-container2 img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Ensures the image covers the container */
+        object-position: center; /* Centers the image */
+    }
     .image-row {
         display: flex;
         flex-wrap: wrap; /* Allows wrapping to the next line if there are too many images for one row */
+        justify-content: center; /* Center the flex items horizontally */
     }
 </style>
 
 <!-- <p>{{ images_daily_text_1 }}</p> -->
-{% if images_daily_text_1 %}
-    {% for image_url, source_id in images_daily_text_1 %}
-        <h6> BlackGEM ID = {{ source_id }} </h6>
+{% if extragalactic_sources_id %}
+    {% for image_url, source_id, source_name, source_ra, source_dec, source_jpg in images_daily_text_1 %}
+        <h6> BlackGEM ID = {{ source_id }} ({{source_name}})</h6>
         <div class="image-row">
             {% for url in image_url %}
                 {% if url %}
@@ -110,8 +117,33 @@ On this page, you can find the status of the telescope and recent observations.
                 {% endif %}
             {% endfor %}
         </div>
+        RA = {{source_ra}}  ;  Dec = {{source_dec}}<br>
+        {% if source_jpg %}
+            <div class="image-row">
+                <div class="image-container2">
+                    <img src="{{ source_jpg }}" alt="source_jpg">
+                </div>
+            </div>
+            <em><a href="#" onclick='window.open("http://bgtom:BG_t0m!@xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid={{source_id}}");return false;'>Request Lightcurve Update</a></em><br>
+            <small><em>(Requesting a Lightcurve will send a request to an external server. Refresh the page in ~5 minutes to see the result!)</em></small>
+        {% else %}
+            <em><a href="#" onclick='window.open("http://bgtom:BG_t0m!@xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid={{source_id}}");return false;'>Request Lightcurve</a></em><br>
+            <small><em>(Requesting a Lightcurve will send a request to an external server. Refresh the page in ~5 minutes to see the result!)</em></small>
+        {% endif %}
+        <form method="post" action="{% url 'status_to_GEMTOM' %}" class="image-form">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ source_id }}">
+            <input type="hidden" name="name" value="{{ source_name }}">
+            <input type="hidden" name="ra" value="{{ source_ra }}">
+            <input type="hidden" name="dec" value="{{ source_dec }}">
+            <button type="submit">Add to GEMTOM</button>
+        </form>
         <hr>
     {% endfor %}
+{% else %}
+    <p> No images to display.</p>
+    <br>
+    <hr>
 {% endif %}
 
 
