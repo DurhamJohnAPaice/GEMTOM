@@ -20,7 +20,10 @@ from django.utils.safestring import mark_safe
 from django.core.files.storage import FileSystemStorage
 from guardian.shortcuts import assign_perm, get_objects_for_user
 
+## For importing targets
 from .BlackGEM_to_GEMTOM import *
+from tom_targets.utils import import_targets
+
 from . import plotly_test
 from . import plotly_app
 from ztfquery import lightcurve
@@ -44,6 +47,105 @@ from django.views.generic.base import RedirectView
 from data_processor import run_data_processor
 from tom_dataproducts.models import DataProduct, DataProductGroup, ReducedDatum
 from tom_dataproducts.forms import DataProductUploadForm
+
+
+class TargetImportView(LoginRequiredMixin, TemplateView):
+    """
+    View that handles the import of targets from a CSV. Requires authentication.
+    """
+    template_name = 'tom_targets/target_import.html'
+
+    def post(self, request):
+        """
+        Handles the POST requests to this view. Creates a StringIO object and passes it to ``import_targets``.
+
+        NEW - can also handle BlackGEM-specific targets!
+
+        :param request: the request object passed to this view
+        :type request: HTTPRequest
+        """
+
+        print("\n\n\n\n\n\n\n")
+        print("Barkbarkbark!")
+        print("\n\n\n\n\n\n\n")
+
+        ## Are we uploading in the BlackGEM format, or the TOM-specific format?
+        ## If BlackGEM, we need to process the targets first, so...
+        if 'process_targets' in request.POST:
+
+            ## Load them in and interpret them as a pandas dataframe
+            csv_file = request.FILES['file']
+            csv_stream = StringIO(csv_file.read().decode('utf-8'), newline=None)
+            data = pd.read_csv(csv_stream)
+
+            ## Process them using the BlackGEM_to_GEMTOM code
+            processed_file = GEM_to_TOM(data, request)
+            processed_file.to_csv("./Data/processed_file.csv", index=False)
+
+            ## Output them into a StringIO format for the import_targets function
+            csv_stream = StringIO(open(os.getcwd()+"/Data/processed_file.csv", "rb").read().decode('utf-8'), newline=None)
+
+        ## If they're TOM-specific...
+        if 'import_targets' in request.POST:
+            csv_file = request.FILES['target_csv']
+            csv_stream = StringIO(csv_file.read().decode('utf-8'), newline=None)
+
+        ## And finally, read them in!
+        result = import_targets(csv_stream)
+        for target in result['targets']:
+            target.give_user_access(request.user)
+        messages.success(
+            request,
+            'Targets created: {}'.format(len(result['targets']))
+        )
+        for error in result['errors']:
+            messages.warning(request, error)
+        return redirect(reverse('tom_targets:list'))
+
+
+def status_to_GEMTOM(request):
+    id = request.POST.get('id')
+    name = request.POST.get('name')
+    ra = request.POST.get('ra')
+    dec = request.POST.get('dec')
+    # print(ra, dec)
+
+    get_lightcurve(id)
+
+    gemtom_dataframe = pd.DataFrame({
+        'name' : [name],
+        'ra' : [ra],
+        'dec' : [dec],
+        'BlackGEM ID' : [int(id)],
+        'type' : ['SIDEREAL'],
+        'public' : ['Public']
+    })
+
+    gemtom_dataframe = gemtom_dataframe.reindex(gemtom_dataframe.index)
+
+    print(gemtom_dataframe)
+
+    gemtom_dataframe.to_csv("./Data/processed_file.csv", index=False)
+    csv_stream = StringIO(open(os.getcwd()+"/Data/processed_file.csv", "rb").read().decode('utf-8'), newline=None)
+
+    ## And finally, read them in!
+    result = import_targets(csv_stream)
+    for target in result['targets']:
+        target.give_user_access(request.user)
+    messages.success(
+        request,
+        'Targets created: {}'.format(len(result['targets']))
+    )
+    for error in result['errors']:
+        messages.warning(request, error)
+    return redirect(reverse('tom_targets:list'))
+
+    # return redirect('/targets')  # Redirect to the original view if no input
+    # return ra, dec
+    # if user_input:
+    #     return redirect(f'/status/{user_input}')
+    # return redirect('status')  # Redirect to the original view if no input
+
 
 class AboutView(TemplateView):
     template_name = 'about.html'
@@ -397,6 +499,7 @@ def handle_input(request):
     if user_input:
         return redirect(f'/status/{user_input}')
     return redirect('status')  # Redirect to the original view if no input
+
 
 ## Function for checking last night's BlackGEM status.
 def status_daily():

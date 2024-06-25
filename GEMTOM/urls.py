@@ -19,10 +19,12 @@ from .views import *
 
 urlpatterns = [
     # path("status_daily/", views.status_daily, name='status_daily'),
+    path('targets/import/', TargetImportView.as_view(), name='import'),
     path('', include('tom_common.urls')),
     path('about/', AboutView.as_view(), name='about'),
     path('status/', StatusView.as_view(), name='status'),
     path('status/<int:obs_date>/', NightView, name='night'),
+    path('status_to_GEMTOM/', status_to_GEMTOM, name='status_to_GEMTOM'),
     path('handle_input/', handle_input, name='handle_input'),
     # path('status_daily/', status_daily, name='status_daily'),
     path('blackGEM/', BlackGEMView.as_view(), name='blackGEM'),

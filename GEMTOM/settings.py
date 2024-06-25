@@ -311,7 +311,7 @@ HARVESTERS = {
 #     {'name': 'dicovery_date', 'type': 'datetime'}
 # ]
 EXTRA_FIELDS = [
-    {'name': 'BlackGEM ID', 'type': 'number'},
+    {'name': 'BlackGEM ID', 'type': 'string'},
     # {'name': 'Bark', 'type': 'string'}
 ]
 # EXTRA_FIELDS = []
