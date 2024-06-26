@@ -34,12 +34,49 @@ On this page, you can find the status of the telescope and recent observations.
 
 <em>Try 20240424</em>
 
+<br>
+<hr>
+<br>
 
-<br>
+
+<h5>BlackGEM History (Past 10 days):</h5>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>MJD</th>
+            <th>Observed</th>
+            <th>Transients</th>
+            <th>Gaia Crossmatches</th>
+            <th>Extragalactic Transients</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if history %}
+            {% for date, extended_date, MJD, Observed, Number_Of_Transients, Number_of_Gaia_Crossmatches, Number_Of_Extragalactic in history %}
+                {% if Observed == "Yes" %}
+                    <tr style="color: black;">
+                {% else %}
+                    <tr style="color: #D5D5D5;">
+                {% endif %}
+                    <td><a href="{{ date }}">{{ extended_date }}</a> </td>
+                    <td>{{ MJD }}</td>
+                    <td>{{ Observed }}</td>
+                    <td>{{ Number_Of_Transients }}</td>
+                    <td>{{ Number_of_Gaia_Crossmatches }}</td>
+                    <td>{{ Number_Of_Extragalactic }}</td>
+                </tr>
+            {% endfor %}
+        {% endif %}
+    </tbody>
+</table>
+
+
+<!-- <br> -->
 <br>
 <hr>
 <hr>
-<br>
+<!-- <br> -->
 
 <h5>Last Night's Files:</h5>
 
@@ -151,9 +188,10 @@ On this page, you can find the status of the telescope and recent observations.
 
 
 
-<br>
+<!-- <br> -->
+<!-- <hr> -->
 <hr>
-<hr>
+<!-- <br>
 <br>
 <br>
 <br>
@@ -170,14 +208,13 @@ On this page, you can find the status of the telescope and recent observations.
 <br>
 <br>
 <br>
-<br>
-<br>
+<br> -->
 
-<h1>Testing Ground</h1>
+<!-- <h1>Testing Ground</h1>
 <h2>NOTE: Everything below here is just for testing purposes. Assume all information is incorrect!</h2>
 
 <hr>
-<hr>
+<hr> -->
 
 <!-- <p>Did BlackGEM observe last night?<br></p>
 <!-- <p>{{ result }}</p> -->
@@ -250,24 +287,13 @@ $(function() {
 });
 </script> -->
 
+<!-- {% if dates %}
+    {% for date in dates %}
+        <h6>{{ date }}</h6>
+    {% endfor %}
+{% endif %} -->
 
-<h2>BlackGEM History:</h2>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>MJD</th>
-            <th>Observed</th>
-            <th>Number Of Sources</th>
-            <th>Number In Gaia</th>
-            <th>Number Of Images</th>
-        </tr>
-    </thead>
-    <tbody id="tableBody">
-    </tbody>
-</table>
-
-<script>
+<!-- <script>
 
 
   // JavaScript code for inserting data into the table
@@ -355,7 +381,7 @@ $(function() {
     <tbody>
     </tbody>
 </table>
-</body>
+</body> -->
 
 <!-- <br>
 <hr>

@@ -34,6 +34,7 @@ from django.template import loader
 from astropy.time import Time
 from bs4 import BeautifulSoup
 from datetime import date, timedelta
+import numpy as np
 
 from tom_common.hooks import run_hook
 from tom_observations.models import Target
@@ -192,8 +193,168 @@ class BlackGEMView(TemplateView):
 ## ------------------------ Codes for the Status pages -------------------------
 
 
+
+def get_recent_blackgem_history():
+
+    obs_date = date.today() - timedelta(1)
+    extended_obs_date = obs_date.strftime("%Y-%m-%d")
+    obs_date = obs_date.strftime("%Y%m%d")
+    mjd = int(Time(extended_obs_date + "T00:00:00.00", scale='utc').mjd)
+
+    dates           = []
+    mjds            = []
+    observed        = []
+    transients      = []
+    gaia            = []
+    extagalactic    = []
+
+    for this_mjd in np.arange(mjd,mjd-10,-1):
+
+        time_mjd        = Time(this_mjd, format='mjd')
+        time_isot       = time_mjd.isot
+
+        extended_date   = time_isot[0:10]
+        obs_date      = extended_date[0:4] + extended_date[5:7] + extended_date[8:10]
+
+        dates.append(extended_date)
+        mjds.append(this_mjd)
+
+        base_url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/'
+
+        ## Get the list of files from Hugo's server
+        files = list_files(base_url + obs_date)
+
+        ## Check to find the transients file. It could be under one of two names...
+        if extended_date+"_gw_BlackGEM_transients.csv" in files:
+            transients_filename = base_url + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
+            data = pd.read_csv(transients_filename)
+        elif extended_date+"_BlackGEM_transients.csv" in files:
+            transients_filename = base_url + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
+            data = pd.read_csv(transients_filename)
+        else:
+            ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
+            # return "0", "0", "0", ["","","","", ""], "", "", "", ""
+            observed.append("No")
+            transients.append("0")
+            gaia.append("0")
+            extagalactic.append("0")
+            continue
+
+        ## Check to find the gaia crossmatched file. It could be under one of two names...
+        if extended_date+"_gw_BlackGEM_transients_gaia.csv" in files:
+            gaia_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv"
+            data_gaia = pd.read_csv(gaia_filename)
+            num_in_gaia = str(len(data_gaia))
+        elif extended_date+"_BlackGEM_transients_gaia.csv" in files:
+            gaia_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_gaia.csv"
+            data_gaia = pd.read_csv(gaia_filename)
+            num_in_gaia = str(len(data_gaia))
+        else:
+            ## If it doesn't exist, assume no gaia crossmatches were found.
+            gaia_filename = ""
+            num_in_gaia = "0"
+
+        ## Check to find the extragalactic file. It could be under one of two names...
+        if extended_date+"_gw_BlackGEM_transients_selected.csv" in files:
+            extragalactic_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv"
+            extragalactic_data = pd.read_csv(extragalactic_filename)
+        elif extended_date+"_BlackGEM_transients_selected.csv" in files:
+            extragalactic_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_selected.csv"
+            extragalactic_data = pd.read_csv(extragalactic_filename)
+        else:
+            ## If it doesn't exist, assume no extragalactic sources were found.
+            extragalactic_filename = ""
+
+        extragalactic_sources_id = []
+        ## For each image file...
+        for file in files:
+            if ".png" in file:
+                ## If we haven't got the data yet...
+                if file[2:10] not in extragalactic_sources_id:
+                    ## Save the ID...
+                    extragalactic_sources_id.append(file[2:10])
+
+        print(extended_date + " (MJD " + str(this_mjd) + "): BlackGEM found " + str(len(data)) + " transients (" + str(len(data_gaia)) + " in Gaia, " + str(len(extragalactic_sources_id)) + " extragalactic).")
+        observed.append("Yes")
+        transients.append(len(data))
+        gaia.append(len(data_gaia))
+        extagalactic.append(len(extragalactic_sources_id))
+
+        # try:
+        #     data = pd.read_csv(base_url + short_date + "/"+extended_date+"_gw_BlackGEM_transients.csv")
+        #     data_gaia = pd.read_csv(base_url + short_date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv")
+        #
+        #     page = requests.get(base_url + date).text
+        #     page2 = page.split("\n")
+        #
+        #     unique_sources = []
+        #     for line in page2:
+        #         if ".png" in line:
+        #             if line[82:90] not in unique_sources:
+        #                 unique_sources.append(line[82:90])
+        #
+        #     print(extended_date + " (MJD " + str(this_mjd) + "): BlackGEM found " + str(len(data)) + " transients (" + str(len(data_gaia)) + " in Gaia, " + str(len(unique_sources)) + " extragalactic).")
+        #     observed.append("Yes")
+        #     transients.append(len(data))
+        #     gaia.append(len(data_gaia))
+        #     extagalactic.append(len(unique_sources))
+        #
+        # except Exception as e:
+        #     print(extended_date + " (MJD " + str(this_mjd) + "): No observations.")
+        #     observed.append("No")
+        #     transients.append(0)
+        #     gaia.append(0)
+        #     extagalactic.append(0)
+
+    fileOut = "./Data/Recent_BlackGEM_History.csv"
+    output = pd.DataFrame({'Date' : dates, 'MJD' : mjds, 'Observed' : observed, 'Number_Of_Transients' : transients, 'Number_of_Gaia_Crossmatches' : gaia, 'Number_Of_Extragalactic' : extagalactic})
+    output.to_csv(fileOut, index=False)
+
+    print(output)
+
+
+def blackgem_history():
+    '''
+    Fetches BlackGEM's history and returns as several lists, in order to make a table
+    '''
+
+    # get_recent_blackgem_history()
+
+    # history = pd.read_csv("./data/BlackGEM_History.csv")
+    history = pd.read_csv("./data/Recent_BlackGEM_History.csv")
+    print(history)
+
+    return history
+
+def update_history():
+    '''
+    Fetches BlackGEM's history and returns as several lists, in order to make a table
+    '''
+
+    get_recent_blackgem_history()
+
+    history = pd.read_csv("./data/Recent_BlackGEM_History.csv")
+    print(history)
+
+    return redirect('status')  # Redirect to the original view if no input
+
+
+# Date,MJD,Observed,Number_Of_Transients,Number_of_Gaia_Crossmatches,Number_Of_Extragalactic
+# 2024-04-30,60430,No,0,0,0
+# 2024-04-29,60429,No,0,0,0
+# 2024-04-28,60428,No,0,0,0
+# 2024-04-27,60427,Yes,79,13,3
+# 2024-04-26,60426,No,0,0,0
+# 2024-04-25,60425,Yes,148,59,3
+# 2024-04-24,60424,Yes,373,3369,21
+# 2024-04-23,60423,Yes,137,200,7
+# 2024-04-22,60422,Yes,351,3,0
+# 2024-04-21,60421,No,0,0,0
+
+
 class StatusView(TemplateView):
     template_name = 'status.html'
+
 
     def post(self, request, **kwargs):
         # date = '20240424'
@@ -210,7 +371,6 @@ class StatusView(TemplateView):
         print("Hello! Welcome to the BlackGEM Transient fetcher.")
         print("Looking for data from ", extended_date, "...", sep="")
         print("")
-
 
         try:
             data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
@@ -258,9 +418,26 @@ class StatusView(TemplateView):
             context['transients_filename'], \
             context['gaia_filename'], \
             context['extragalactic_filename'] = status_daily()
+        history = blackgem_history()
+        dates = list(history.Date)
+        dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
+        print(dates[0])
+
+        ## Check to see if the recent history is up to date. If not, update.
+        yesterday_date = date.today() - timedelta(1)
+        yesterday_date = yesterday_date.strftime("%Y%m%d")
+        if dates[0] != yesterday_date:
+            update_history()
+            history = blackgem_history()
+            dates = list(history.Date)
+            dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
+
+        context['history'] = zip(dates, list(history.Date), list(history.MJD), list(history.Observed), list(history.Number_Of_Transients), list(history.Number_of_Gaia_Crossmatches), list(history.Number_Of_Extragalactic))
+        print(context['history'])
         # context['images_daily_text_1'], \
         #     context['images_daily_text_2']  = images_daily()
         return context
+
 
 
 def get_lightcurve(source_id):
@@ -451,11 +628,12 @@ def status_daily():
 
         ## If there was no data, assume BlackGEM didn't observe.
         if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0"):
-            status_daily_text_1 = "BlackGEM did not observe last night (" + extended_yesterday_date + ")"
-            status_daily_text_2 = ""
-            status_daily_text_3 = ""
-            status_daily_text_4 = ""
-            images_daily_text_1 = zip([], ["BlackGEM did not observe last night."])
+            extragalactic_sources_id    = ""
+            status_daily_text_1         = "BlackGEM did not observe last night (" + extended_yesterday_date + ")"
+            status_daily_text_2         = ""
+            status_daily_text_3         = ""
+            status_daily_text_4         = ""
+            images_daily_text_1         = zip([], ["BlackGEM did not observe last night."])
 
         else:
             if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
@@ -467,20 +645,25 @@ def status_daily():
             for source in extragalactic_sources[0]:
                 extragalactic_sources_string += source + ", "
 
+            extragalactic_sources_id = extragalactic_sources[0]
             status_daily_text_2 = "On " + extended_yesterday_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " transient" + data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec)."
             status_daily_text_3 = "BlackGEM recorded pictures of " + extragalactic_sources_length + " possible extragalactic transient" + extragalactic_sources_plural + "."
             status_daily_text_4 = extragalactic_sources_string
             # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0])
             images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
 
-    else:
-        status_daily_text_1 = "BlackGEM did not observe last night (" + extended_yesterday_date + ")"
-        status_daily_text_2 = ""
-        status_daily_text_3 = ""
-        status_daily_text_4 = ""
-        images_daily_text_1 = zip([], ["BlackGEM did not observe last night."])
 
-    extragalactic_sources_id = extragalactic_sources[0]
+    else:
+        extragalactic_sources_id    = ""
+        transients_filename         = ""
+        gaia_filename               = ""
+        extragalactic_filename      = ""
+        status_daily_text_1         = "BlackGEM did not observe last night (" + extended_yesterday_date + ")"
+        status_daily_text_2         = ""
+        status_daily_text_3         = ""
+        status_daily_text_4         = ""
+        images_daily_text_1         = zip([], ["BlackGEM did not observe last night."])
+
 
     return status_daily_text_1, status_daily_text_2, status_daily_text_3, status_daily_text_4, images_daily_text_1, extragalactic_sources_id, transients_filename, gaia_filename, extragalactic_filename
 
@@ -498,6 +681,13 @@ def NightView(request, obs_date):
     data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
         transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(obs_date)
 
+    if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
+    else: data_length_plural = "s"; data_length_plural_2 = "ve"
+    if num_in_gaia == "1": gaia_plural = ""
+    else: gaia_plural = "es"
+    if extragalactic_sources_length == "1": extragalactic_sources_plural = ""
+    else: extragalactic_sources_plural = "s"
+
     context = {
         "response"                      : response % obs_date,
         "obs_date"                      : obs_date,
@@ -511,12 +701,16 @@ def NightView(request, obs_date):
         "extragalactic_sources_ra"      : extragalactic_sources[2],
         "extragalactic_sources_dec"     : extragalactic_sources[3],
         "extragalactic_sources_jpg"     : extragalactic_sources[4],
+        "data_length_plural"            : data_length_plural,
+        "data_length_plural_2"          : data_length_plural_2,
+        "gaia_plural"                   : gaia_plural,
+        "extragalactic_sources_plural"  : extragalactic_sources_plural,
         "images_urls_sorted"            : images_urls_sorted,
     }
 
     if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0") and (extragalactic_sources[0] == "") and (images_urls_sorted == ""):
         observed_string = "BlackGEM did not observe that night (" + extended_date + ")"
-        images_daily_text_1 = zip([], ["BlackGEM did not observe last night."])
+        images_daily_text_1 = zip([], ["BlackGEM did not observe that night."])
     else:
         observed_string = "Yes!"
         images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
@@ -528,7 +722,6 @@ def NightView(request, obs_date):
     context['extragalactic_filename']   = extragalactic_filename
 
     return render(request, "status/index.html", context)
-
 
 
 

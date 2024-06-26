@@ -18,8 +18,8 @@ On this page, you can find the data for a specific observation date.
 <h4>Did BlackGEM observe on {{ extended_date }}?<br></h4>
 <h3>{{ observed }} </h3>
 
-On {{ extended_date }} (MJD {{ mjd }}), BlackGEM observed {{ data_length }} transients, which have {{ num_in_gaia }} crossmatches in Gaia (radius 1 arcsec). <br>
-BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extragalactic transients. <br><br>
+On {{ extended_date }} (MJD {{ mjd }}), BlackGEM observed {{ data_length }} transient{{ data_length_plural}}, which ha{{ data_length_plural_2 }} {{ num_in_gaia }} crossmatch{{ gaia_plural }} in Gaia (radius 1 arcsec). <br>
+BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extragalactic transient{{ extragalactic_sources_plural }}. <br><br>
 <!-- {% for source in extragalactic_sources_id %}
     {{ source }},
 {% endfor %} -->
