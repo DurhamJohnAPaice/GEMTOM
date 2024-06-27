@@ -44,6 +44,7 @@ class PhotometryProcessor(DataProcessor):
         :returns: python list containing the photometric data from the DataProduct
         :rtype: list
         """
+        print("\n\n\nBark!\n\n\n")
 
         # print("Processing Bark 1!")
         photometry = []
@@ -59,18 +60,20 @@ class PhotometryProcessor(DataProcessor):
 
         ## --- Deal with column names ---
         ## Step 1: Time...
-        if ('time' not in data.colnames) and ('mjd' not in data.colnames) and ('jd' not in data.colnames):
+        if ('time' not in data.colnames) and ('mjd' not in data.colnames) and ('jd' not in data.colnames) and ('hjd' not in data.colnames):
             print("Bad time column!")
-            raise InvalidFileFormatException("No time column found in file; Photometry requires a time column with the name 'time', 'mjd', or 'jd'.")
+            raise InvalidFileFormatException("No time column found in file; Photometry requires a time column with the name 'time', 'mjd', 'hjd', or 'jd'.")
         ## Step 2: Magnitude...
+        if 'mag' in data.colnames: data['mag'].name = 'magnitude'
         if 'magnitude' not in data.colnames: raise InvalidFileFormatException("No 'magnitude' column found in file; Photometry only supports magnitude.")
         ## Step 2: Error...
+        if 'mag_err' in data.colnames: data['mag_err'].name = 'error'
         if 'magnitude_error' in data.colnames and 'error' not in data.colnames:
             data['magnitude_error'].name ='error'
 
         ## Remove superfluous columns:
         for column_name in data.colnames:
-            if column_name not in ['time', 'mjd', 'jd', 'telescope', 'magnitude', 'error', 'limit', 'source', 'filter']:
+            if column_name not in ['time', 'mjd', 'hjd', 'jd', 'telescope', 'mag', 'magnitude', 'error', 'limit', 'source', 'filter']:
                 data.remove_column(column_name)
 
         ## If Telescope, Filter, and Source columns aren't present, then create and fill in.
@@ -92,7 +95,18 @@ class PhotometryProcessor(DataProcessor):
             s           *= len(data)
             data["source"] = s
 
+        if 'limit' not in data.colnames:
+            # print("Test!")
+            s           = ['']
+            s           *= len(data)
+            data["limit"] = s
+
         for datum in data:
+            ## If the Magnitude value is invalid, just skip the whole datum.
+            if (datum['magnitude'] == '99.990'):
+                continue
+
+            ## For the Time value, make sure it's in the right format.
             if 'time' in datum.colnames:
                 if float(datum['time']) > 2400000:
                     time = Time(float(datum['time']), format='jd')
@@ -102,16 +116,48 @@ class PhotometryProcessor(DataProcessor):
                 time = Time(float(datum['mjd']), format='mjd')
             if 'jd' in datum.colnames:
                 time = Time(float(datum['jd']), format='jd')
+            if 'hjd' in datum.colnames:
+                time = Time(float(datum['hjd']), format='jd')
+
+            ## Check that every row has a valid magnitude or limit value.
             if np.ma.is_masked(datum['magnitude']) and 'limit' not in datum.colnames:
                 raise InvalidFileFormatException("One or more Magnitude values missing. Please check and re-upload.")
+
+            ## If the magnitude shows an upper limit, remove.
+            datum_magnitude = str(datum['magnitude'])
+            if ('>' in datum_magnitude) or ('<' in datum_magnitude):
+                datum['limit'] = float(datum_magnitude[1:])
+                datum['magnitude'] = 0
+            else:
+                datum['magnitude'] = float(datum_magnitude)
+
+            ## Correct the timezone
             utc = TimezoneInfo(utc_offset=0*units.hour)
             time.format = 'datetime'
             value = {
                 'timestamp': time.to_datetime(timezone=utc),
             }
+
+            ## For each value,
             for column_name in datum.colnames:
-                if not np.ma.is_masked(datum[column_name]):
-                    value[column_name] = datum[column_name]
+
+                ## If the column is masked, skip. If the magnitude value is zero, skip magnitude and error.
+                if not (np.ma.is_masked(datum[column_name])) \
+                    and not (column_name == 'magnitude' and datum['magnitude'] == '0') \
+                    and not (column_name == 'error' and datum['magnitude'] == '0'):
+
+                    ## If the column is magnitude, record as a float.
+                    if (column_name == 'magnitude' and datum['magnitude'] != '0'):
+                        value[column_name] = float(datum[column_name])
+
+                    ## Else, record as whatever it already is.
+                    else:
+                        value[column_name] = datum[column_name]
+
             photometry.append(value)
+
+
+        # for row in photometry:
+        #     print(row)
 
         return photometry
