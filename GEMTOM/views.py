@@ -33,8 +33,12 @@ import requests
 from django.template import loader
 from astropy.time import Time
 from bs4 import BeautifulSoup
-from datetime import date, timedelta
+from datetime import datetime, date, timedelta
 import numpy as np
+
+## For the Transients View
+from django_plotly_dash import DjangoDash
+import dash_ag_grid as dag
 
 from tom_common.hooks import run_hook
 from tom_observations.models import Target
@@ -128,7 +132,7 @@ def status_to_GEMTOM(request):
 
     gemtom_dataframe = gemtom_dataframe.reindex(gemtom_dataframe.index)
 
-    print(gemtom_dataframe)
+    # print(gemtom_dataframe)
 
     gemtom_dataframe.to_csv("./Data/processed_file.csv", index=False)
     csv_stream = StringIO(open(os.getcwd()+"/Data/processed_file.csv", "rb").read().decode('utf-8'), newline=None)
@@ -145,6 +149,61 @@ def status_to_GEMTOM(request):
         messages.warning(request, error)
     return redirect(reverse('tom_targets:list'))
 
+def ID_to_GEMTOM(request):
+    '''
+    Imports a target from the BlackGEM ID
+    '''
+
+    transient_id = request.POST.get('id')
+
+    print(transient_id)
+
+    # import pandas as pd
+    # from pathlib import Path
+    # from blackpy import BlackGEM
+    #
+    # user_home = str(Path.home())
+    # creds_user_file = user_home + "/.bg_follow_user_john_creds"
+    # creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
+    # bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+    #
+    # params = {'transient_id': transient_id,}
+    #
+    # qu = """\
+    # SELECT iau_name
+    #       ,ra_deg
+    #       ,dec_deg
+    #       ,id
+    #   FROM runcat
+    #  WHERE id = %(transient_id)s
+    # """
+    #
+    # query = qu % (params)
+    #
+    # l_results = bg.run_query(query)
+    # source_data = pd.DataFrame(l_results, columns=['name','ra','dec','id',])
+    #
+    # gemtom_dataframe_latter = pd.DataFrame({
+    #     'type' : ['SIDEREAL'],
+    #     'public' : ['Public']
+    # })
+    #
+    # gemtom_dataframe = pd.concat([source_data, gemtom_dataframe_latter]).reset_index(drop=True)
+    #
+    # gemtom_dataframe.to_csv("./Data/processed_file.csv", index=False)
+    # csv_stream = StringIO(open(os.getcwd()+"/Data/processed_file.csv", "rb").read().decode('utf-8'), newline=None)
+    #
+    # ## And finally, read them in!
+    # result = import_targets(csv_stream)
+    # for target in result['targets']:
+    #     target.give_user_access(request.user)
+    # messages.success(
+    #     request,
+    #     'Targets created: {}'.format(len(result['targets']))
+    # )
+    # for error in result['errors']:
+    #     messages.warning(request, error)
+    return redirect(reverse('tom_targets:list'))
 
 
 class AboutView(TemplateView):
@@ -194,12 +253,15 @@ class BlackGEMView(TemplateView):
 
 
 
-def get_recent_blackgem_history():
+def get_recent_blackgem_history(days_since_last_update):
 
     obs_date = date.today() - timedelta(1)
     extended_obs_date = obs_date.strftime("%Y-%m-%d")
     obs_date = obs_date.strftime("%Y%m%d")
     mjd = int(Time(extended_obs_date + "T00:00:00.00", scale='utc').mjd)
+
+    ## Get previous history:
+    previous_history = blackgem_history()
 
     dates           = []
     mjds            = []
@@ -208,7 +270,10 @@ def get_recent_blackgem_history():
     gaia            = []
     extagalactic    = []
 
-    for this_mjd in np.arange(mjd,mjd-10,-1):
+    if days_since_last_update > 10:
+        days_since_last_update = 10
+
+    for this_mjd in np.arange(mjd,mjd-days_since_last_update,-1):
 
         time_mjd        = Time(this_mjd, format='mjd')
         time_isot       = time_mjd.isot
@@ -280,37 +345,11 @@ def get_recent_blackgem_history():
         gaia.append(len(data_gaia))
         extagalactic.append(len(extragalactic_sources_id))
 
-        # try:
-        #     data = pd.read_csv(base_url + short_date + "/"+extended_date+"_gw_BlackGEM_transients.csv")
-        #     data_gaia = pd.read_csv(base_url + short_date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv")
-        #
-        #     page = requests.get(base_url + date).text
-        #     page2 = page.split("\n")
-        #
-        #     unique_sources = []
-        #     for line in page2:
-        #         if ".png" in line:
-        #             if line[82:90] not in unique_sources:
-        #                 unique_sources.append(line[82:90])
-        #
-        #     print(extended_date + " (MJD " + str(this_mjd) + "): BlackGEM found " + str(len(data)) + " transients (" + str(len(data_gaia)) + " in Gaia, " + str(len(unique_sources)) + " extragalactic).")
-        #     observed.append("Yes")
-        #     transients.append(len(data))
-        #     gaia.append(len(data_gaia))
-        #     extagalactic.append(len(unique_sources))
-        #
-        # except Exception as e:
-        #     print(extended_date + " (MJD " + str(this_mjd) + "): No observations.")
-        #     observed.append("No")
-        #     transients.append(0)
-        #     gaia.append(0)
-        #     extagalactic.append(0)
-
     fileOut = "./Data/Recent_BlackGEM_History.csv"
-    output = pd.DataFrame({'Date' : dates, 'MJD' : mjds, 'Observed' : observed, 'Number_Of_Transients' : transients, 'Number_of_Gaia_Crossmatches' : gaia, 'Number_Of_Extragalactic' : extagalactic})
-    output.to_csv(fileOut, index=False)
+    new_history = pd.DataFrame({'Date' : dates, 'MJD' : mjds, 'Observed' : observed, 'Number_Of_Transients' : transients, 'Number_of_Gaia_Crossmatches' : gaia, 'Number_Of_Extragalactic' : extagalactic})
 
-    print(output)
+    output = pd.concat([new_history,previous_history.iloc[:(10-days_since_last_update)]]).reset_index(drop=True)
+    output.to_csv(fileOut, index=False)
 
 
 def blackgem_history():
@@ -322,34 +361,21 @@ def blackgem_history():
 
     # history = pd.read_csv("./data/BlackGEM_History.csv")
     history = pd.read_csv("./data/Recent_BlackGEM_History.csv")
-    print(history)
+    # print(history)
 
     return history
 
-def update_history():
+def update_history(days_since_last_update):
     '''
     Fetches BlackGEM's history and returns as several lists, in order to make a table
     '''
 
-    get_recent_blackgem_history()
+    get_recent_blackgem_history(days_since_last_update)
 
     history = pd.read_csv("./data/Recent_BlackGEM_History.csv")
-    print(history)
+    # print(history)
 
     return redirect('status')  # Redirect to the original view if no input
-
-
-# Date,MJD,Observed,Number_Of_Transients,Number_of_Gaia_Crossmatches,Number_Of_Extragalactic
-# 2024-04-30,60430,No,0,0,0
-# 2024-04-29,60429,No,0,0,0
-# 2024-04-28,60428,No,0,0,0
-# 2024-04-27,60427,Yes,79,13,3
-# 2024-04-26,60426,No,0,0,0
-# 2024-04-25,60425,Yes,148,59,3
-# 2024-04-24,60424,Yes,373,3369,21
-# 2024-04-23,60423,Yes,137,200,7
-# 2024-04-22,60422,Yes,351,3,0
-# 2024-04-21,60421,No,0,0,0
 
 
 class StatusView(TemplateView):
@@ -421,22 +447,118 @@ class StatusView(TemplateView):
         history = blackgem_history()
         dates = list(history.Date)
         dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
-        print(dates[0])
+        # print(dates[0])
 
-        ## Check to see if the recent history is up to date. If not, update.
-        yesterday_date = date.today() - timedelta(1)
-        yesterday_date = yesterday_date.strftime("%Y%m%d")
-        if dates[0] != yesterday_date:
-            update_history()
+        ## --- Check to see if the recent history is up to date. If not, update.
+        ## Get yesterday's date...
+        yesterday_date = datetime.today() - timedelta(1)
+        yesterday_date = yesterday_date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        ## Get the most recent date...
+        most_recent_date = datetime.strptime(dates[0], "%Y%m%d")
+
+        ## Find the difference...
+        difference = yesterday_date - most_recent_date
+        days_since_last_update = difference.days
+        print("Days since last update:", days_since_last_update)
+
+        yesterday_date_string = yesterday_date.strftime("%Y%m%d")
+
+        if days_since_last_update > 0:
+            update_history(days_since_last_update)
             history = blackgem_history()
             dates = list(history.Date)
             dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
 
         context['history'] = zip(dates, list(history.Date), list(history.MJD), list(history.Observed), list(history.Number_Of_Transients), list(history.Number_of_Gaia_Crossmatches), list(history.Number_Of_Extragalactic))
-        print(context['history'])
+        # print(context['history'])
         # context['images_daily_text_1'], \
         #     context['images_daily_text_2']  = images_daily()
         return context
+
+
+class TransientsView(TemplateView):
+    template_name = 'transients.html'
+
+        # Initialize the Dash app
+    app = DjangoDash('CSVDataApp')
+
+    # Read CSV data
+    # df = pd.read_csv('./data/BlackGEM_Transients_Last30Days.csv')
+    df = pd.read_csv('./data/BlackGEM_Transients_Last30Days_Test.csv')
+
+    ## Round values for displaying
+    df['ra'] = round(df['ra'],5)
+    df['dec'] = round(df['dec'],5)
+    df['snr_zogy'] = round(df['snr_zogy'],2)
+    df['q_max'] = round(df['q_max'],2)
+    df['u_max'] = round(df['u_max'],2)
+    df['i_max'] = round(df['i_max'],2)
+    # df['lc_req'] = 'http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(df.runcat_id)
+    # df['lc_req'] = df.runcat_id.str[:]
+
+    lc_req = ['http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(i) for i in df['runcat_id']]
+    lc_view = ['http://xmm-ssc.irap.omp.eu/claxson/BG_images/lcrequests/' + str(i) + '_lc.jpg' for i in df['runcat_id']]
+    # lc_req = ['<a href="' + i + '">Request Lightcurve</a>' for i in lc_req]
+    lc_req = ['[Request Lightcurve](' + i + ')' for i in lc_req]
+    lc_view = ['[View Lightcurve](' + i + ')' for i in lc_view]
+    df['lc_req'] = lc_req
+    df['lc_view'] = lc_view
+
+    # s       = pd.Series(['http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid='])
+    # lc_req  = s.repeat(len(df))
+    # lc_req  = lc_req.set_axis(range(len(df)))
+    # df['lc_req'] = lc_req + df['runcat_id']
+
+
+
+    # print(df.columns)
+
+    # Define the layout of the Dash app
+    app.layout = html.Div([
+        dag.AgGrid(
+            id='csv-grid',
+            rowData=df.to_dict('records'),
+            # columnDefs=[{'headerName': col, 'field': col} for col in df.columns[1:]],
+            columnDefs=[
+                {'headerName': 'BGEM ID', 'field': 'runcat_id'},
+                # {'headerName': 'IAU Name', 'field': 'iauname'},
+                {'headerName': 'RA', 'field': 'ra'},
+                {'headerName': 'Dec', 'field': 'dec'},
+                {'headerName': '#Datapoints', 'field': 'datapoints'},
+                {'headerName': 'S/N', 'field': 'snr_zogy'},
+                {'headerName': 'q', 'field': 'q_max', 'minWidth': 30, 'maxWidth': 60},
+                {'headerName': 'u', 'field': 'u_max', 'minWidth': 30, 'maxWidth': 60},
+                {'headerName': 'i', 'field': 'i_max', 'minWidth': 30, 'maxWidth': 60},
+                {'headerName': 'Last Observation', 'field': 'last_obs', 'maxWidth': 110},
+                {'headerName': 'Request LC', 'field': 'lc_req', "cellRenderer": "markdown", 'maxWidth': 130},
+                {'headerName': 'View LC', 'field': 'lc_view', "cellRenderer": "markdown"},
+                # {'headerName': 'G', 'field': 'GMag'},
+            ],
+            defaultColDef={
+                'sortable': True,
+                'filter': True,
+                'resizable': True,
+                'editable': True,
+            },
+            dangerously_allow_code=True,
+            columnSize="autoSize",
+            dashGridOptions = {"skipHeaderOnAutoSize": True},
+            style={'height': '400px', 'width': '100%'},  # Set explicit height for the grid
+            # style={'resize': 'both', 'overflow': 'hidden'},
+            className='ag-theme-balham'  # Add a theme for better appearance
+        )
+    ], style={'height': '200px', 'width': '100%'}
+    )
+    # ], style={'width': '100%', 'height': False})  # Set the parent container's style
+
+    # ], style={'width': '100%', 'height': 1200, 'display': 'flex'})  # Also adjust the parent container style
+    # ], style={'resize': 'both', 'overflow': 'hidden'})
+    # ], className='dash-container')  # Also adjust the parent container style
+
+    def dash_view(request):
+        return render(request, 'myapp/dash_template.html')
+
 
 
 
@@ -617,7 +739,7 @@ def status_daily():
 
     url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/' + yesterday_date + "/"
 
-    print(url)
+    # print(url)
     r = requests.get(url)
     if r.status_code != 404:
         result = "BlackGEM observed last night!"

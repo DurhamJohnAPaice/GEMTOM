@@ -1,0 +1,13 @@
+/* static/css/custom_styles.css */
+.dash-container {
+    width: 100%;
+    height: 600px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.dash-grid {
+    width: 100%;
+    height: 100%;
+}

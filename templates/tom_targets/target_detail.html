@@ -106,10 +106,11 @@
         {% endif %}
         {% if user.is_authenticated %}
         <hr>
-        {% query_forced_photometry object %}
+        {% query_forced_photometry object %}        
         <hr>
         {% endif %}
         {% dataproduct_list_for_target object %}
+        <hr>
       </div>
       <div class="tab-pane" id="manage-groups">
         {% target_groups target %}

@@ -232,6 +232,9 @@ FACILITIES = {
     },
 }
 
+## Integrating Single-Target Data Service quieries
+## https://tom-toolkit.readthedocs.io/en/stable/managing_data/single_target_data_service.html
+
 # Define the valid data product types for your TOM.
 # This is a dictionary of tuples to be used as ChoiceField options, with the first element being the type and the
 # second being the display name.
@@ -244,6 +247,7 @@ DATA_PRODUCT_TYPES = {
     'image_file': ('image_file', 'Image File'),
     'ztf_data': ('ztf_data', 'ZTF Photometry'),
     'blackgem_data': ('blackgem_data', 'BlackGEM Photometry'),
+
     # 'new_photometry': ('photometry', 'New Photometry'),
     # 'test_type': ('test_type', 'Test Type')
 }
