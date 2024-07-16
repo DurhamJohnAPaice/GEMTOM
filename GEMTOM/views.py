@@ -7,7 +7,7 @@ import pandas as pd
 from astropy.coordinates import SkyCoord, Galactocentric
 from astropy import units as u
 import plotly.express as px
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html, Input, Output, callback
 from io import StringIO
 
 from django.views.generic import TemplateView, FormView
@@ -39,6 +39,8 @@ import numpy as np
 ## For the Transients View
 from django_plotly_dash import DjangoDash
 import dash_ag_grid as dag
+import json
+
 
 from tom_common.hooks import run_hook
 from tom_observations.models import Target
@@ -484,8 +486,8 @@ class TransientsView(TemplateView):
     app = DjangoDash('CSVDataApp')
 
     # Read CSV data
-    # df = pd.read_csv('./data/BlackGEM_Transients_Last30Days.csv')
-    df = pd.read_csv('./data/BlackGEM_Transients_Last30Days_Test.csv')
+    df = pd.read_csv('./data/BlackGEM_Transients_Last30Days.csv')
+    # df = pd.read_csv('./data/BlackGEM_Transients_Last30Days_Test.csv')
 
     ## Round values for displaying
     df['ra'] = round(df['ra'],5)
@@ -514,25 +516,26 @@ class TransientsView(TemplateView):
 
     # print(df.columns)
 
-    # Define the layout of the Dash app
+    ## Define the layout of the Dash app
     app.layout = html.Div([
         dag.AgGrid(
             id='csv-grid',
             rowData=df.to_dict('records'),
             # columnDefs=[{'headerName': col, 'field': col} for col in df.columns[1:]],
             columnDefs=[
+                # {'headerName': 'BGEM ID', 'field': 'runcat_id', 'checkboxSelection': True},
                 {'headerName': 'BGEM ID', 'field': 'runcat_id'},
-                # {'headerName': 'IAU Name', 'field': 'iauname'},
+                {'headerName': 'IAU Name', 'field': 'iauname'},
                 {'headerName': 'RA', 'field': 'ra'},
                 {'headerName': 'Dec', 'field': 'dec'},
                 {'headerName': '#Datapoints', 'field': 'datapoints'},
                 {'headerName': 'S/N', 'field': 'snr_zogy'},
-                {'headerName': 'q', 'field': 'q_max', 'minWidth': 30, 'maxWidth': 60},
-                {'headerName': 'u', 'field': 'u_max', 'minWidth': 30, 'maxWidth': 60},
-                {'headerName': 'i', 'field': 'i_max', 'minWidth': 30, 'maxWidth': 60},
-                {'headerName': 'Last Observation', 'field': 'last_obs', 'maxWidth': 110},
-                {'headerName': 'Request LC', 'field': 'lc_req', "cellRenderer": "markdown", 'maxWidth': 130},
-                {'headerName': 'View LC', 'field': 'lc_view', "cellRenderer": "markdown"},
+                {'headerName': 'q (max)', 'field': 'q_max', 'minWidth': 82, 'maxWidth': 100},
+                {'headerName': 'u (max)', 'field': 'u_max', 'minWidth': 82, 'maxWidth': 100},
+                {'headerName': 'i (max)', 'field': 'i_max', 'minWidth': 82, 'maxWidth': 100},
+                {'headerName': 'Last Obs', 'field': 'last_obs', 'maxWidth': 110},
+                # {'headerName': 'Request LC', 'field': 'lc_req', "cellRenderer": "markdown", 'maxWidth': 130},
+                # {'headerName': 'View LC', 'field': 'lc_view', "cellRenderer": "markdown"},
                 # {'headerName': 'G', 'field': 'GMag'},
             ],
             defaultColDef={
@@ -543,18 +546,58 @@ class TransientsView(TemplateView):
             },
             dangerously_allow_code=True,
             columnSize="autoSize",
-            dashGridOptions = {"skipHeaderOnAutoSize": True},
+            dashGridOptions = {"skipHeaderOnAutoSize": True, "rowSelection": "single"},
             style={'height': '400px', 'width': '100%'},  # Set explicit height for the grid
             # style={'resize': 'both', 'overflow': 'hidden'},
             className='ag-theme-balham'  # Add a theme for better appearance
-        )
-    ], style={'height': '200px', 'width': '100%'}
+        ),
+        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
+        html.Div(id='output-div')  # Div to display the information
+    ], style={'height': '600px', 'width': '100%'}
     )
-    # ], style={'width': '100%', 'height': False})  # Set the parent container's style
 
-    # ], style={'width': '100%', 'height': 1200, 'display': 'flex'})  # Also adjust the parent container style
-    # ], style={'resize': 'both', 'overflow': 'hidden'})
-    # ], className='dash-container')  # Also adjust the parent container style
+    @app.callback(
+        Output('selected-row-data', 'data'),
+        Input('csv-grid', 'selectedRows')
+    )
+    def update_selected_row(selectedRows):
+        if selectedRows:
+            return selectedRows[0]  # Assuming single row selection
+        return {}
+
+    @app.callback(
+        Output('output-div', 'children'),
+        Input('selected-row-data', 'data')
+    )
+    def display_selected_row_data(row_data):
+        if row_data:
+            url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/lcrequests/' + str(row_data['runcat_id']) + '_lc.jpg'
+
+            r = requests.get(url)
+            if r.status_code != 404:
+                return html.Div([
+                        html.Img(src=url, style={'max-width': '100%', 'height': 'auto', 'display': 'block', 'margin': 'auto'})
+                    ],
+                    style={'font-family': 'Arial', 'color': 'blue', 'text-align': 'center'}
+                )
+            else:
+                return html.Div([
+                        html.A('Request Lightcurve', href='http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(row_data['runcat_id']), target="_blank"),
+                    ],
+                    style={'font-family': 'Arial', 'color': 'blue', 'text-align': 'center'}
+                )
+
+
+
+
+
+            # return html.Div(row_data['runcat_id'])
+            # return html.A('<a href="http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(row_data['runcat_id']) + '">Request Lightcurve</a>')
+            # return html.Div(html.A('Click here', href='http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(row_data['runcat_id']), target="_blank"))
+            # return html.Div([
+            #     html.P(f"{key}: {value}") for key, value in row_data['runcat_id'].items()
+            # ])
+        return html.P("No row selected")
 
     def dash_view(request):
         return render(request, 'myapp/dash_template.html')
