@@ -7,7 +7,7 @@ import pandas as pd
 from astropy.coordinates import SkyCoord, Galactocentric
 from astropy import units as u
 import plotly.express as px
-from dash import Dash, dcc, html, Input, Output, callback
+from dash import Dash, dcc, html, Input, Output, State, callback
 from io import StringIO
 
 from django.views.generic import TemplateView, FormView
@@ -109,17 +109,7 @@ class TargetImportView(LoginRequiredMixin, TemplateView):
             messages.warning(request, error)
         return redirect(reverse('tom_targets:list'))
 
-
-def status_to_GEMTOM(request):
-    '''
-    Imports a target from the Status tab
-    '''
-
-    id = request.POST.get('id')
-    name = request.POST.get('name')
-    ra = request.POST.get('ra')
-    dec = request.POST.get('dec')
-    # print(ra, dec)
+def add_to_GEMTOM(id, name, ra, dec):
 
     get_lightcurve(id)
 
@@ -141,15 +131,62 @@ def status_to_GEMTOM(request):
 
     ## And finally, read them in!
     result = import_targets(csv_stream)
-    for target in result['targets']:
-        target.give_user_access(request.user)
-    messages.success(
-        request,
-        'Targets created: {}'.format(len(result['targets']))
-    )
-    for error in result['errors']:
-        messages.warning(request, error)
+    # for target in result['targets']:
+    #     target.give_user_access(request.user)
+    # messages.success(
+    #     request,
+    #     'Targets created: {}'.format(len(result['targets']))
+    # )
+    # for error in result['errors']:
+    #     messages.warning(request, error)
     return redirect(reverse('tom_targets:list'))
+
+
+
+def status_to_GEMTOM(request):
+    '''
+    Imports a target from the Status tab
+    '''
+
+    id = request.POST.get('id')
+    name = request.POST.get('name')
+    ra = request.POST.get('ra')
+    dec = request.POST.get('dec')
+
+    add_to_GEMTOM(id, name, ra, dec)
+
+    return redirect(reverse('tom_targets:list'))
+    # print(ra, dec)
+
+    # get_lightcurve(id)
+    #
+    # gemtom_dataframe = pd.DataFrame({
+    #     'name' : [name],
+    #     'ra' : [ra],
+    #     'dec' : [dec],
+    #     'BlackGEM ID' : [int(id)],
+    #     'type' : ['SIDEREAL'],
+    #     'public' : ['Public']
+    # })
+    #
+    # gemtom_dataframe = gemtom_dataframe.reindex(gemtom_dataframe.index)
+    #
+    # # print(gemtom_dataframe)
+    #
+    # gemtom_dataframe.to_csv("./Data/processed_file.csv", index=False)
+    # csv_stream = StringIO(open(os.getcwd()+"/Data/processed_file.csv", "rb").read().decode('utf-8'), newline=None)
+    #
+    # ## And finally, read them in!
+    # result = import_targets(csv_stream)
+    # for target in result['targets']:
+    #     target.give_user_access(request.user)
+    # messages.success(
+    #     request,
+    #     'Targets created: {}'.format(len(result['targets']))
+    # )
+    # for error in result['errors']:
+    #     messages.warning(request, error)
+    # return redirect(reverse('tom_targets:list'))
 
 def ID_to_GEMTOM(request):
     '''
@@ -483,45 +520,25 @@ class TransientsView(TemplateView):
     template_name = 'transients.html'
 
         # Initialize the Dash app
-    app = DjangoDash('CSVDataApp')
+    app = DjangoDash('RecentTransients')
 
     # Read CSV data
     df = pd.read_csv('./data/BlackGEM_Transients_Last30Days.csv')
     # df = pd.read_csv('./data/BlackGEM_Transients_Last30Days_Test.csv')
 
     ## Round values for displaying
-    df['ra'] = round(df['ra'],5)
-    df['dec'] = round(df['dec'],5)
-    df['snr_zogy'] = round(df['snr_zogy'],2)
-    df['q_max'] = round(df['q_max'],2)
-    df['u_max'] = round(df['u_max'],2)
-    df['i_max'] = round(df['i_max'],2)
-    # df['lc_req'] = 'http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(df.runcat_id)
-    # df['lc_req'] = df.runcat_id.str[:]
-
-    lc_req = ['http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(i) for i in df['runcat_id']]
-    lc_view = ['http://xmm-ssc.irap.omp.eu/claxson/BG_images/lcrequests/' + str(i) + '_lc.jpg' for i in df['runcat_id']]
-    # lc_req = ['<a href="' + i + '">Request Lightcurve</a>' for i in lc_req]
-    lc_req = ['[Request Lightcurve](' + i + ')' for i in lc_req]
-    lc_view = ['[View Lightcurve](' + i + ')' for i in lc_view]
-    df['lc_req'] = lc_req
-    df['lc_view'] = lc_view
-
-    # s       = pd.Series(['http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid='])
-    # lc_req  = s.repeat(len(df))
-    # lc_req  = lc_req.set_axis(range(len(df)))
-    # df['lc_req'] = lc_req + df['runcat_id']
-
-
-
-    # print(df.columns)
+    df['ra']        = round(df['ra'],5)
+    df['dec']       = round(df['dec'],5)
+    df['snr_zogy']  = round(df['snr_zogy'],2)
+    df['q_max']     = round(df['q_max'],2)
+    df['u_max']     = round(df['u_max'],2)
+    df['i_max']     = round(df['i_max'],2)
 
     ## Define the layout of the Dash app
     app.layout = html.Div([
         dag.AgGrid(
             id='csv-grid',
             rowData=df.to_dict('records'),
-            # columnDefs=[{'headerName': col, 'field': col} for col in df.columns[1:]],
             columnDefs=[
                 # {'headerName': 'BGEM ID', 'field': 'runcat_id', 'checkboxSelection': True},
                 {'headerName': 'BGEM ID', 'field': 'runcat_id'},
@@ -530,13 +547,10 @@ class TransientsView(TemplateView):
                 {'headerName': 'Dec', 'field': 'dec'},
                 {'headerName': '#Datapoints', 'field': 'datapoints'},
                 {'headerName': 'S/N', 'field': 'snr_zogy'},
-                {'headerName': 'q (max)', 'field': 'q_max', 'minWidth': 82, 'maxWidth': 100},
-                {'headerName': 'u (max)', 'field': 'u_max', 'minWidth': 82, 'maxWidth': 100},
-                {'headerName': 'i (max)', 'field': 'i_max', 'minWidth': 82, 'maxWidth': 100},
+                {'headerName': 'q (max)', 'field': 'q_max', 'minWidth': 86, 'maxWidth': 101},
+                {'headerName': 'u (max)', 'field': 'u_max', 'minWidth': 82, 'maxWidth': 90},
+                {'headerName': 'i (max)', 'field': 'i_max', 'minWidth': 75, 'maxWidth': 90},
                 {'headerName': 'Last Obs', 'field': 'last_obs', 'maxWidth': 110},
-                # {'headerName': 'Request LC', 'field': 'lc_req', "cellRenderer": "markdown", 'maxWidth': 130},
-                # {'headerName': 'View LC', 'field': 'lc_view', "cellRenderer": "markdown"},
-                # {'headerName': 'G', 'field': 'GMag'},
             ],
             defaultColDef={
                 'sortable': True,
@@ -544,18 +558,17 @@ class TransientsView(TemplateView):
                 'resizable': True,
                 'editable': True,
             },
-            dangerously_allow_code=True,
             columnSize="autoSize",
             dashGridOptions = {"skipHeaderOnAutoSize": True, "rowSelection": "single"},
             style={'height': '400px', 'width': '100%'},  # Set explicit height for the grid
-            # style={'resize': 'both', 'overflow': 'hidden'},
             className='ag-theme-balham'  # Add a theme for better appearance
         ),
         dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
-        html.Div(id='output-div')  # Div to display the information
-    ], style={'height': '600px', 'width': '100%'}
+        html.Div(id='output-div'),  # Div to display the information
+    ], style={'height': '2000px', 'width': '100%'}
     )
 
+    ## --- Handle selecting rows ---
     @app.callback(
         Output('selected-row-data', 'data'),
         Input('csv-grid', 'selectedRows')
@@ -570,38 +583,85 @@ class TransientsView(TemplateView):
         Input('selected-row-data', 'data')
     )
     def display_selected_row_data(row_data):
+
+        ## When a row is selected, we either need to show the lightcurve or a link to request one:
         if row_data:
+
+            ## URL for the lightcuve
             url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/lcrequests/' + str(row_data['runcat_id']) + '_lc.jpg'
 
+            ## Find if the lightcurve exists...
             r = requests.get(url)
+
             if r.status_code != 404:
                 return html.Div([
-                        html.Img(src=url, style={'max-width': '100%', 'height': 'auto', 'display': 'block', 'margin': 'auto'})
-                    ],
-                    style={'font-family': 'Arial', 'color': 'blue', 'text-align': 'center'}
-                )
+                        html.Img(src=url, style={'max-width': '100%', 'height': 'auto', 'display': 'block', 'margin': 'auto'}),
+                        html.Button('Add to GEMTOM', id='call-function-button', n_clicks=0, style={
+                            'font-family': 'Arial',
+                            'font-size': '16px',
+                            'color': 'white',
+                            'background-color': '#007bff',
+                            'border': 'none',
+                            'padding': '10px 20px',
+                            'text-align': 'center',
+                            'text-decoration': 'none',
+                            'display': 'inline-block',
+                            'margin': '4px 2px',
+                            'cursor': 'pointer',
+                            'border-radius': '12px'
+                        })
+                    ] + [html.P(f"{key}: {value}") for key, value in row_data.items()][1:],
+                    style={'font-family': 'Arial', 'text-align': 'center'})
             else:
                 return html.Div([
-                        html.A('Request Lightcurve', href='http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(row_data['runcat_id']), target="_blank"),
-                    ],
-                    style={'font-family': 'Arial', 'color': 'blue', 'text-align': 'center'}
+                        html.Div([html.A('Request Lightcurve', href='http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(row_data['runcat_id']), target="_blank")]),
+                        html.Div([html.Button('Add to GEMTOM', id='call-function-button', n_clicks=0, style={
+                            'font-family': 'Arial',
+                            'font-size': '16px',
+                            'color': 'white',
+                            'background-color': '#007bff',
+                            'border': 'none',
+                            'padding': '10px 20px',
+                            'text-align': 'center',
+                            'text-decoration': 'none',
+                            'display': 'inline-block',
+                            'margin': '4px 2px',
+                            'cursor': 'pointer',
+                            'border-radius': '12px'
+                        })]),
+                    ] + [html.P(f"{key}: {value}") for key, value in row_data.items()][1:],
+                    style={'font-family': 'Arial', 'text-align': 'center'}
                 )
+        return html.Div(
+            html.P("Select a row."),
+            style={'font-family': 'Arial', 'text-align': 'center'}
+        )
 
 
+    ## --- Add to GEMTOM ---
+    ## Callback to handle button click:
+    @app.callback(
+        Output('output-div', 'children', allow_duplicate=True),  # Allow multiple outputs to the same component
+        Input('call-function-button', 'n_clicks'),
+        State('selected-row-data', 'data'),
+        prevent_initial_call=True  # Prevent the callback from being called when the app loads
+    )
+    ## Function to add the transient to GEMTOM:
+    def transient_to_GEMTOM(n_clicks, row_data):
+        if n_clicks > 0 and row_data:
 
+            id      = str(row_data['runcat_id'])
+            name    = str(row_data['iauname'])
+            ra      = str(row_data['ra'])
+            dec     = str(row_data['dec'])
 
+            add_to_GEMTOM(id, name, ra, dec)
 
-            # return html.Div(row_data['runcat_id'])
-            # return html.A('<a href="http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(row_data['runcat_id']) + '">Request Lightcurve</a>')
-            # return html.Div(html.A('Click here', href='http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(row_data['runcat_id']), target="_blank"))
-            # return html.Div([
-            #     html.P(f"{key}: {value}") for key, value in row_data['runcat_id'].items()
-            # ])
-        return html.P("No row selected")
+            return redirect(reverse('tom_targets:list'))
 
+    ## Render the app
     def dash_view(request):
         return render(request, 'myapp/dash_template.html')
-
 
 
 
