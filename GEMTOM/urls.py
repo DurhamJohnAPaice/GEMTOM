@@ -21,7 +21,7 @@ urlpatterns = [
     # path("status_daily/", views.status_daily, name='status_daily'),
     path('targets/import/', TargetImportView.as_view(), name='import'),
     path('', include('tom_common.urls')),
-    path('about/', AboutView.as_view(), name='about'),
+    # path('about/', AboutView.as_view(), name='about'),
     path('status/', StatusView.as_view(), name='status'),
     path('transients/', TransientsView.as_view(), name='transients'),
     path('status/<int:obs_date>/', NightView, name='night'),

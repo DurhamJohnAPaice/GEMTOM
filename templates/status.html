@@ -173,13 +173,13 @@ On this page, you can find the status of the telescope and recent observations.
             <input type="hidden" name="name" value="{{ source_name }}">
             <input type="hidden" name="ra" value="{{ source_ra }}">
             <input type="hidden" name="dec" value="{{ source_dec }}">
-            <button type="submit">Add to GEMTOM</button>
+            <button type="submit" class="btn btn-primary">Add to GEMTOM</button>
         </form>
-        <form method="post" action="{% url 'ID_to_GEMTOM' %}" class="image-form">
+        <!-- <form method="post" action="{% url 'ID_to_GEMTOM' %}" class="image-form">
             {% csrf_token %}
             <input type="hidden" name="id" value="{{ source_id }}">
             <button type="submit">Add to GEMTOM (Version 2!)</button>
-        </form>
+        </form> -->
         <hr>
     {% endfor %}
 {% else %}

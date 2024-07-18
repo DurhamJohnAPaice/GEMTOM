@@ -110,6 +110,9 @@ class TargetImportView(LoginRequiredMixin, TemplateView):
         return redirect(reverse('tom_targets:list'))
 
 
+## =============================================================================
+## ---------------------------- General Functions ------------------------------
+
 def list_files(url):
     '''
     Gets a list of files from an online directory.
@@ -136,6 +139,18 @@ def list_files(url):
     else:
         print(f"Failed to access {url}")
         return []
+
+
+def get_lightcurve(source_id):
+    '''
+    Fetches the lightcurve from Hugo's server. Returns blank if no lightcurve exists.
+    '''
+    url = "http://xmm-ssc.irap.omp.eu/claxson/BG_images/lcrequests/" + source_id + "_lc.jpg"
+    r = requests.get(url)
+    if r.status_code != 404:
+        return url
+    else:
+        return ""
 
 
 def add_to_GEMTOM(id, name, ra, dec):
@@ -169,53 +184,6 @@ def add_to_GEMTOM(id, name, ra, dec):
     # for error in result['errors']:
     #     messages.warning(request, error)
     return redirect(reverse('tom_targets:list'))
-
-
-
-def status_to_GEMTOM(request):
-    '''
-    Imports a target from the Status tab
-    '''
-
-    id = request.POST.get('id')
-    name = request.POST.get('name')
-    ra = request.POST.get('ra')
-    dec = request.POST.get('dec')
-
-    add_to_GEMTOM(id, name, ra, dec)
-
-    return redirect(reverse('tom_targets:list'))
-    # print(ra, dec)
-
-    # get_lightcurve(id)
-    #
-    # gemtom_dataframe = pd.DataFrame({
-    #     'name' : [name],
-    #     'ra' : [ra],
-    #     'dec' : [dec],
-    #     'BlackGEM ID' : [int(id)],
-    #     'type' : ['SIDEREAL'],
-    #     'public' : ['Public']
-    # })
-    #
-    # gemtom_dataframe = gemtom_dataframe.reindex(gemtom_dataframe.index)
-    #
-    # # print(gemtom_dataframe)
-    #
-    # gemtom_dataframe.to_csv("./Data/processed_file.csv", index=False)
-    # csv_stream = StringIO(open(os.getcwd()+"/Data/processed_file.csv", "rb").read().decode('utf-8'), newline=None)
-    #
-    # ## And finally, read them in!
-    # result = import_targets(csv_stream)
-    # for target in result['targets']:
-    #     target.give_user_access(request.user)
-    # messages.success(
-    #     request,
-    #     'Targets created: {}'.format(len(result['targets']))
-    # )
-    # for error in result['errors']:
-    #     messages.warning(request, error)
-    # return redirect(reverse('tom_targets:list'))
 
 def ID_to_GEMTOM(request):
     '''
@@ -274,36 +242,6 @@ def ID_to_GEMTOM(request):
     return redirect(reverse('tom_targets:list'))
 
 
-class AboutView(TemplateView):
-    template_name = 'about.html'
-
-
-    def get_context_data(self, **kwargs):
-        return {'targets': Target.objects.all()}
-
-
-    def post(self, request, **kwargs):
-        source_ra  = float(request.POST['num1'])
-        source_dec = float(request.POST['num2'])
-
-        print("-- ZTF: Looking for target...", end="\r")
-        lcq = lightcurve.LCQuery.from_position(source_ra, source_dec, 5)
-        ZTF_data_full = pd.DataFrame(lcq.data)
-        ZTF_data = pd.DataFrame({'JD' : lcq.data.mjd, 'Magnitude' : lcq.data.mag, 'Magnitude_Error' : lcq.data.magerr})
-
-        if len(ZTF_data) == 0:
-            raise Exception("-- ZTF: Target not found. Try AAVSO instead?")
-
-        print("-- ZTF: Looking for target... target found.")
-        print(lcq.__dict__)
-
-        df = ZTF_data # replace with your own data source
-
-        fig = px.scatter(df, x='JD', y='Magnitude')
-        fig.update_layout(
-            yaxis = dict(autorange="reversed")
-        )
-        return HttpResponse("Closest target within 5 arcseconds:" + fig.to_html() + ZTF_data_full.to_html())
 
 
 
@@ -312,6 +250,8 @@ class BlackGEMView(TemplateView):
 
     def get_context_data(self, **kwargs):
         return {'targets': Target.objects.all()}
+
+
 
 
 
@@ -546,6 +486,271 @@ class StatusView(TemplateView):
         #     context['images_daily_text_2']  = images_daily()
         return context
 
+
+def handle_input(request):
+    '''
+    Redirects to a status page about a certain date.
+    '''
+    user_input = request.GET.get('user_input')
+    print(user_input)
+    if user_input:
+        return redirect(f'/status/{user_input}')
+    return redirect('status')  # Redirect to the original view if no input
+
+
+
+def get_blackgem_stats(obs_date):
+    '''
+    Gets details about a night's observations from its observation date.
+    Querys Hugo's server.
+    '''
+
+    ## Get date in different formats
+    extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
+    mjd = int(Time(extended_date + "T00:00:00.00", scale='utc').mjd)
+
+    base_url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/'
+
+    ## Get the list of files from Hugo's server
+    files = list_files(base_url + obs_date)
+
+    ## Check to find the transients file. It could be under one of two names...
+    if extended_date+"_gw_BlackGEM_transients.csv" in files:
+        transients_filename = base_url + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
+        data = pd.read_csv(transients_filename)
+    elif extended_date+"_BlackGEM_transients.csv" in files:
+        transients_filename = base_url + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
+        data = pd.read_csv(transients_filename)
+    else:
+        ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
+        return "0", "0", "0", ["","","","", ""], "", "", "", ""
+
+    ## Check to find the gaia crossmatched file. It could be under one of two names...
+    if extended_date+"_gw_BlackGEM_transients_gaia.csv" in files:
+        gaia_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv"
+        data_gaia = pd.read_csv(gaia_filename)
+        num_in_gaia = str(len(data_gaia))
+    elif extended_date+"_BlackGEM_transients_gaia.csv" in files:
+        gaia_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_gaia.csv"
+        data_gaia = pd.read_csv(gaia_filename)
+        num_in_gaia = str(len(data_gaia))
+    else:
+        ## If it doesn't exist, assume no gaia crossmatches were found.
+        gaia_filename = ""
+        num_in_gaia = "0"
+
+    ## Check to find the extragalactic file. It could be under one of two names...
+    if extended_date+"_gw_BlackGEM_transients_selected.csv" in files:
+        extragalactic_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv"
+        extragalactic_data = pd.read_csv(extragalactic_filename)
+    elif extended_date+"_BlackGEM_transients_selected.csv" in files:
+        extragalactic_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_selected.csv"
+        extragalactic_data = pd.read_csv(extragalactic_filename)
+    else:
+        ## If it doesn't exist, assume no extragalactic sources were found.
+        extragalactic_filename = ""
+
+    ## --- Find the details of each extragalactic source ---
+    images_urls                 = []
+    extragalactic_sources       = []
+    extragalactic_sources_id    = []
+    extragalactic_sources_name  = []
+    extragalactic_sources_ra    = []
+    extragalactic_sources_dec   = []
+    extragalactic_sources_jpg   = []
+
+    ## For each image file...
+    for file in files:
+        if ".png" in file:
+            ## Save the URL...
+            images_urls.append(base_url + obs_date + "/" + file[2:])
+
+            ## If we haven't got the data yet...
+            if file[2:10] not in extragalactic_sources_id:
+
+                ## Save the ID...
+                extragalactic_sources_id.append(file[2:10])
+
+                ## And if there's extragalactic data...
+                if extragalactic_filename:
+                    runcat_id_list = list(extragalactic_data['runcat_id'])
+
+                    ## And this source is in that data...
+                    if int(file[2:10]) in runcat_id_list:
+                        ## Save the name, RA, dec, and look for a lightcurve.
+                        row_number = runcat_id_list.index(int(file[2:10]))
+                        extragalactic_sources_name.append(extragalactic_data['iauname'][row_number])
+                        extragalactic_sources_ra.append(  extragalactic_data['ra'][row_number])
+                        extragalactic_sources_dec.append( extragalactic_data['dec'][row_number])
+                        extragalactic_sources_jpg.append(get_lightcurve(file[2:10]))
+                    else:
+                        ## If it's not, state they're all unknown.
+                        extragalactic_sources_name.append("Unknown")
+                        extragalactic_sources_ra.append("(Unknown)")
+                        extragalactic_sources_dec.append("(Unknown)")
+                        extragalactic_sources_jpg.append("")
+
+    ## Combine these together.
+    extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_name, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_jpg]
+    # print(extragalactic_sources)
+    # print(extragalactic_sources_name)
+    # print(extragalactic_sources_ra)
+    # print(extragalactic_sources_dec)
+
+
+    ## Sort the images into a list, separated into each source
+    images_urls_sorted = []
+    for this_source in extragalactic_sources[0]:
+        matching = [url for url in images_urls if this_source in url]
+        images_urls_sorted.append(matching)
+
+    num_new_transients  = str(len(data))
+    num_extragalactic   = str(len(extragalactic_sources[0]))
+    extragalactic_ids   = extragalactic_sources
+    extragalactic_urls  = images_urls_sorted
+
+    return num_new_transients, num_in_gaia, num_extragalactic, extragalactic_ids, extragalactic_urls, \
+        transients_filename, gaia_filename, extragalactic_filename
+
+
+## Function for checking last night's BlackGEM status.
+def status_daily():
+    '''
+    Specifically checks last night's observation.
+    '''
+
+    yesterday = date.today() - timedelta(1)
+    yesterday_date = yesterday.strftime("%Y%m%d")
+    extended_yesterday_date = yesterday.strftime("%Y-%m-%d")
+    mjd = int(Time(extended_yesterday_date + "T00:00:00.00", scale='utc').mjd)
+
+    url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/' + yesterday_date + "/"
+
+    # print(url)
+    r = requests.get(url)
+    if r.status_code != 404:
+        result = "BlackGEM observed last night!"
+        status_daily_text_1 = "Yes!"
+
+        data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
+            transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(yesterday_date)
+
+        ## If there was no data, assume BlackGEM didn't observe.
+        if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0"):
+            extragalactic_sources_id    = ""
+            status_daily_text_1         = "BlackGEM did not observe last night (" + extended_yesterday_date + ")"
+            status_daily_text_2         = ""
+            status_daily_text_3         = ""
+            status_daily_text_4         = ""
+            images_daily_text_1         = zip([], ["BlackGEM did not observe last night."])
+
+        else:
+            if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
+            else: data_length_plural = "s"; data_length_plural_2 = "ve"
+            if extragalactic_sources_length == "1": extragalactic_sources_plural = ""
+            else: extragalactic_sources_plural = "s"
+
+            extragalactic_sources_string = ""
+            for source in extragalactic_sources[0]:
+                extragalactic_sources_string += source + ", "
+
+            extragalactic_sources_id = extragalactic_sources[0]
+            status_daily_text_2 = "On " + extended_yesterday_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " transient" + data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec)."
+            status_daily_text_3 = "BlackGEM recorded pictures of " + extragalactic_sources_length + " possible extragalactic transient" + extragalactic_sources_plural + "."
+            status_daily_text_4 = extragalactic_sources_string
+            # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0])
+            images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
+
+
+    else:
+        extragalactic_sources_id    = ""
+        transients_filename         = ""
+        gaia_filename               = ""
+        extragalactic_filename      = ""
+        status_daily_text_1         = "BlackGEM did not observe last night (" + extended_yesterday_date + ")"
+        status_daily_text_2         = ""
+        status_daily_text_3         = ""
+        status_daily_text_4         = ""
+        images_daily_text_1         = zip([], ["BlackGEM did not observe last night."])
+
+
+    return status_daily_text_1, status_daily_text_2, status_daily_text_3, status_daily_text_4, images_daily_text_1, extragalactic_sources_id, transients_filename, gaia_filename, extragalactic_filename
+
+
+def NightView(request, obs_date):
+    '''
+    Finds and displays data from a certain date.
+    '''
+
+    response = "You're looking at BlackGEM date %s."
+
+    obs_date = str(obs_date)
+    extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
+
+    data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
+        transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(obs_date)
+
+    if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
+    else: data_length_plural = "s"; data_length_plural_2 = "ve"
+    if num_in_gaia == "1": gaia_plural = ""
+    else: gaia_plural = "es"
+    if extragalactic_sources_length == "1": extragalactic_sources_plural = ""
+    else: extragalactic_sources_plural = "s"
+
+    context = {
+        "response"                      : response % obs_date,
+        "obs_date"                      : obs_date,
+        "extended_date"                 : extended_date,
+        "mjd"                           : int(Time(extended_date + "T00:00:00.00", scale='utc').mjd),
+        "data_length"                   : data_length,
+        "num_in_gaia"                   : num_in_gaia,
+        "extragalactic_sources_length"  : extragalactic_sources_length,
+        "extragalactic_sources_id"      : extragalactic_sources[0],
+        "extragalactic_sources_name"    : extragalactic_sources[1],
+        "extragalactic_sources_ra"      : extragalactic_sources[2],
+        "extragalactic_sources_dec"     : extragalactic_sources[3],
+        "extragalactic_sources_jpg"     : extragalactic_sources[4],
+        "data_length_plural"            : data_length_plural,
+        "data_length_plural_2"          : data_length_plural_2,
+        "gaia_plural"                   : gaia_plural,
+        "extragalactic_sources_plural"  : extragalactic_sources_plural,
+        "images_urls_sorted"            : images_urls_sorted,
+    }
+
+    if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0") and (extragalactic_sources[0] == "") and (images_urls_sorted == ""):
+        observed_string = "BlackGEM did not observe that night (" + extended_date + ")"
+        images_daily_text_1 = zip([], ["BlackGEM did not observe that night."])
+    else:
+        observed_string = "Yes!"
+        images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
+
+    context['observed']                 = observed_string
+    context['images_daily_text_1']      = images_daily_text_1
+    context['transients_filename']      = transients_filename
+    context['gaia_filename']            = gaia_filename
+    context['extragalactic_filename']   = extragalactic_filename
+
+    return render(request, "status/index.html", context)
+
+
+def status_to_GEMTOM(request):
+    '''
+    Imports a target from the Status tab
+    '''
+
+    id = request.POST.get('id')
+    name = request.POST.get('name')
+    ra = request.POST.get('ra')
+    dec = request.POST.get('dec')
+
+    add_to_GEMTOM(id, name, ra, dec)
+
+    return redirect(reverse('tom_targets:list'))
+
+
+
+## =============================================================================
+## ------------------- Codes for the Recent Transients page --------------------
 
 
 def blackgem_recent_transients():
@@ -840,7 +1045,8 @@ class TransientsView(TemplateView):
                         'margin': '4px 2px',
                         'cursor': 'pointer',
                         'border-radius': '12px'
-                    }))
+                    })),
+                    html.P(id='button-click-message')  # Div to display the message when button is clicked
                 ] + [table_1] + [table_2] + [table_3] + [table_4] + [table_5] + [table_6],
                 style={'font-family': 'Arial', 'text-align': 'center'})
 
@@ -853,7 +1059,7 @@ class TransientsView(TemplateView):
     ## --- Add to GEMTOM ---
     ## Callback to handle button click:
     @app.callback(
-        Output('output-div', 'children', allow_duplicate=True),  # Allow multiple outputs to the same component
+        Output('button-click-message', 'children'),  # Allow multiple outputs to the same component
         Input('call-function-button', 'n_clicks'),
         State('selected-row-data', 'data'),
         prevent_initial_call=True  # Prevent the callback from being called when the app loads
@@ -869,7 +1075,7 @@ class TransientsView(TemplateView):
 
             add_to_GEMTOM(id, name, ra, dec)
 
-            return redirect(reverse('tom_targets:list'))
+            return html.P(f"Target added to GEMTOM as " + name + ". Please see the Targets page.")
 
     ## Render the app
     def dash_view(request):
@@ -877,352 +1083,9 @@ class TransientsView(TemplateView):
 
 
 
-def get_lightcurve(source_id):
-    '''
-    Fetches the lightcurve from Hugo's server. Returns blank if no lightcurve exists.
-    '''
-    url = "http://xmm-ssc.irap.omp.eu/claxson/BG_images/lcrequests/" + source_id + "_lc.jpg"
-    r = requests.get(url)
-    if r.status_code != 404:
-        return url
-    else:
-        return ""
 
-def handle_input(request):
-    '''
-    Redirects to a status page about a certain date.
-    '''
-    user_input = request.GET.get('user_input')
-    print(user_input)
-    if user_input:
-        return redirect(f'/status/{user_input}')
-    return redirect('status')  # Redirect to the original view if no input
-
-
-
-def get_blackgem_stats(obs_date):
-    '''
-    Gets details about a night's observations from its observation date.
-    Querys Hugo's server.
-    '''
-
-    ## Get date in different formats
-    extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
-    mjd = int(Time(extended_date + "T00:00:00.00", scale='utc').mjd)
-
-    base_url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/'
-
-    ## Get the list of files from Hugo's server
-    files = list_files(base_url + obs_date)
-
-    ## Check to find the transients file. It could be under one of two names...
-    if extended_date+"_gw_BlackGEM_transients.csv" in files:
-        transients_filename = base_url + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
-        data = pd.read_csv(transients_filename)
-    elif extended_date+"_BlackGEM_transients.csv" in files:
-        transients_filename = base_url + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
-        data = pd.read_csv(transients_filename)
-    else:
-        ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
-        return "0", "0", "0", ["","","","", ""], "", "", "", ""
-
-    ## Check to find the gaia crossmatched file. It could be under one of two names...
-    if extended_date+"_gw_BlackGEM_transients_gaia.csv" in files:
-        gaia_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv"
-        data_gaia = pd.read_csv(gaia_filename)
-        num_in_gaia = str(len(data_gaia))
-    elif extended_date+"_BlackGEM_transients_gaia.csv" in files:
-        gaia_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_gaia.csv"
-        data_gaia = pd.read_csv(gaia_filename)
-        num_in_gaia = str(len(data_gaia))
-    else:
-        ## If it doesn't exist, assume no gaia crossmatches were found.
-        gaia_filename = ""
-        num_in_gaia = "0"
-
-    ## Check to find the extragalactic file. It could be under one of two names...
-    if extended_date+"_gw_BlackGEM_transients_selected.csv" in files:
-        extragalactic_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv"
-        extragalactic_data = pd.read_csv(extragalactic_filename)
-    elif extended_date+"_BlackGEM_transients_selected.csv" in files:
-        extragalactic_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_selected.csv"
-        extragalactic_data = pd.read_csv(extragalactic_filename)
-    else:
-        ## If it doesn't exist, assume no extragalactic sources were found.
-        extragalactic_filename = ""
-
-    ## --- Find the details of each extragalactic source ---
-    images_urls                 = []
-    extragalactic_sources       = []
-    extragalactic_sources_id    = []
-    extragalactic_sources_name  = []
-    extragalactic_sources_ra    = []
-    extragalactic_sources_dec   = []
-    extragalactic_sources_jpg   = []
-
-    ## For each image file...
-    for file in files:
-        if ".png" in file:
-            ## Save the URL...
-            images_urls.append(base_url + obs_date + "/" + file[2:])
-
-            ## If we haven't got the data yet...
-            if file[2:10] not in extragalactic_sources_id:
-
-                ## Save the ID...
-                extragalactic_sources_id.append(file[2:10])
-
-                ## And if there's extragalactic data...
-                if extragalactic_filename:
-                    runcat_id_list = list(extragalactic_data['runcat_id'])
-
-                    ## And this source is in that data...
-                    if int(file[2:10]) in runcat_id_list:
-                        ## Save the name, RA, dec, and look for a lightcurve.
-                        row_number = runcat_id_list.index(int(file[2:10]))
-                        extragalactic_sources_name.append(extragalactic_data['iauname'][row_number])
-                        extragalactic_sources_ra.append(  extragalactic_data['ra'][row_number])
-                        extragalactic_sources_dec.append( extragalactic_data['dec'][row_number])
-                        extragalactic_sources_jpg.append(get_lightcurve(file[2:10]))
-                    else:
-                        ## If it's not, state they're all unknown.
-                        extragalactic_sources_name.append("Unknown")
-                        extragalactic_sources_ra.append("(Unknown)")
-                        extragalactic_sources_dec.append("(Unknown)")
-                        extragalactic_sources_jpg.append("")
-
-    ## Combine these together.
-    extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_name, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_jpg]
-    # print(extragalactic_sources)
-    # print(extragalactic_sources_name)
-    # print(extragalactic_sources_ra)
-    # print(extragalactic_sources_dec)
-
-
-    ## Sort the images into a list, separated into each source
-    images_urls_sorted = []
-    for this_source in extragalactic_sources[0]:
-        matching = [url for url in images_urls if this_source in url]
-        images_urls_sorted.append(matching)
-
-    num_new_transients  = str(len(data))
-    num_extragalactic   = str(len(extragalactic_sources[0]))
-    extragalactic_ids   = extragalactic_sources
-    extragalactic_urls  = images_urls_sorted
-
-    return num_new_transients, num_in_gaia, num_extragalactic, extragalactic_ids, extragalactic_urls, \
-        transients_filename, gaia_filename, extragalactic_filename
-
-
-## Function for checking last night's BlackGEM status.
-def status_daily():
-    '''
-    Specifically checks last night's observation.
-    '''
-
-    yesterday = date.today() - timedelta(1)
-    yesterday_date = yesterday.strftime("%Y%m%d")
-    extended_yesterday_date = yesterday.strftime("%Y-%m-%d")
-    mjd = int(Time(extended_yesterday_date + "T00:00:00.00", scale='utc').mjd)
-
-    url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/' + yesterday_date + "/"
-
-    # print(url)
-    r = requests.get(url)
-    if r.status_code != 404:
-        result = "BlackGEM observed last night!"
-        status_daily_text_1 = "Yes!"
-
-        data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
-            transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(yesterday_date)
-
-        ## If there was no data, assume BlackGEM didn't observe.
-        if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0"):
-            extragalactic_sources_id    = ""
-            status_daily_text_1         = "BlackGEM did not observe last night (" + extended_yesterday_date + ")"
-            status_daily_text_2         = ""
-            status_daily_text_3         = ""
-            status_daily_text_4         = ""
-            images_daily_text_1         = zip([], ["BlackGEM did not observe last night."])
-
-        else:
-            if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
-            else: data_length_plural = "s"; data_length_plural_2 = "ve"
-            if extragalactic_sources_length == "1": extragalactic_sources_plural = ""
-            else: extragalactic_sources_plural = "s"
-
-            extragalactic_sources_string = ""
-            for source in extragalactic_sources[0]:
-                extragalactic_sources_string += source + ", "
-
-            extragalactic_sources_id = extragalactic_sources[0]
-            status_daily_text_2 = "On " + extended_yesterday_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " transient" + data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec)."
-            status_daily_text_3 = "BlackGEM recorded pictures of " + extragalactic_sources_length + " possible extragalactic transient" + extragalactic_sources_plural + "."
-            status_daily_text_4 = extragalactic_sources_string
-            # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0])
-            images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
-
-
-    else:
-        extragalactic_sources_id    = ""
-        transients_filename         = ""
-        gaia_filename               = ""
-        extragalactic_filename      = ""
-        status_daily_text_1         = "BlackGEM did not observe last night (" + extended_yesterday_date + ")"
-        status_daily_text_2         = ""
-        status_daily_text_3         = ""
-        status_daily_text_4         = ""
-        images_daily_text_1         = zip([], ["BlackGEM did not observe last night."])
-
-
-    return status_daily_text_1, status_daily_text_2, status_daily_text_3, status_daily_text_4, images_daily_text_1, extragalactic_sources_id, transients_filename, gaia_filename, extragalactic_filename
-
-
-def NightView(request, obs_date):
-    '''
-    Finds and displays data from a certain date.
-    '''
-
-    response = "You're looking at BlackGEM date %s."
-
-    obs_date = str(obs_date)
-    extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
-
-    data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
-        transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(obs_date)
-
-    if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
-    else: data_length_plural = "s"; data_length_plural_2 = "ve"
-    if num_in_gaia == "1": gaia_plural = ""
-    else: gaia_plural = "es"
-    if extragalactic_sources_length == "1": extragalactic_sources_plural = ""
-    else: extragalactic_sources_plural = "s"
-
-    context = {
-        "response"                      : response % obs_date,
-        "obs_date"                      : obs_date,
-        "extended_date"                 : extended_date,
-        "mjd"                           : int(Time(extended_date + "T00:00:00.00", scale='utc').mjd),
-        "data_length"                   : data_length,
-        "num_in_gaia"                   : num_in_gaia,
-        "extragalactic_sources_length"  : extragalactic_sources_length,
-        "extragalactic_sources_id"      : extragalactic_sources[0],
-        "extragalactic_sources_name"    : extragalactic_sources[1],
-        "extragalactic_sources_ra"      : extragalactic_sources[2],
-        "extragalactic_sources_dec"     : extragalactic_sources[3],
-        "extragalactic_sources_jpg"     : extragalactic_sources[4],
-        "data_length_plural"            : data_length_plural,
-        "data_length_plural_2"          : data_length_plural_2,
-        "gaia_plural"                   : gaia_plural,
-        "extragalactic_sources_plural"  : extragalactic_sources_plural,
-        "images_urls_sorted"            : images_urls_sorted,
-    }
-
-    if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0") and (extragalactic_sources[0] == "") and (images_urls_sorted == ""):
-        observed_string = "BlackGEM did not observe that night (" + extended_date + ")"
-        images_daily_text_1 = zip([], ["BlackGEM did not observe that night."])
-    else:
-        observed_string = "Yes!"
-        images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
-
-    context['observed']                 = observed_string
-    context['images_daily_text_1']      = images_daily_text_1
-    context['transients_filename']      = transients_filename
-    context['gaia_filename']            = gaia_filename
-    context['extragalactic_filename']   = extragalactic_filename
-
-    return render(request, "status/index.html", context)
-
-
-
-
-
-
-## ======== RANDOM TESTING STUFF BELOW THIS LINE =========
-
-    # if request.method == 'POST' and 'run_script' in request.POST:
-    #
-    #     def test_function():
-    #         return "Bark!"
-    #
-    #     # call function
-    #     test_function()
-    #
-    #     # return user to required page
-    #     # return HttpResponseRedirect(reverse(template_name))
-
-
-# def post(self, request, **kwargs):
-#
-#     if request.method == 'POST' and 'run_script' in request.POST:
-#
-#         # # import function to run
-#         # from path_to_script import function_to_run
-#
-#         # call function
-#         print("Bark!")
-#
-#         # return HttpResponse('')
-#
-#         data = {
-#         "subject": "hello",
-#         "message": "Hi there",
-#         "sender": "foo@example.com",
-#         "cc_myself": True,
-#         }
-#         file_data = {"mugshot": SimpleUploadedFile("face.jpg", b"file data")}
-#         print(data)
-#         # f = ContactFormWithMugshot(data, file_data)
-#         # f = ContactFormWithMugshot(request.POST, request.FILE)
-#
-#         # # return user to required page
-#         return HttpResponseRedirect(reverse('about'))
-
-# def handle_uploaded_file(f):
-#     with open("some/file/name.txt", "wb+") as destination:
-#         for chunk in f.chunks():
-#             destination.write(chunk)
-#
-# def upload_file(request):
-#     if request.method == "POST":
-#         form = UploadFileForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             handle_uploaded_file(request.FILES["file"])
-#             return HttpResponseRedirect("/success/url/")
-#     else:
-#         form = UploadFileForm()
-#     return render(request, "upload.html", {"form": form})
-
-
-    #
-    # def simple_upload(request):
-    #     if request.method == 'POST' and request.FILES['myfile']:
-    #         myfile = request.FILES['myfile']
-    #         fs = FileSystemStorage()
-    #         filename = fs.save(myfile.name, myfile)
-    #         uploaded_file_url = fs.url(filename)
-    #         return render(request, 'core/simple_upload.html', {
-    #             'uploaded_file_url': uploaded_file_url
-    #         })
-    #     return render(request, 'core/simple_upload.html')
-
-
-# class UploadView(TemplateView):
-#     template_name = 'simple_upload.html'
-
-
-            #
-            # data = {
-            # "subject": "hello",
-            # "message": "Hi there",
-            # "sender": "foo@example.com",
-            # "cc_myself": True,
-            # }
-            # file_data = {"mugshot": SimpleUploadedFile("face.jpg", b"file data")}
-            # print(data)
-            # print(file_data)
-            # # f = ContactFormWithMugshot(data, file_data)
-            # # f = ContactFormWithMugshot(request.POST, request.FILE)
+## =============================================================================
+## --------------------- Codes for updating various data -----------------------
 
 
 class UpdateZTFView(LoginRequiredMixin, RedirectView):
@@ -1478,3 +1341,35 @@ class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):
 
 
         return redirect(form.get('referrer', '/'))
+
+#
+# class AboutView(TemplateView):
+#     template_name = 'about.html'
+#
+#
+#     def get_context_data(self, **kwargs):
+#         return {'targets': Target.objects.all()}
+#
+#
+#     def post(self, request, **kwargs):
+#         source_ra  = float(request.POST['num1'])
+#         source_dec = float(request.POST['num2'])
+#
+#         print("-- ZTF: Looking for target...", end="\r")
+#         lcq = lightcurve.LCQuery.from_position(source_ra, source_dec, 5)
+#         ZTF_data_full = pd.DataFrame(lcq.data)
+#         ZTF_data = pd.DataFrame({'JD' : lcq.data.mjd, 'Magnitude' : lcq.data.mag, 'Magnitude_Error' : lcq.data.magerr})
+#
+#         if len(ZTF_data) == 0:
+#             raise Exception("-- ZTF: Target not found. Try AAVSO instead?")
+#
+#         print("-- ZTF: Looking for target... target found.")
+#         print(lcq.__dict__)
+#
+#         df = ZTF_data # replace with your own data source
+#
+#         fig = px.scatter(df, x='JD', y='Magnitude')
+#         fig.update_layout(
+#             yaxis = dict(autorange="reversed")
+#         )
+#         return HttpResponse("Closest target within 5 arcseconds:" + fig.to_html() + ZTF_data_full.to_html())
