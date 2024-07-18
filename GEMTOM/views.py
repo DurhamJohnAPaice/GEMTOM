@@ -7,7 +7,7 @@ import pandas as pd
 from astropy.coordinates import SkyCoord, Galactocentric
 from astropy import units as u
 import plotly.express as px
-from dash import Dash, dcc, html, Input, Output, State, callback
+from dash import Dash, dcc, html, Input, Output, State, callback, dash_table
 from io import StringIO
 
 from django.views.generic import TemplateView, FormView
@@ -40,7 +40,7 @@ import numpy as np
 from django_plotly_dash import DjangoDash
 import dash_ag_grid as dag
 import json
-
+import dash_table.Format as Format
 
 from tom_common.hooks import run_hook
 from tom_observations.models import Target
@@ -108,6 +108,35 @@ class TargetImportView(LoginRequiredMixin, TemplateView):
         for error in result['errors']:
             messages.warning(request, error)
         return redirect(reverse('tom_targets:list'))
+
+
+def list_files(url):
+    '''
+    Gets a list of files from an online directory.
+    '''
+
+    # Send a GET request to the URL
+    response = requests.get(url)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        # Parse the HTML content using BeautifulSoup
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Find all links on the page
+        links = soup.find_all('a')
+
+        # Extract file names from the links
+        files = [link.get('href') for link in links if link.get('href')]
+
+        # Filter out the parent directory link (if present) and directories
+        files = [file for file in files if not file.endswith('/') and file != '../']
+
+        return files
+    else:
+        print(f"Failed to access {url}")
+        return []
+
 
 def add_to_GEMTOM(id, name, ra, dec):
 
@@ -393,7 +422,7 @@ def get_recent_blackgem_history(days_since_last_update):
 
 def blackgem_history():
     '''
-    Fetches BlackGEM's history and returns as several lists, in order to make a table
+    Fetches BlackGEM's history and returns as a pandas dataframe
     '''
 
     # get_recent_blackgem_history()
@@ -403,6 +432,7 @@ def blackgem_history():
     # print(history)
 
     return history
+
 
 def update_history(days_since_last_update):
     '''
@@ -415,6 +445,7 @@ def update_history(days_since_last_update):
     # print(history)
 
     return redirect('status')  # Redirect to the original view if no input
+
 
 
 class StatusView(TemplateView):
@@ -516,8 +547,133 @@ class StatusView(TemplateView):
         return context
 
 
+
+def blackgem_recent_transients():
+    '''
+    Fetches BlackGEM's recent transients and returns as a pandas dataframe
+    '''
+
+    recent_transients = pd.read_csv("./data/BlackGEM_Transients_Last30Days.csv")
+
+    return recent_transients
+
+def update_recent_transients(days_since_last_update):
+    '''
+    Fetches BlackGEM's recent transients and updates
+    '''
+
+    get_recent_blackgem_transients(days_since_last_update)
+
+
+
+def get_recent_blackgem_transients(days_since_last_update):
+    print(days_since_last_update)
+
+    obs_date = date.today() - timedelta(1)
+    extended_obs_date = obs_date.strftime("%Y-%m-%d")
+    obs_date = obs_date.strftime("%Y%m%d")
+    mjd = int(Time(extended_obs_date + "T00:00:00.00", scale='utc').mjd)
+
+    ## Get previous history:
+    previous_history = blackgem_recent_transients()
+
+    if days_since_last_update > 30:
+        days_since_last_update = 30
+
+    base_url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/'
+
+    datestamp = datetime.strptime(obs_date, "%Y%m%d")
+
+    dates = []
+    for days_back in range(days_since_last_update):
+        this_datestamp = datestamp - timedelta(days_back)
+        this_date = this_datestamp.strftime("%Y%m%d")
+        dates.append(this_date)
+
+    old_datestamp = datestamp - timedelta(30)
+    old_date = old_datestamp.strftime("%Y-%m-%d")
+
+    data_list = []
+
+    num_sources = 0
+    for obs_date in dates:
+        extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
+
+        ## Get the list of files from Hugo's server
+        files = list_files(base_url + obs_date)
+
+        ## Check to find the transients file. It could be under one of two names...
+        if extended_date+"_gw_BlackGEM_transients.csv" in files:
+            transients_filename = base_url + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
+            data = pd.read_csv(transients_filename)
+        elif extended_date+"_BlackGEM_transients.csv" in files:
+            transients_filename = base_url + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
+            data = pd.read_csv(transients_filename)
+        else:
+            ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
+            print("No transients on", obs_date)
+            continue
+
+
+        d           = pd.Series([extended_date])
+        date_column = d.repeat(len(data))
+        date_column = date_column.set_axis(range(len(data)))
+        data["last_obs"] = date_column
+
+        # data_list.append(data.iloc[:20])
+        data_list.append(data)
+        num_sources += len(data)
+        print(obs_date, "--", len(data), "\t Total:", num_sources)
+
+    ## Combine the new data together
+    df = pd.concat(data_list).reset_index(drop=True)
+
+    ## Find the index at which data is older than 30 days
+    old_date_index = (previous_history['last_obs'].values == old_date).argmax()
+
+    ## Combine the new data with the old, but only up to 30 days
+    df_2 = pd.concat([df, previous_history.iloc[:old_date_index]])
+    df_2.to_csv("./data/BlackGEM_Transients_Last30Days.csv", index=False)
+
+
+
 class TransientsView(TemplateView):
     template_name = 'transients.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        print("\n\n\nBARK!\n\n\n")
+
+        ## --- Update Recent Transients ---
+        recent_transients = blackgem_recent_transients()
+        dates = list(recent_transients.last_obs)
+        dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
+        # print(dates[0])
+
+        ## --- Check to see if the recent history is up to date. If not, update.
+        ## Get yesterday's date...
+        yesterday_date = datetime.today() - timedelta(1)
+        yesterday_date = yesterday_date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        ## Get the most recent date...
+        most_recent_date = datetime.strptime(dates[0], "%Y%m%d")
+
+        ## Find the difference...
+        difference = yesterday_date - most_recent_date
+        days_since_last_update = difference.days
+        print("Days since last update:", days_since_last_update)
+
+        yesterday_date_string = yesterday_date.strftime("%Y%m%d")
+
+        if days_since_last_update > 0:
+            update_recent_transients(days_since_last_update)
+            recent_transients = blackgem_recent_transients()
+            dates = list(recent_transients.last_obs)
+            dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
+
+        return context
+
 
         # Initialize the Dash app
     app = DjangoDash('RecentTransients')
@@ -526,30 +682,55 @@ class TransientsView(TemplateView):
     df = pd.read_csv('./data/BlackGEM_Transients_Last30Days.csv')
     # df = pd.read_csv('./data/BlackGEM_Transients_Last30Days_Test.csv')
 
+    ## Remove bugged values
+    df['q_max'] = df['q_max'].replace(99,np.nan)
+    df['u_max'] = df['u_max'].replace(99,np.nan)
+    df['i_max'] = df['i_max'].replace(99,np.nan)
+
     ## Round values for displaying
-    df['ra']        = round(df['ra'],5)
-    df['dec']       = round(df['dec'],5)
-    df['snr_zogy']  = round(df['snr_zogy'],2)
-    df['q_max']     = round(df['q_max'],2)
-    df['u_max']     = round(df['u_max'],2)
-    df['i_max']     = round(df['i_max'],2)
+    df['ra_sml']            = round(df['ra'],4)
+    df['dec_sml']           = round(df['dec'],4)
+    df['snr_zogy_sml']  = round(df['snr_zogy'],1)
+    df['iauname_short']       = df['iauname'].str[5:]
+    df['q_min_sml']     = round(df['q_min'],1)
+    df['u_min_sml']     = round(df['u_min'],1)
+    df['i_min_sml']     = round(df['i_min'],1)
+    df['q_max_sml']     = round(df['q_max'],1)
+    df['u_max_sml']     = round(df['u_max'],1)
+    df['i_max_sml']     = round(df['i_max'],1)
+    df['q_dif']         = round(df['q_max']-df['q_min'],2)
+    df['u_dif']         = round(df['u_max']-df['u_min'],2)
+    df['i_dif']         = round(df['i_max']-df['i_min'],2)
+
+
+
 
     ## Define the layout of the Dash app
     app.layout = html.Div([
         dag.AgGrid(
             id='csv-grid',
             rowData=df.to_dict('records'),
+            # columnDefs=[
+            #     {'headerName': col, 'field': col, 'valueFormatter': formatter_function} if df[col].dtype in ['float64', 'int64'] else {'headerName': col, 'field': col}
+            #     for col in df.columns
+            # ],
             columnDefs=[
                 # {'headerName': 'BGEM ID', 'field': 'runcat_id', 'checkboxSelection': True},
                 {'headerName': 'BGEM ID', 'field': 'runcat_id'},
-                {'headerName': 'IAU Name', 'field': 'iauname'},
-                {'headerName': 'RA', 'field': 'ra'},
-                {'headerName': 'Dec', 'field': 'dec'},
+                {'headerName': 'IAU Name', 'field': 'iauname_short'},
+                {'headerName': 'RA', 'field': 'ra_sml'},
+                {'headerName': 'Dec', 'field': 'dec_sml'},
                 {'headerName': '#Datapoints', 'field': 'datapoints'},
-                {'headerName': 'S/N', 'field': 'snr_zogy'},
-                {'headerName': 'q (max)', 'field': 'q_max', 'minWidth': 86, 'maxWidth': 101},
-                {'headerName': 'u (max)', 'field': 'u_max', 'minWidth': 82, 'maxWidth': 90},
-                {'headerName': 'i (max)', 'field': 'i_max', 'minWidth': 75, 'maxWidth': 90},
+                {'headerName': 'S/N', 'field': 'snr_zogy_sml'},
+                # {'headerName': 'q (min)', 'field': 'q_min', 'minWidth': 86, 'maxWidth': 101, 'valueFormatter': {"function":"""if (isNaN(params.value)) {d3.format(",.2f")(params.value)}"""}},
+                # {'headerName': 'u (min)', 'field': 'u_min', 'minWidth': 82, 'maxWidth': 90 , 'cellRenderer': {"function":"""d3.format(",.2f")(params.value)"""}},
+                # {'headerName': 'i (min)', 'field': 'i_min', 'minWidth': 75, 'maxWidth': 90 , 'valueFormatter': {"function":"""d3.format(",.2f")(params.value)"""}},
+                {'headerName': 'q min', 'field': 'q_min_sml',   'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'q dif', 'field': 'q_dif',       'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'u min', 'field': 'u_min_sml',   'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'u dif', 'field': 'u_dif',       'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'i min', 'field': 'i_min_sml',   'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'i dif', 'field': 'i_dif',       'minWidth': 75, 'maxWidth': 75},
                 {'headerName': 'Last Obs', 'field': 'last_obs', 'maxWidth': 110},
             ],
             defaultColDef={
@@ -587,6 +768,47 @@ class TransientsView(TemplateView):
         ## When a row is selected, we either need to show the lightcurve or a link to request one:
         if row_data:
 
+            # Format columns
+            formatted_columns = [
+                {'name': k, 'id': k, 'type': 'numeric', 'format': Format.Format(precision=2, scheme=Format.Scheme.fixed).group(True), 'presentation': 'input'} if isinstance(row_data[k], (int, float)) else {'name': k, 'id': k}
+                for k in row_data.keys()
+            ]
+
+            ## Create a DataTable to display the row data
+            table_1 = dash_table.DataTable(
+                data=[row_data],
+                columns=[[{'name': k, 'id': k} for k in row_data.keys()][i] for i in [1,3,4,5,6,7,8]],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## q mag
+            table_2 = dash_table.DataTable(
+                data=[row_data],
+                columns=[[{'name': k, 'id': k} for k in row_data.keys() if k in ['q_min', 'q_max', 'q_xtrsrc', 'q_rb', 'q_fwhm', 'q_dif']][i] for i in [1,2,0,3,4,5]],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## u mag
+            table_3 = dash_table.DataTable(
+                data=[row_data],
+                # columns=[[{'name': k, 'id': k} for k in row_data.keys()][i] for i in [13,14,15,16,17,44]],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['u_min', 'u_max', 'u_xtrsrc', 'u_rb', 'u_fwhm', 'u_dif']],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## i mag
+            table_4 = dash_table.DataTable(
+                data=[row_data],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['i_min', 'i_max', 'i_xtrsrc', 'i_rb', 'i_fwhm', 'i_dif']],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            table_5 = dash_table.DataTable(
+                data=[row_data],
+                columns=[{'name': k, 'id': k} for k in row_data.keys()][23:29],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            table_6 = dash_table.DataTable(
+                data=[row_data],
+                columns=[{'name': k, 'id': k} for k in row_data.keys()][30:36],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
             ## URL for the lightcuve
             url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/lcrequests/' + str(row_data['runcat_id']) + '_lc.jpg'
 
@@ -594,46 +816,36 @@ class TransientsView(TemplateView):
             r = requests.get(url)
 
             if r.status_code != 404:
-                return html.Div([
-                        html.Img(src=url, style={'max-width': '100%', 'height': 'auto', 'display': 'block', 'margin': 'auto'}),
-                        html.Button('Add to GEMTOM', id='call-function-button', n_clicks=0, style={
-                            'font-family': 'Arial',
-                            'font-size': '16px',
-                            'color': 'white',
-                            'background-color': '#007bff',
-                            'border': 'none',
-                            'padding': '10px 20px',
-                            'text-align': 'center',
-                            'text-decoration': 'none',
-                            'display': 'inline-block',
-                            'margin': '4px 2px',
-                            'cursor': 'pointer',
-                            'border-radius': '12px'
-                        })
-                    ] + [html.P(f"{key}: {value}") for key, value in row_data.items()][1:],
-                    style={'font-family': 'Arial', 'text-align': 'center'})
+                lightcurve_html = html.Img(src=url, style={'max-width': '100%', 'height': 'auto', 'display': 'block', 'margin': 'auto'})
             else:
-                return html.Div([
-                        html.Div([html.A('Request Lightcurve', href='http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(row_data['runcat_id']), target="_blank")]),
-                        html.Div([html.Button('Add to GEMTOM', id='call-function-button', n_clicks=0, style={
-                            'font-family': 'Arial',
-                            'font-size': '16px',
-                            'color': 'white',
-                            'background-color': '#007bff',
-                            'border': 'none',
-                            'padding': '10px 20px',
-                            'text-align': 'center',
-                            'text-decoration': 'none',
-                            'display': 'inline-block',
-                            'margin': '4px 2px',
-                            'cursor': 'pointer',
-                            'border-radius': '12px'
-                        })]),
-                    ] + [html.P(f"{key}: {value}") for key, value in row_data.items()][1:],
-                    style={'font-family': 'Arial', 'text-align': 'center'}
-                )
+                lightcurve_html = [
+                    html.A('Request Lightcurve', href='http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(row_data['runcat_id']), target="_blank"),
+                    html.P("Lightcurve will be requested on click. Once done, please return in five minutes to see!")
+                ]
+
+            # if r.status_code != 404:
+            return html.Div([
+                    html.P("Object " + str(row_data["runcat_id"]) + ":"),
+                    html.Div(lightcurve_html),
+                    html.Div(html.Button('Add to GEMTOM', id='call-function-button', n_clicks=0, style={
+                        'font-family': 'Arial',
+                        'font-size': '16px',
+                        'color': 'white',
+                        'background-color': '#007bff',
+                        'border': 'none',
+                        'padding': '10px 20px',
+                        'text-align': 'center',
+                        'text-decoration': 'none',
+                        'display': 'inline-block',
+                        'margin': '4px 2px',
+                        'cursor': 'pointer',
+                        'border-radius': '12px'
+                    }))
+                ] + [table_1] + [table_2] + [table_3] + [table_4] + [table_5] + [table_6],
+                style={'font-family': 'Arial', 'text-align': 'center'})
+
         return html.Div(
-            html.P("Select a row."),
+            html.P("Select a row"),
             style={'font-family': 'Arial', 'text-align': 'center'}
         )
 
@@ -686,33 +898,6 @@ def handle_input(request):
         return redirect(f'/status/{user_input}')
     return redirect('status')  # Redirect to the original view if no input
 
-
-def list_files(url):
-    '''
-    Gets a list of files from an online directory.
-    '''
-
-    # Send a GET request to the URL
-    response = requests.get(url)
-
-    # Check if the request was successful
-    if response.status_code == 200:
-        # Parse the HTML content using BeautifulSoup
-        soup = BeautifulSoup(response.content, 'html.parser')
-
-        # Find all links on the page
-        links = soup.find_all('a')
-
-        # Extract file names from the links
-        files = [link.get('href') for link in links if link.get('href')]
-
-        # Filter out the parent directory link (if present) and directories
-        files = [file for file in files if not file.endswith('/') and file != '../']
-
-        return files
-    else:
-        print(f"Failed to access {url}")
-        return []
 
 
 def get_blackgem_stats(obs_date):
