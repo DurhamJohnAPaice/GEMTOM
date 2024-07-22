@@ -1,0 +1,310 @@
+{% extends 'tom_common/base.html' %}
+{% block content %}
+<!-- --------------------------- -->
+<head>
+<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+
+<p>
+On this page, you can find all transients found by BlackGEM in the past 30 days.
+</p>
+<hr>
+<p>
+<!-- <strong>Status ground:</strong> -->
+</p>
+
+<div style="text-align:center">
+
+
+<!-- <h5>BlackGEM Transients (Past 30 days):</h5>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>MJD</th>
+            <th>Observed</th>
+            <th>Transients</th>
+            <th>Gaia Crossmatches</th>
+            <th>Extragalactic Transients</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if history %}
+            {% for date, extended_date, MJD, Observed, Number_Of_Transients, Number_of_Gaia_Crossmatches, Number_Of_Extragalactic in history %}
+                {% if Observed == "Yes" %}
+                    <tr style="color: black;">
+                {% else %}
+                    <tr style="color: #D5D5D5;">
+                {% endif %}
+                    <td><a href="{{ date }}">{{ extended_date }}</a> </td>
+                    <td>{{ MJD }}</td>
+                    <td>{{ Observed }}</td>
+                    <td>{{ Number_Of_Transients }}</td>
+                    <td>{{ Number_of_Gaia_Crossmatches }}</td>
+                    <td>{{ Number_Of_Extragalactic }}</td>
+                </tr>
+            {% endfor %}
+        {% endif %}
+    </tbody>
+</table> -->
+
+<style>
+    .dash-container {
+        width: 100%;
+        height: 2000px;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
+
+<!-- myapp/templates/myapp/dash_template.html -->
+
+<head>
+    <title>CSV Data Grid</title>
+    <link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-grid.css">
+    <link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-theme-balham.css">
+</head>
+
+<body>
+    <h5>BlackGEM Transients (Past 30 days)</h5>
+    {% load plotly_dash %}
+    <div class="dash-container">
+        {% plotly_app name="RecentTransients" ratio=2 %}
+    </div>
+</body>
+
+
+<!-- <br> -->
+<!-- <hr> -->
+<!-- <hr> -->
+<!-- <br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br> -->
+
+<!-- <h1>Testing Ground</h1>
+<h2>NOTE: Everything below here is just for testing purposes. Assume all information is incorrect!</h2>
+
+<hr>
+<hr> -->
+
+<!-- <p>Did BlackGEM observe last night?<br></p>
+<!-- <p>{{ result }}</p> -->
+<!-- <p>{{ status_daily_text_1 }}</p> -->
+<!-- <p>{{ status_daily_text_2 }}</p> -->
+<!-- <p>{{ status_daily_text_3 }}</p> -->
+<!-- <p>{{ status_daily_text_4 }}</p> -->
+<!-- <p>{{ other_data }}</p> -->
+
+
+<!-- <hr>
+<hr>
+
+<h2>BlackGEM Status:</h2>
+
+<div id='if-part1' style='visibility: hidden;'>BlackGEM Observed last night!</div>
+<div id='else-part1' style='visibility: hidden'>BlackGEM did not observe last night.</div>
+
+<script>
+    var node;
+    if(true) {
+        node = document.getElementById('if-part1');
+    }
+    else {
+        node = document.getElementById('else-part1');
+    }
+    node.style.visibility = 'visible';
+</script>
+
+<hr>
+<hr>
+
+<hr>
+<hr>
+
+<h2>BlackGEM Status 2:</h2>
+
+<div id='if-part2' style='visibility: hidden;'>BlackGEM Observed last night!</div>
+<div id='else-part2' style='visibility: hidden'>BlackGEM did not observe last night.</div>
+<div id='checker' style='visibility: hidden'>Code is running!</div>
+
+<script>
+    var node2;
+    node2 = document.getElementById('checker');
+    node2.style.visibility = 'visible';
+
+    var node;
+    var http = new XMLHttpRequest();
+    http.open('HEAD', 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/20240424/', false);
+    http.send();
+    if (http.status != 404)
+        node = document.getElementById('if-part2');
+    }
+    else {
+        node = document.getElementById('else-part2');
+    }
+    node.style.visibility = 'visible';
+</script>
+
+<hr>
+<hr> -->
+
+<!-- <div id="CSVTable"></div>
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/jquerycsvtotable/jquery.csvToTable.js"></script>
+
+<script>
+$(function() {
+  $('#CSVTable').CSVToTable('../data/BlackGEM_History.csv');
+});
+</script> -->
+
+<!-- {% if dates %}
+    {% for date in dates %}
+        <h6>{{ date }}</h6>
+    {% endfor %}
+{% endif %} -->
+
+<!-- <script>
+
+
+  // JavaScript code for inserting data into the table
+  // var data = $.csv.toObjects(csv):
+  // var data = $('#CSVTable').CSVToTable('../data/BlackGEM_History.csv')
+  var data = [
+    { date: "2024-04-25", mjd: 60425, observed: "Yes", sources: "148", gaia: "59",   images: "3"  },
+    { date: "2024-04-24", mjd: 60424, observed: "Yes", sources: "373", gaia: "3369", images: "21" },
+  ];
+  // var data = $.csv.toObjects('../data/BlackGEM_History.csv'):
+  // // document.write(data)
+  //
+  var tableBody = document.getElementById("tableBody");
+
+  data.forEach(function(item) {
+    var row = document.createElement("tr");
+
+    var dateCell = document.createElement("td");
+    dateCell.textContent = item.date;
+    row.appendChild(dateCell);
+
+    var mjdCell = document.createElement("td");
+    mjdCell.textContent = item.mjd;
+    row.appendChild(mjdCell);
+
+    var observedCell = document.createElement("td");
+    observedCell.textContent = item.observed;
+    row.appendChild(observedCell);
+
+    var sourcesCell = document.createElement("td");
+    sourcesCell.textContent = item.sources;
+    row.appendChild(sourcesCell);
+
+    var gaiaCell = document.createElement("td");
+    gaiaCell.textContent = item.gaia;
+    row.appendChild(gaiaCell);
+
+    var imagesCell = document.createElement("td");
+    imagesCell.textContent = item.images;
+    row.appendChild(imagesCell);
+
+    tableBody.appendChild(row);
+  });
+</script>
+
+<br>
+<hr>
+<hr>
+<hr>
+<br>
+
+<head>
+<meta charset="utf-8">
+<title></title>
+<script>
+    window.onload=function(){ with (new XMLHttpRequest()) {
+      onreadystatechange=cb; open('GET','../data/BlackGEM_History.csv',true); responseType='text';send();
+    }}
+    function cb(){if(this.readyState===4)document.getElementById('main')
+                                                 .innerHTML=tbl(this.responseText); }
+    function tbl(csv){ // do whatever is necessary to create your table here ...
+        return csv.split('\n')
+               .map(function(tr,i){return '<tr><td> '
+                                         +tr.replace(/\t/g,'</td><td>')
+                                         +'</td></tr>';})
+               .join('\n'); }
+    // var tableBody = document.getElementById("tableBody");
+
+
+<!-- </script>
+</head>
+<body>
+<h2>BlackGEM History:</h2>
+<table id="main">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>MJD</th>
+            <th>Observed</th>
+            <th>Number Of Sources</th>
+            <th>Number in Gaia</th>
+            <th>Number Of Images</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+</body> -->
+
+<!-- <br>
+<hr>
+<hr>
+<hr>
+<br>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>MJD</th>
+            <th>Observed</th>
+            <th>Number Of Sources</th>
+            <th>Number Of Images</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for datum in main %}
+        <tr>
+            <td>{{ datum.timestamp }}</td>
+            <td>
+                <!-- prepend greater-than sign if this is a magnitude limit -->
+                <!-- {% if datum.limit %}>{% endif %}
+                {{ datum.magnitude}}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="2">No recent photometry.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table> -->
+
+
+<!-- --------------------------- -->
+{% endblock %}

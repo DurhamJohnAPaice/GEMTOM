@@ -1,0 +1,19 @@
+{% extends 'tom_common/base.html' %}
+{% block content %}
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plot Graph</title>
+    <!-- Add Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>My Plotly Graph</h1>
+    <!-- Render the Plotly graph -->
+    <div>{{ plot_div|safe ratio=1 }}</div>
+</body>
+</html>
+
+{% endblock %}

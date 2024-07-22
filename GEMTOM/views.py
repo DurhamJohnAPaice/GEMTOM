@@ -36,11 +36,20 @@ from bs4 import BeautifulSoup
 from datetime import datetime, date, timedelta
 import numpy as np
 
-## For the Transients View
+## For the Recent Transients View
 from django_plotly_dash import DjangoDash
 import dash_ag_grid as dag
 import json
 import dash_table.Format as Format
+
+## For the Transient View
+from pathlib import Path
+import plotly.graph_objs as go
+from plotly.offline import plot
+
+## BlackGEM Stuff
+from blackpy import BlackGEM
+from blackpy.catalogs.blackgem import TransientsCatalog
 
 from tom_common.hooks import run_hook
 from tom_observations.models import Target
@@ -71,10 +80,6 @@ class TargetImportView(LoginRequiredMixin, TemplateView):
         :param request: the request object passed to this view
         :type request: HTTPRequest
         """
-
-        print("\n\n\n\n\n\n\n")
-        print("Barkbarkbark!")
-        print("\n\n\n\n\n\n\n")
 
         ## Are we uploading in the BlackGEM format, or the TOM-specific format?
         ## If BlackGEM, we need to process the targets first, so...
@@ -498,6 +503,17 @@ def handle_input(request):
     return redirect('status')  # Redirect to the original view if no input
 
 
+def search_BGEM_ID(request):
+    '''
+    Redirects to a status page about a certain date.
+    '''
+    user_input = request.GET.get('user_input')
+    print(user_input)
+    if user_input:
+        return redirect(f'/transient/{user_input}')
+    return redirect('transient')  # Redirect to the original view if no input
+
+
 
 def get_blackgem_stats(obs_date):
     '''
@@ -795,8 +811,7 @@ def get_recent_blackgem_transients(days_since_last_update):
         this_date = this_datestamp.strftime("%Y%m%d")
         dates.append(this_date)
 
-    old_datestamp = datestamp - timedelta(30)
-    old_date = old_datestamp.strftime("%Y-%m-%d")
+
 
     data_list = []
 
@@ -831,19 +846,54 @@ def get_recent_blackgem_transients(days_since_last_update):
         print(obs_date, "--", len(data), "\t Total:", num_sources)
 
     ## Combine the new data together
-    df = pd.concat(data_list).reset_index(drop=True)
+    df_new = pd.concat(data_list).reset_index(drop=True)
 
     ## Find the index at which data is older than 30 days
+    old_datestamp = datestamp - timedelta(30)
+    old_date = old_datestamp.strftime("%Y-%m-%d")
     old_date_index = (previous_history['last_obs'].values == old_date).argmax()
+    n = 0
+    while old_date_index == 0:
+        n += 1
+        old_datestamp = datestamp - timedelta(30+n)
+        old_date = old_datestamp.strftime("%Y-%m-%d")
+        old_date_index = (previous_history['last_obs'].values == old_date).argmax()
+        if n == 29:
+            break
 
+    print(old_date_index)
+    print(len(previous_history))
+    print(len(df_new))
     ## Combine the new data with the old, but only up to 30 days
-    df_2 = pd.concat([df, previous_history.iloc[:old_date_index]])
-    df_2.to_csv("./data/BlackGEM_Transients_Last30Days.csv", index=False)
+    df = pd.concat([df_new, previous_history.iloc[:old_date_index]])
+
+    ## Make new columns and create new, truncated old columns
+    ## Remove bugged values
+    df['q_max'] = df['q_max'].replace(99,np.nan)
+    df['u_max'] = df['u_max'].replace(99,np.nan)
+    df['i_max'] = df['i_max'].replace(99,np.nan)
+
+    ## Round values for displaying
+    df['ra_sml']        = round(df['ra'],4)
+    df['dec_sml']       = round(df['dec'],4)
+    df['snr_zogy_sml']  = round(df['snr_zogy'],1)
+    df['iauname_short'] = df['iauname'].str[5:]
+    df['q_min_sml']     = round(df['q_min'],1)
+    df['u_min_sml']     = round(df['u_min'],1)
+    df['i_min_sml']     = round(df['i_min'],1)
+    df['q_max_sml']     = round(df['q_max'],1)
+    df['u_max_sml']     = round(df['u_max'],1)
+    df['i_max_sml']     = round(df['i_max'],1)
+    df['q_dif']         = round(df['q_max']-df['q_min'],2)
+    df['u_dif']         = round(df['u_max']-df['u_min'],2)
+    df['i_dif']         = round(df['i_max']-df['i_min'],2)
+
+    df.to_csv("./data/BlackGEM_Transients_Last30Days.csv", index=False)
 
 
 
 class TransientsView(TemplateView):
-    template_name = 'transients.html'
+    template_name = 'recent_transients.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -886,26 +936,29 @@ class TransientsView(TemplateView):
     # Read CSV data
     df = pd.read_csv('./data/BlackGEM_Transients_Last30Days.csv')
     # df = pd.read_csv('./data/BlackGEM_Transients_Last30Days_Test.csv')
+    #
+    # ## Remove bugged values
+    # df['q_max'] = df['q_max'].replace(99,np.nan)
+    # df['u_max'] = df['u_max'].replace(99,np.nan)
+    # df['i_max'] = df['i_max'].replace(99,np.nan)
+    #
+    # ## Round values for displaying
+    # df['ra_sml']            = round(df['ra'],4)
+    # df['dec_sml']           = round(df['dec'],4)
+    # df['snr_zogy_sml']  = round(df['snr_zogy'],1)
+    # df['iauname_short']       = df['iauname'].str[5:]
+    # df['q_min_sml']     = round(df['q_min'],1)
+    # df['u_min_sml']     = round(df['u_min'],1)
+    # df['i_min_sml']     = round(df['i_min'],1)
+    # df['q_max_sml']     = round(df['q_max'],1)
+    # df['u_max_sml']     = round(df['u_max'],1)
+    # df['i_max_sml']     = round(df['i_max'],1)
+    # df['q_dif']         = round(df['q_max']-df['q_min'],2)
+    # df['u_dif']         = round(df['u_max']-df['u_min'],2)
+    # df['i_dif']         = round(df['i_max']-df['i_min'],2)
 
-    ## Remove bugged values
-    df['q_max'] = df['q_max'].replace(99,np.nan)
-    df['u_max'] = df['u_max'].replace(99,np.nan)
-    df['i_max'] = df['i_max'].replace(99,np.nan)
-
-    ## Round values for displaying
-    df['ra_sml']            = round(df['ra'],4)
-    df['dec_sml']           = round(df['dec'],4)
-    df['snr_zogy_sml']  = round(df['snr_zogy'],1)
-    df['iauname_short']       = df['iauname'].str[5:]
-    df['q_min_sml']     = round(df['q_min'],1)
-    df['u_min_sml']     = round(df['u_min'],1)
-    df['i_min_sml']     = round(df['i_min'],1)
-    df['q_max_sml']     = round(df['q_max'],1)
-    df['u_max_sml']     = round(df['u_max'],1)
-    df['i_max_sml']     = round(df['i_max'],1)
-    df['q_dif']         = round(df['q_max']-df['q_min'],2)
-    df['u_dif']         = round(df['u_max']-df['u_min'],2)
-    df['i_dif']         = round(df['i_max']-df['i_min'],2)
+    # print(df.columns)
+    # print(len(df))
 
 
 
@@ -1081,6 +1134,249 @@ class TransientsView(TemplateView):
     def dash_view(request):
         return render(request, 'myapp/dash_template.html')
 
+
+## =============================================================================
+## ------------------- Codes for the Transient Search page ---------------------
+
+class TransientSearchView(TemplateView):
+    template_name = 'transient_search.html'
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+    def plot_graph_view(request):
+        # Example DataFrame
+        data = {
+            'x': [1, 2, 3, 4, 5],
+            'y': [10, 15, 13, 17, 21]
+        }
+        df = pd.DataFrame(data)
+
+        # Create a Plotly graph
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df['x'], y=df['y'], mode='lines+markers', name='Line and Marker'))
+
+        # Convert the Plotly graph to HTML
+        plot_div = plot(fig, output_type='div')
+
+        # Pass the plot_div to the template
+        return render(request, 'transient/index.html', {'plot_div': plot_div})
+
+
+def get_lightcurve_from_BGEM_ID(transient_id):
+
+    creds_user_file = str(Path.home()) + "/.bg_follow_user_john_creds"
+    creds_db_file = str(Path.home()) + "/.bg_follow_transientsdb_creds"
+
+    # Instantiate the BlackGEM object
+    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+
+    # Create an instance of the Transients Catalog
+    tc = TransientsCatalog(bg)
+
+    # Get all the associated extracted sources for this transient
+    # Note that you can specify the columns yourself, but here we use the defaults
+    bg_columns, bg_results = tc.get_associations(transient_id)
+    df_bg_assocs = pd.DataFrame(bg_results, columns=bg_columns)
+    df_bg_assocs
+
+    # Make a mjd vs. flux_zogy plot, using all the datapoints and group them by filter
+    filters = ['u', 'g', 'q', 'r', 'i', 'z']
+    colors = ['darkviolet', 'forestgreen', 'darkorange', 'orangered', 'crimson', 'dimgrey']
+    symbols = ['triangle-up', 'diamond-wide', 'circle', 'diamond-tall', 'pentagon', 'star']
+
+    source_mjd = df_bg_assocs["i.\"date-obs\""][0].to_julian_date()
+
+    gemtom_photometry = pd.DataFrame({
+        'MJD' : df_bg_assocs["i.\"date-obs\""],
+        'mag' : df_bg_assocs["x.mag_zogy"],
+        'magerr' : df_bg_assocs["x.magerr_zogy"],
+        'filter' : df_bg_assocs["i.filter"],
+    })
+
+    print(source_mjd-2400000.5)
+
+    return df_bg_assocs
+
+
+
+def BGEM_ID_View(request, bgem_id):
+    '''
+    Finds and displays data from a certain date.
+    '''
+
+    df = get_lightcurve_from_BGEM_ID(bgem_id)
+    print(df)
+    print(df.columns)
+
+    response = "You're looking at BlackGEM transient %s."
+
+    # obs_date = str(obs_date)
+    # extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
+    #
+    # data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
+    #     transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(obs_date)
+    #
+    # if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
+    # else: data_length_plural = "s"; data_length_plural_2 = "ve"
+    # if num_in_gaia == "1": gaia_plural = ""
+    # else: gaia_plural = "es"
+    # if extragalactic_sources_length == "1": extragalactic_sources_plural = ""
+    # else: extragalactic_sources_plural = "s"
+    #
+
+
+    # Example DataFrame
+
+    # Create a Plotly graph
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df['x.ra_psf_d'], y=df['x.dec_psf_d'], mode='markers', name='Line and Marker'))
+    fig.update_layout(width=400, height=400)
+    location_on_sky = plot(fig, output_type='div')
+
+    ## Lightcurve
+    filters = ['u', 'g', 'q', 'r', 'i', 'z']
+    colors = ['darkviolet', 'forestgreen', 'darkorange', 'orangered', 'crimson', 'dimgrey']
+    symbols = ['triangle-up', 'diamond-wide', 'circle', 'diamond-tall', 'pentagon', 'star']
+
+    fig = go.Figure()
+
+    for f in filters:
+        df_2 = df.loc[df['i.filter'] == f]
+        fig.add_trace(go.Scatter(
+                    x               = df_2['i."mjd-obs"'],
+                    y               = df_2['x.mag_zogy'],
+                    error_y         = dict(
+                                        type='data',
+                                        array = df_2['x.magerr_zogy'],
+                                        thickness=1,
+                                        width=3,
+                                      ),
+                    mode            = 'markers',
+                    marker_color    = colors[filters.index(f)],
+                    name            = filters[filters.index(f)],
+                    # text            = round(df_2['x.flux_zogy'],3)
+                    # symbol=symbols[filters.index(f)],
+                    # label=f
+        ))
+
+    # fig.add_trace(go.Scatter(x=df['i."mjd-obs"'], y=df['x.mag_zogy'], mode='markers', name='Line and Marker'))
+    fig.update_layout(height=600)
+    fig.update_layout(hovermode="x", xaxis=dict(tickformat ='d'),
+        title="Lightcurves",
+        xaxis_title="MJD",
+        yaxis_title="Flux",)
+    fig.update_yaxes(autorange="reversed")
+    lightcurve = plot(fig, output_type='div')
+
+    # Pass the plot_div to the template
+    # return render(request, 'transient/index.html')
+
+    ## Get the name, ra, and dec:
+
+    user_home = str(Path.home())
+    creds_user_file = user_home + "/.bg_follow_user_john_creds"
+    creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
+
+    # Instantialte the BlackGEM object, with a connection to the database
+    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+
+    qu = """\
+    SELECT id
+          ,iau_name
+          ,ra_deg
+          ,dec_deg
+      FROM runcat
+     WHERE id = '%(bgem_id)s'
+    """
+
+    params = {'bgem_id': bgem_id}
+    query = qu % (params)
+
+    l_results = bg.run_query(query)
+    source_data = pd.DataFrame(l_results, columns=['id','iau_name','ra_deg','dec_deg'])
+    iau_name    = source_data['iau_name'][0]
+    ra          = source_data['ra_deg'][0]
+    dec         = source_data['dec_deg'][0]
+    print(source_data)
+    print(l_results)
+
+    ## Detail each observation:
+
+    app = DjangoDash('EachObservation')
+
+    df_new = df.rename(columns={
+        'a.xtrsrc'          : "xtrsrc",
+        'x.ra_psf_d'        : "ra_psf_d",
+        'x.dec_psf_d'       : "dec_psf_d",
+        'x.flux_zogy'       : "flux_zogy",
+        'x.fluxerr_zogy'    : "fluxerr_zogy",
+        'x.mag_zogy'        : "mag_zogy",
+        'x.magerr_zogy'     : "magerr_zogy",
+        'i."mjd-obs"'       : "mjd_obs",
+        'i."date-obs"'      : "date_obs",
+        'i.filter'          : "filter",
+    })
+
+    ## Define the layout of the Dash app
+    app.layout = html.Div([
+        dag.AgGrid(
+            id='observation-grid',
+            rowData=df_new.to_dict('records'),
+            # rowData=rowData_new,
+            # columnDefs=[{'headerName': col, 'field': col} for col in df_new.columns],
+            # columnDefs=[
+            #             {'headerName': '1', 'field': 'x.ra_psf_d'},
+            #             {'headerName': '2', 'field': 'x.dec_psf_d'},
+            # ],
+            columnDefs=[
+                        {'headerName': 'a.xtrsrc', 'field':  'xtrsrc'},
+                        {'headerName': 'x.ra_psf_d', 'field':  'ra_psf_d'},
+                        {'headerName': 'x.dec_psf_d', 'field':  'dec_psf_d'},
+                        {'headerName': 'x.flux_zogy', 'field':  'flux_zogy'},
+                        {'headerName': 'x.fluxerr_zogy', 'field':  'fluxerr_zogy'},
+                        {'headerName': 'x.mag_zogy', 'field':  'mag_zogy'},
+                        {'headerName': 'x.magerr_zogy', 'field':  'magerr_zogy'},
+                        {'headerName': 'i.mjd_obs', 'field':  'mjd_obs'},
+                        {'headerName': 'i.date_obs', 'field':  'date_obs'},
+                        {'headerName': 'i.filter', 'field': 'filter'},
+            ],
+            defaultColDef={
+                'sortable': True,
+                'filter': True,
+                'resizable': True,
+                'editable': True,
+            },
+            columnSize="autoSize",
+            dashGridOptions = {"skipHeaderOnAutoSize": True, "rowSelection": "single"},
+            style={'height': '400px', 'width': '100%'},  # Set explicit height for the grid
+            className='ag-theme-balham'  # Add a theme for better appearance
+        ),
+        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
+        html.Div(id='output-div'),  # Div to display the information
+    ], style={'height': '400px', 'width': '100%'}
+    )
+
+    print(df_new)
+
+    # ## Render the app
+    # def obs_dash_view(request):
+    #     return render(request, 'transient/index.html')
+
+    context = {
+        "bgem_id"           : bgem_id,
+        "iau_name"          : iau_name,
+        "ra"                : ra,
+        "dec"               : dec,
+        "dataframe"         : df,
+        "columns"           : df.columns,
+        "location_on_sky"   : location_on_sky,
+        "lightcurve"        : lightcurve,
+    }
+
+    return render(request, "transient/index.html", context)
 
 
 
