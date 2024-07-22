@@ -898,13 +898,10 @@ class TransientsView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        print("\n\n\nBARK!\n\n\n")
-
         ## --- Update Recent Transients ---
         recent_transients = blackgem_recent_transients()
         dates = list(recent_transients.last_obs)
         dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
-        # print(dates[0])
 
         ## --- Check to see if the recent history is up to date. If not, update.
         ## Get yesterday's date...
@@ -930,59 +927,29 @@ class TransientsView(TemplateView):
         return context
 
 
-        # Initialize the Dash app
+    ## ===== Plot the transients from the past 30 days =====
+
+    ## --- Step 1: The 'Recent Transients' Table ---
+    ## Uses a Dash AG Grid
+
+    # Initialize the Dash app
     app = DjangoDash('RecentTransients')
 
     # Read CSV data
     df = pd.read_csv('./data/BlackGEM_Transients_Last30Days.csv')
-    # df = pd.read_csv('./data/BlackGEM_Transients_Last30Days_Test.csv')
-    #
-    # ## Remove bugged values
-    # df['q_max'] = df['q_max'].replace(99,np.nan)
-    # df['u_max'] = df['u_max'].replace(99,np.nan)
-    # df['i_max'] = df['i_max'].replace(99,np.nan)
-    #
-    # ## Round values for displaying
-    # df['ra_sml']            = round(df['ra'],4)
-    # df['dec_sml']           = round(df['dec'],4)
-    # df['snr_zogy_sml']  = round(df['snr_zogy'],1)
-    # df['iauname_short']       = df['iauname'].str[5:]
-    # df['q_min_sml']     = round(df['q_min'],1)
-    # df['u_min_sml']     = round(df['u_min'],1)
-    # df['i_min_sml']     = round(df['i_min'],1)
-    # df['q_max_sml']     = round(df['q_max'],1)
-    # df['u_max_sml']     = round(df['u_max'],1)
-    # df['i_max_sml']     = round(df['i_max'],1)
-    # df['q_dif']         = round(df['q_max']-df['q_min'],2)
-    # df['u_dif']         = round(df['u_max']-df['u_min'],2)
-    # df['i_dif']         = round(df['i_max']-df['i_min'],2)
-
-    # print(df.columns)
-    # print(len(df))
-
-
-
 
     ## Define the layout of the Dash app
     app.layout = html.Div([
         dag.AgGrid(
             id='csv-grid',
             rowData=df.to_dict('records'),
-            # columnDefs=[
-            #     {'headerName': col, 'field': col, 'valueFormatter': formatter_function} if df[col].dtype in ['float64', 'int64'] else {'headerName': col, 'field': col}
-            #     for col in df.columns
-            # ],
             columnDefs=[
-                # {'headerName': 'BGEM ID', 'field': 'runcat_id', 'checkboxSelection': True},
                 {'headerName': 'BGEM ID', 'field': 'runcat_id'},
                 {'headerName': 'IAU Name', 'field': 'iauname_short'},
                 {'headerName': 'RA', 'field': 'ra_sml'},
                 {'headerName': 'Dec', 'field': 'dec_sml'},
                 {'headerName': '#Datapoints', 'field': 'datapoints'},
                 {'headerName': 'S/N', 'field': 'snr_zogy_sml'},
-                # {'headerName': 'q (min)', 'field': 'q_min', 'minWidth': 86, 'maxWidth': 101, 'valueFormatter': {"function":"""if (isNaN(params.value)) {d3.format(",.2f")(params.value)}"""}},
-                # {'headerName': 'u (min)', 'field': 'u_min', 'minWidth': 82, 'maxWidth': 90 , 'cellRenderer': {"function":"""d3.format(",.2f")(params.value)"""}},
-                # {'headerName': 'i (min)', 'field': 'i_min', 'minWidth': 75, 'maxWidth': 90 , 'valueFormatter': {"function":"""d3.format(",.2f")(params.value)"""}},
                 {'headerName': 'q min', 'field': 'q_min_sml',   'minWidth': 75, 'maxWidth': 75},
                 {'headerName': 'q dif', 'field': 'q_dif',       'minWidth': 75, 'maxWidth': 75},
                 {'headerName': 'u min', 'field': 'u_min_sml',   'minWidth': 75, 'maxWidth': 75},
@@ -999,15 +966,20 @@ class TransientsView(TemplateView):
             },
             columnSize="autoSize",
             dashGridOptions = {"skipHeaderOnAutoSize": True, "rowSelection": "single"},
-            style={'height': '400px', 'width': '100%'},  # Set explicit height for the grid
+            style={'height': '400px', 'width': '100%'},  # Set explicit height for the table
             className='ag-theme-balham'  # Add a theme for better appearance
         ),
-        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
-        html.Div(id='output-div'),  # Div to display the information
-    ], style={'height': '2000px', 'width': '100%'}
+        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data, for when a row is clicked
+
+        ## The following are sections that show information based on the row clicked
+        html.Div(id='information-div'),     ## For Step 2: Displays the Object ID, IAU Name, RA, and Dec
+        dcc.Graph(id='lightcurve-graph'),   ## For Step 3: Displays the Lightcurve
+        html.Div(id='output-div'),          ## For Step 4: Displays the link to Transients, the 'Add to GEMTOM' button, and the full data.
+
+    ], style={'height': '1600px', 'width': '100%'} # Set explicit height for the full app, includine the extra information.
     )
 
-    ## --- Handle selecting rows ---
+    ## --- Step 1 Cont': Handle selecting rows ---
     @app.callback(
         Output('selected-row-data', 'data'),
         Input('csv-grid', 'selectedRows')
@@ -1017,6 +989,105 @@ class TransientsView(TemplateView):
             return selectedRows[0]  # Assuming single row selection
         return {}
 
+    ## --- Step 2: Display the Object ID, IAU Name, RA, and Dec ---
+    @app.callback(
+        Output('information-div', 'children'),
+        Input('selected-row-data', 'data')
+    )
+    def display_information(row_data):
+        if row_data:
+            return html.Div([
+                html.P("Object " + str(row_data["runcat_id"]), style={'font-size':'20px'}),
+                html.P(str(row_data["iauname"]), style={'font-size':'17px'}),
+                html.P("RA: " + str(row_data["ra"]) + ", Dec: " + str(row_data["dec"]), style={'font-size':'17px'}),
+                ], style={'font-family': 'Arial', 'text-align': 'center'}
+            )
+
+        return html.Div(
+            html.P("Select a row"),
+            style={'font-family': 'Arial', 'text-align': 'center'}
+        )
+
+
+    ## --- Step 3: Make the Lightcurve of a given source ---
+    @app.callback(
+        Output('lightcurve-graph', 'figure'),
+        Input('selected-row-data', 'data'),
+        prevent_initial_call=True  # Prevent the callback from being called when the app loads
+    )
+    def create_lightcurve(row_data):
+
+        if row_data:
+            bgem_id = row_data['runcat_id']
+
+            df = get_lightcurve_from_BGEM_ID(bgem_id)
+
+            # Create a Plotly graph
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=df['x.ra_psf_d'], y=df['x.dec_psf_d'], mode='markers', name='Line and Marker'))
+            fig.update_layout(width=400, height=400)
+            location_on_sky = plot(fig, output_type='div')
+
+            ## Lightcurve
+            filters = ['u', 'g', 'q', 'r', 'i', 'z']
+            colors = ['darkviolet', 'forestgreen', 'darkorange', 'orangered', 'crimson', 'dimgrey']
+            symbols = ['triangle-up', 'diamond-wide', 'circle', 'diamond-tall', 'pentagon', 'star']
+
+            fig = go.Figure()
+
+            for f in filters:
+                df_2 = df.loc[df['i.filter'] == f]
+                fig.add_trace(go.Scatter(
+                            x               = df_2['i."mjd-obs"'],
+                            y               = df_2['x.mag_zogy'],
+                            error_y         = dict(
+                                                type='data',
+                                                array = df_2['x.magerr_zogy'],
+                                                thickness=1,
+                                                width=3,
+                                              ),
+                            mode            = 'markers',
+                            marker_color    = colors[filters.index(f)],
+                            name            = filters[filters.index(f)],
+                ))
+
+            fig.update_layout(height=600)
+            fig.update_layout(hovermode="x", xaxis=dict(tickformat ='d'),
+                title="Lightcurves",
+                xaxis_title="MJD",
+                yaxis_title="Flux",)
+            fig.update_yaxes(autorange="reversed")
+            # lightcurve = plot(fig, output_type='div')
+
+            return fig
+            # return bgem_id
+
+        return go.Figure()
+
+    ## --- Step 4: Display the link to Transients, the 'Add to GEMTOM' button, and the full data ---
+
+    ## First, create the 'Add to GEMTOM' button
+    ## Callback to handle button click:
+    @app.callback(
+        Output('button-click-message', 'children'),  # Allow multiple outputs to the same component
+        Input('call-function-button', 'n_clicks'),
+        State('selected-row-data', 'data'),
+        prevent_initial_call=True  # Prevent the callback from being called when the app loads
+    )
+    ## Function to add the transient to GEMTOM:
+    def transient_to_GEMTOM(n_clicks, row_data):
+        if n_clicks > 0 and row_data:
+
+            id      = str(row_data['runcat_id'])
+            name    = str(row_data['iauname'])
+            ra      = str(row_data['ra'])
+            dec     = str(row_data['dec'])
+
+            add_to_GEMTOM(id, name, ra, dec)
+
+            return html.P(f"Target added to GEMTOM as " + name + ". Please see the Targets page.")
+
+    ## Then, assumble all the rest of the information
     @app.callback(
         Output('output-div', 'children'),
         Input('selected-row-data', 'data')
@@ -1032,7 +1103,7 @@ class TransientsView(TemplateView):
                 for k in row_data.keys()
             ]
 
-            ## Create a DataTable to display the row data
+            ## Main data (Name, RA/Dec, Datapoints, etc.)
             table_1 = dash_table.DataTable(
                 data=[row_data],
                 columns=[[{'name': k, 'id': k} for k in row_data.keys()][i] for i in [1,3,4,5,6,7,8]],
@@ -1057,34 +1128,25 @@ class TransientsView(TemplateView):
                 columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['i_min', 'i_max', 'i_xtrsrc', 'i_rb', 'i_fwhm', 'i_dif']],
                 style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
             )
+            ## Extra 1
             table_5 = dash_table.DataTable(
                 data=[row_data],
                 columns=[{'name': k, 'id': k} for k in row_data.keys()][23:29],
                 style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
             )
+            ## Extra 2
             table_6 = dash_table.DataTable(
                 data=[row_data],
                 columns=[{'name': k, 'id': k} for k in row_data.keys()][30:36],
                 style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
             )
-            ## URL for the lightcuve
-            url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/lcrequests/' + str(row_data['runcat_id']) + '_lc.jpg'
 
-            ## Find if the lightcurve exists...
-            r = requests.get(url)
-
-            if r.status_code != 404:
-                lightcurve_html = html.Img(src=url, style={'max-width': '100%', 'height': 'auto', 'display': 'block', 'margin': 'auto'})
-            else:
-                lightcurve_html = [
-                    html.A('Request Lightcurve', href='http://xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid=' + str(row_data['runcat_id']), target="_blank"),
-                    html.P("Lightcurve will be requested on click. Once done, please return in five minutes to see!")
-                ]
-
-            # if r.status_code != 404:
-            return html.Div([
-                    html.P("Object " + str(row_data["runcat_id"]) + ":"),
-                    html.Div(lightcurve_html),
+            return html.Div(
+                    [
+                    html.A("'Transients' webpage for this source", href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid=" + str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
+                    html.P(" "),
+                    # html.P("Object " + str(row_data["runcat_id"]) + ":"),
+                    # html.Div(lightcurve_html),
                     html.Div(html.Button('Add to GEMTOM', id='call-function-button', n_clicks=0, style={
                         'font-family': 'Arial',
                         'font-size': '16px',
@@ -1100,39 +1162,13 @@ class TransientsView(TemplateView):
                         'border-radius': '12px'
                     })),
                     html.P(id='button-click-message')  # Div to display the message when button is clicked
-                ] + [table_1] + [table_2] + [table_3] + [table_4] + [table_5] + [table_6],
+                    ] +
+                [table_1] + [table_2] + [table_3] + [table_4] + [table_5] + [table_6],
                 style={'font-family': 'Arial', 'text-align': 'center'})
 
-        return html.Div(
-            html.P("Select a row"),
-            style={'font-family': 'Arial', 'text-align': 'center'}
-        )
+        return
 
 
-    ## --- Add to GEMTOM ---
-    ## Callback to handle button click:
-    @app.callback(
-        Output('button-click-message', 'children'),  # Allow multiple outputs to the same component
-        Input('call-function-button', 'n_clicks'),
-        State('selected-row-data', 'data'),
-        prevent_initial_call=True  # Prevent the callback from being called when the app loads
-    )
-    ## Function to add the transient to GEMTOM:
-    def transient_to_GEMTOM(n_clicks, row_data):
-        if n_clicks > 0 and row_data:
-
-            id      = str(row_data['runcat_id'])
-            name    = str(row_data['iauname'])
-            ra      = str(row_data['ra'])
-            dec     = str(row_data['dec'])
-
-            add_to_GEMTOM(id, name, ra, dec)
-
-            return html.P(f"Target added to GEMTOM as " + name + ". Please see the Targets page.")
-
-    ## Render the app
-    def dash_view(request):
-        return render(request, 'myapp/dash_template.html')
 
 
 ## =============================================================================
@@ -1213,21 +1249,6 @@ def BGEM_ID_View(request, bgem_id):
 
     response = "You're looking at BlackGEM transient %s."
 
-    # obs_date = str(obs_date)
-    # extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
-    #
-    # data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
-    #     transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(obs_date)
-    #
-    # if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
-    # else: data_length_plural = "s"; data_length_plural_2 = "ve"
-    # if num_in_gaia == "1": gaia_plural = ""
-    # else: gaia_plural = "es"
-    # if extragalactic_sources_length == "1": extragalactic_sources_plural = ""
-    # else: extragalactic_sources_plural = "s"
-    #
-
-
     # Example DataFrame
 
     # Create a Plotly graph
@@ -1300,8 +1321,8 @@ def BGEM_ID_View(request, bgem_id):
     iau_name    = source_data['iau_name'][0]
     ra          = source_data['ra_deg'][0]
     dec         = source_data['dec_deg'][0]
-    print(source_data)
-    print(l_results)
+    # print(source_data)
+    # print(l_results)
 
     ## Detail each observation:
 
@@ -1319,6 +1340,14 @@ def BGEM_ID_View(request, bgem_id):
         'i."date-obs"'      : "date_obs",
         'i.filter'          : "filter",
     })
+    # df_new.style.format({
+    #     # 'runcat_id' : make_runcat_clickable,
+    #     'xtrsrc' : make_xtrsrc_clickable
+    # })
+
+    df_new['xtrsrc'] = df_new['xtrsrc'].apply(lambda x: f'[{x}](https://staging.apps.blackgem.org/transients/blackview/show_xtrsrc/{x})')
+
+    # print(df_new)
 
     ## Define the layout of the Dash app
     app.layout = html.Div([
@@ -1332,15 +1361,15 @@ def BGEM_ID_View(request, bgem_id):
             #             {'headerName': '2', 'field': 'x.dec_psf_d'},
             # ],
             columnDefs=[
-                        {'headerName': 'a.xtrsrc', 'field':  'xtrsrc'},
+                        {'headerName': 'a.xtrsrc', 'field':  'xtrsrc', 'cellRenderer': 'markdown'},
+                        {'headerName': 'i.mjd_obs', 'field':  'mjd_obs'},
+                        {'headerName': 'i.date_obs', 'field':  'date_obs'},
                         {'headerName': 'x.ra_psf_d', 'field':  'ra_psf_d'},
                         {'headerName': 'x.dec_psf_d', 'field':  'dec_psf_d'},
                         {'headerName': 'x.flux_zogy', 'field':  'flux_zogy'},
                         {'headerName': 'x.fluxerr_zogy', 'field':  'fluxerr_zogy'},
                         {'headerName': 'x.mag_zogy', 'field':  'mag_zogy'},
                         {'headerName': 'x.magerr_zogy', 'field':  'magerr_zogy'},
-                        {'headerName': 'i.mjd_obs', 'field':  'mjd_obs'},
-                        {'headerName': 'i.date_obs', 'field':  'date_obs'},
                         {'headerName': 'i.filter', 'field': 'filter'},
             ],
             defaultColDef={
@@ -1350,7 +1379,10 @@ def BGEM_ID_View(request, bgem_id):
                 'editable': True,
             },
             columnSize="autoSize",
-            dashGridOptions = {"skipHeaderOnAutoSize": True, "rowSelection": "single"},
+            dashGridOptions={
+                "skipHeaderOnAutoSize": True,
+                "rowSelection": "single",
+            },
             style={'height': '400px', 'width': '100%'},  # Set explicit height for the grid
             className='ag-theme-balham'  # Add a theme for better appearance
         ),
@@ -1359,7 +1391,7 @@ def BGEM_ID_View(request, bgem_id):
     ], style={'height': '400px', 'width': '100%'}
     )
 
-    print(df_new)
+    # print(df_new)
 
     # ## Render the app
     # def obs_dash_view(request):

@@ -10,23 +10,20 @@
 <link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-theme-balham.css">
 </head>
 
+<div align="center">
 
 <p>
 On this page, you can find the data for a specific BlackGEM transient.
 </p>
 <hr>
 
-<div align="center">
 
 <h4>BlackGEM ID {{ bgem_id }}<br></h4>
 <h6>{{ iau_name }}<br></h6>
 <h6>RA: {{ ra }}, Dec: {{ dec }}<br></h6>
 
-<!-- {{ dataframe }} -->
-
-<!-- <h5>Lightcurves</h5> -->
-{{ lightcurve|safe }}
-
+<a href="#" onclick='window.open("https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}");return false;'><em>Transients</em> webpage for this source</a>
+<br>&nbsp;
 <form method="post" action="{% url 'status_to_GEMTOM' %}" class="image-form">
     {% csrf_token %}
     <input type="hidden" name="id" value="{{ bgem_id }}">
@@ -35,6 +32,11 @@ On this page, you can find the data for a specific BlackGEM transient.
     <input type="hidden" name="dec" value="{{ dec }}">
     <button type="submit" class="btn btn-primary">Add to GEMTOM</button>
 </form>
+<hr>
+<!-- {{ dataframe }} -->
+
+<!-- <h5>Lightcurves</h5> -->
+{{ lightcurve|safe }}
 
 <!-- Possible Columns:
 <br>
@@ -62,9 +64,10 @@ On this page, you can find the data for a specific BlackGEM transient.
     }
 </style>
 
+
 {% load plotly_dash %}
 <div class="dash-container">
-    {% plotly_app name="EachObservation" ratio=1 %}
+    {% plotly_app name="EachObservation" ratio=0.5 %}
 </div>
 
 <hr>
