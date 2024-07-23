@@ -98,7 +98,9 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
             {% endfor %}
         </div>
         RA = {{source_ra}}  ;  Dec = {{source_dec}}<br>
-        {% if source_jpg %}
+        <em><a href='/transient/{{ source_id }}'>GEMTOM page for this transient</a></em><br>
+        <div style="height:3px;font-size:1px;">&nbsp;</div>
+        <!-- {% if source_jpg %}
             <div class="image-row">
                 <div class="image-container2">
                     <img src="{{ source_jpg }}" alt="source_jpg">
@@ -109,14 +111,14 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
         {% else %}
             <em><a href="#" onclick='window.open("http://bgtom:BG_t0m!@xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid={{source_id}}");return false;'>Request Lightcurve</a></em><br>
             <small><em>(Requesting a Lightcurve will send a request to an external server. Refresh the page in ~5 minutes to see the result!)</em></small>
-        {% endif %}
+        {% endif %} -->
         <form method="post" action="{% url 'status_to_GEMTOM' %}" class="image-form">
             {% csrf_token %}
             <input type="hidden" name="id" value="{{ source_id }}">
             <input type="hidden" name="name" value="{{ source_name }}">
             <input type="hidden" name="ra" value="{{ source_ra }}">
             <input type="hidden" name="dec" value="{{ source_dec }}">
-            <button type="submit">Add to GEMTOM</button>
+            <button type="submit" class="btn btn-primary">Add to GEMTOM</button>
         </form>
         <hr>
     {% endfor %}

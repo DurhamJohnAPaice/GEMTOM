@@ -5,7 +5,7 @@
   </div>
   <div class="col-md-6" style="text-align:right">
     {% if target|target_extra_field:"BlackGEM ID" %}
-      <a href="#" onclick='window.open("http://bgtom:BG_t0m!@xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid={{ target|target_extra_field:"BlackGEM ID" }}");return false;' class="btn btn-primary">Check for BlackGEM data</a>
+      <a href="{% url 'update-BlackGEM-data' %}?target_id={{ target.id }}&target={{ target }}&blackgem_id={{ target|target_extra_field:'BlackGEM ID' }}" class="btn btn-primary" title="Update Targets">Check for BlackGEM data</a>
     {% else %}
       <em>Enter BlackGEM ID to get lightcurve</em>
     {% endif %}

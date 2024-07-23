@@ -396,7 +396,6 @@ def update_history(days_since_last_update):
 class StatusView(TemplateView):
     template_name = 'status.html'
 
-
     def post(self, request, **kwargs):
         # date = '20240424'
         obs_date  = request.POST['obs_date']
@@ -845,8 +844,9 @@ def get_recent_blackgem_transients(days_since_last_update):
         num_sources += len(data)
         print(obs_date, "--", len(data), "\t Total:", num_sources)
 
-    ## Combine the new data together
-    df_new = pd.concat(data_list).reset_index(drop=True)
+    ## If there's any new data, combine it together
+    if data_list:
+        df_new = pd.concat(data_list).reset_index(drop=True)
 
     ## Find the index at which data is older than 30 days
     old_datestamp = datestamp - timedelta(30)
@@ -861,11 +861,14 @@ def get_recent_blackgem_transients(days_since_last_update):
         if n == 29:
             break
 
-    print(old_date_index)
-    print(len(previous_history))
-    print(len(df_new))
-    ## Combine the new data with the old, but only up to 30 days
-    df = pd.concat([df_new, previous_history.iloc[:old_date_index]])
+    # print(old_date_index)
+    # print(len(previous_history))
+    # print(len(df_new))
+    ## If there's new data, combine it with the old, but only up to 30 days
+    if data_list:
+        df = pd.concat([df_new, previous_history.iloc[:old_date_index]])
+    else:
+        df = previous_history.iloc[:old_date_index].reset_index(drop=True)
 
     ## Make new columns and create new, truncated old columns
     ## Remove bugged values
@@ -976,7 +979,7 @@ class TransientsView(TemplateView):
         dcc.Graph(id='lightcurve-graph'),   ## For Step 3: Displays the Lightcurve
         html.Div(id='output-div'),          ## For Step 4: Displays the link to Transients, the 'Add to GEMTOM' button, and the full data.
 
-    ], style={'height': '1600px', 'width': '100%'} # Set explicit height for the full app, includine the extra information.
+    ], style={'height': '1700px', 'width': '100%'} # Set explicit height for the full app, includine the extra information.
     )
 
     ## --- Step 1 Cont': Handle selecting rows ---
@@ -1144,9 +1147,9 @@ class TransientsView(TemplateView):
             return html.Div(
                     [
                     html.A("'Transients' webpage for this source", href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid=" + str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
-                    html.P(" "),
-                    # html.P("Object " + str(row_data["runcat_id"]) + ":"),
-                    # html.Div(lightcurve_html),
+                    html.Br(), html.Br(),
+                    html.A("GEMTOM page for this source", href='/transient/'+str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
+                    html.Br(), html.Br(),
                     html.Div(html.Button('Add to GEMTOM', id='call-function-button', n_clicks=0, style={
                         'font-family': 'Arial',
                         'font-size': '16px',
@@ -1203,6 +1206,8 @@ class TransientSearchView(TemplateView):
 
 def get_lightcurve_from_BGEM_ID(transient_id):
 
+    print("Getting lightcurve for transient ID " + str(transient_id) + "...")
+
     creds_user_file = str(Path.home()) + "/.bg_follow_user_john_creds"
     creds_db_file = str(Path.home()) + "/.bg_follow_transientsdb_creds"
 
@@ -1216,26 +1221,19 @@ def get_lightcurve_from_BGEM_ID(transient_id):
     # Note that you can specify the columns yourself, but here we use the defaults
     bg_columns, bg_results = tc.get_associations(transient_id)
     df_bg_assocs = pd.DataFrame(bg_results, columns=bg_columns)
-    df_bg_assocs
 
-    # Make a mjd vs. flux_zogy plot, using all the datapoints and group them by filter
-    filters = ['u', 'g', 'q', 'r', 'i', 'z']
-    colors = ['darkviolet', 'forestgreen', 'darkorange', 'orangered', 'crimson', 'dimgrey']
-    symbols = ['triangle-up', 'diamond-wide', 'circle', 'diamond-tall', 'pentagon', 'star']
+    return df_bg_assocs
 
-    source_mjd = df_bg_assocs["i.\"date-obs\""][0].to_julian_date()
+def BGEM_to_GEMTOM_photometry(df_bg_assocs):
 
     gemtom_photometry = pd.DataFrame({
-        'MJD' : df_bg_assocs["i.\"date-obs\""],
+        'mjd' : df_bg_assocs["i.\"mjd-obs\""],
         'mag' : df_bg_assocs["x.mag_zogy"],
         'magerr' : df_bg_assocs["x.magerr_zogy"],
         'filter' : df_bg_assocs["i.filter"],
     })
 
-    print(source_mjd-2400000.5)
-
-    return df_bg_assocs
-
+    return gemtom_photometry
 
 
 def BGEM_ID_View(request, bgem_id):
@@ -1543,6 +1541,7 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
 
         return redirect(form.get('referrer', '/'))
 
+
 class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):
     """
     View that handles the updating of BlackGEM data. Requires authentication.
@@ -1555,17 +1554,16 @@ class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):
         """
 
 
-        print("\n\n ===== Running UpdateZTFView... ===== \n")
+        print("\n\n ===== Running UpdateBlackGEMView... ===== \n")
 
         # QueryDict is immutable, and we want to append the remaining params to the redirect URL
         query_params = request.GET.copy()
-        print("Fetching ZTF data:")
+        print("Fetching BlackGEM data:")
         print(query_params)
 
-        target_name = query_params.pop('target', None)
-        target_id   = query_params.pop('target_id', None)
-        target_ra   = query_params.pop('target_ra', None)
-        target_dec  = query_params.pop('target_dec', None)
+        target_name         = query_params.pop('target', None)
+        target_id           = query_params.pop('target_id', None)
+        target_blackgemid   = query_params.pop('blackgem_id', None)
         # print(target_id[0])
         # print(target_ra[0])
         # print(target_dec[0])
@@ -1573,49 +1571,43 @@ class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):
         out = StringIO()
 
         # if target_id:
-        if isinstance(target_name, list):   target_name    = target_name[-1]
-        if isinstance(target_id, list):     target_id      = target_id[-1]
-        if isinstance(target_ra, list):     target_ra      = target_ra[-1]
-        if isinstance(target_dec, list):    target_dec     = target_dec[-1]
+        if isinstance(target_name, list):       target_name         = target_name[-1]
+        if isinstance(target_id, list):         target_id           = target_id[-1]
+        if isinstance(target_blackgemid, list): target_blackgemid   = target_blackgemid[-1]
 
         form = { \
             'observation_record': None, \
             'target': target_name, \
-            'files': "./data/GEMTOM_ZTF_Test.csv", \
-            'data_product_type': 'ztf_data', \
-            'referrer': '/targets/' + target_id + '/?tab=ztf'}
-
+            'files': "./data/GEMTOM_BlackGEM_Test.csv", \
+            'data_product_type': 'blackgem_data', \
+            'referrer': '/targets/' + target_id + '/'}
         # print(form)
 
-        print("-- ZTF: Looking for target...", end="\r")
+        print("-- BlackGEM: Getting Data...", end="\r")
         try:
-            lcq = lightcurve.LCQuery.from_position(target_ra, target_dec, 5)
+            BlackGEM_dataframe = get_lightcurve_from_BGEM_ID(target_blackgemid)
+            photometry = BGEM_to_GEMTOM_photometry(BlackGEM_dataframe)
+            print(BlackGEM_dataframe)
+            print(BlackGEM_dataframe.columns)
 
-            ZTF_data_full = pd.DataFrame(lcq.data)
-            ZTF_data = pd.DataFrame({'JD' : lcq.data.mjd+2400000.5, 'Magnitude' : lcq.data.mag, 'Magnitude_Error' : lcq.data.magerr})
-
-            if len(ZTF_data) == 0:
-                raise Exception("No ZTF data found within 5 arcseconds of given RA/Dec.")
-
-            print("-- ZTF: Looking for target... target found.")
-            print(lcq.__dict__)
+            print("-- BlackGEM: Getting Data... Done.")
 
             ## Save ZTF Data
-            df = ZTF_data
+            df = photometry
             # print(df)
             if not os.path.exists("./data/" + target_name + "/none/"):
                 os.makedirs("./data/" + target_name + "/none/")
-            filepath = "./data/" + target_name + "/none/" + target_name + "_ZTF_Data.csv"
-            df.to_csv(filepath)
+            filepath = "./data/" + target_name + "/none/" + target_name + "_BGEM_Data.csv"
+            df.to_csv(filepath, index=False)
 
             target_instance = Target.objects.get(pk=target_id)
 
             dp = DataProduct(
                 target=target_instance,
                 observation_record=None,
-                data=target_name + "/none/" + target_name + "_ZTF_Data.csv",
+                data=target_name + "/none/" + target_name + "_BGEM_Data.csv",
                 product_id=None,
-                data_product_type='ztf_data'
+                data_product_type='blackgem_data'
             )
             # print(dp)
             dp.save()
@@ -1663,12 +1655,140 @@ class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):
         except Exception as e:
             messages.error(
                 self.request,
-                'Error while fetching ZTF data; ' + str(e)
+                'Error while fetching BlackGEM data; ' + str(e)
             )
 
 
 
         return redirect(form.get('referrer', '/'))
+
+#
+# class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):
+#     """
+#     View that handles the updating of BlackGEM data. Requires authentication.
+#     """
+#
+#     def get(self, request, *args, **kwargs):
+#         """
+#         Method that handles the GET requests for this view. Calls the management command to update the reduced data and
+#         adds a hint using the messages framework about automation.
+#         """
+#
+#
+#         print("\n\n ===== Running UpdateZTFView... ===== \n")
+#
+#         # QueryDict is immutable, and we want to append the remaining params to the redirect URL
+#         query_params = request.GET.copy()
+#         print("Fetching ZTF data:")
+#         print(query_params)
+#
+#         target_name = query_params.pop('target', None)
+#         target_id   = query_params.pop('target_id', None)
+#         target_ra   = query_params.pop('target_ra', None)
+#         target_dec  = query_params.pop('target_dec', None)
+#         # print(target_id[0])
+#         # print(target_ra[0])
+#         # print(target_dec[0])
+#
+#         out = StringIO()
+#
+#         # if target_id:
+#         if isinstance(target_name, list):   target_name    = target_name[-1]
+#         if isinstance(target_id, list):     target_id      = target_id[-1]
+#         if isinstance(target_ra, list):     target_ra      = target_ra[-1]
+#         if isinstance(target_dec, list):    target_dec     = target_dec[-1]
+#
+#         form = { \
+#             'observation_record': None, \
+#             'target': target_name, \
+#             'files': "./data/GEMTOM_ZTF_Test.csv", \
+#             'data_product_type': 'ztf_data', \
+#             'referrer': '/targets/' + target_id + '/?tab=ztf'}
+#
+#         # print(form)
+#
+#         print("-- ZTF: Looking for target...", end="\r")
+#         try:
+#             lcq = lightcurve.LCQuery.from_position(target_ra, target_dec, 5)
+#
+#             ZTF_data_full = pd.DataFrame(lcq.data)
+#             ZTF_data = pd.DataFrame({'JD' : lcq.data.mjd+2400000.5, 'Magnitude' : lcq.data.mag, 'Magnitude_Error' : lcq.data.magerr})
+#
+#             if len(ZTF_data) == 0:
+#                 raise Exception("No ZTF data found within 5 arcseconds of given RA/Dec.")
+#
+#             print("-- ZTF: Looking for target... target found.")
+#             print(lcq.__dict__)
+#
+#             ## Save ZTF Data
+#             df = ZTF_data
+#             # print(df)
+#             if not os.path.exists("./data/" + target_name + "/none/"):
+#                 os.makedirs("./data/" + target_name + "/none/")
+#             filepath = "./data/" + target_name + "/none/" + target_name + "_ZTF_Data.csv"
+#             df.to_csv(filepath)
+#
+#             target_instance = Target.objects.get(pk=target_id)
+#
+#             dp = DataProduct(
+#                 target=target_instance,
+#                 observation_record=None,
+#                 data=target_name + "/none/" + target_name + "_ZTF_Data.csv",
+#                 product_id=None,
+#                 data_product_type='ztf_data'
+#             )
+#             # print(dp)
+#             dp.save()
+#
+#             ## Ingest the data
+#             successful_uploads = []
+#
+#             try:
+#                 run_hook('data_product_post_upload', dp)
+#                 reduced_data = run_data_processor(dp)
+#
+#                 if not settings.TARGET_PERMISSIONS_ONLY:
+#                     for group in form.cleaned_data['groups']:
+#                         assign_perm('tom_dataproducts.view_dataproduct', group, dp)
+#                         assign_perm('tom_dataproducts.delete_dataproduct', group, dp)
+#                         assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
+#                 successful_uploads.append(str(dp))
+#
+#             except InvalidFileFormatException as iffe:
+#                 print("Invalid File Format Exception!")
+#                 print(iffe)
+#                 ReducedDatum.objects.filter(data_product=dp).delete()
+#                 dp.delete()
+#                 messages.error(
+#                     self.request,
+#                     'File format invalid for file {0} -- Error: {1}'.format(str(dp), iffe)
+#                 )
+#             except Exception as iffe:
+#                 print("Exception!")
+#                 print(iffe)
+#                 ReducedDatum.objects.filter(data_product=dp).delete()
+#                 dp.delete()
+#                 messages.error(self.request, 'There was a problem processing your file: {0}'.format(str(dp)))
+#
+#             if successful_uploads:
+#                 print("Successful upload!")
+#                 messages.success(
+#                     self.request,
+#                     'Successfully uploaded: {0}'.format('\n'.join([p for p in successful_uploads]))
+#                 )
+#             else:
+#                 print("Upload unsuccessful!")
+#
+#
+#         except Exception as e:
+#             messages.error(
+#                 self.request,
+#                 'Error while fetching ZTF data; ' + str(e)
+#             )
+#
+#
+#
+#         return redirect(form.get('referrer', '/'))
 
 #
 # class AboutView(TemplateView):

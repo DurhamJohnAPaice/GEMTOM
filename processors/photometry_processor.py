@@ -8,8 +8,6 @@ import numpy as np
 from tom_dataproducts.data_processor import DataProcessor
 from tom_dataproducts.exceptions import InvalidFileFormatException
 
-# print("Photometry Initialisation Bark!")
-
 class PhotometryProcessor(DataProcessor):
     def process_data(self, data_product):
         """
@@ -22,7 +20,6 @@ class PhotometryProcessor(DataProcessor):
         :returns: python list of 2-tuples, each with a timestamp and corresponding data
         :rtype: list
         """
-        print("Bark!")
 
         mimetype = mimetypes.guess_type(data_product.data.path)[0]
         if mimetype in self.PLAINTEXT_MIMETYPES:
@@ -44,11 +41,8 @@ class PhotometryProcessor(DataProcessor):
         :returns: python list containing the photometric data from the DataProduct
         :rtype: list
         """
-        print("\n\n\nBark!\n\n\n")
 
-        # print("Processing Bark 1!")
         photometry = []
-        # print("Test2!")
 
         data = astropy_ascii.read(data_product.data.path)
         if len(data) < 1:
@@ -78,25 +72,21 @@ class PhotometryProcessor(DataProcessor):
 
         ## If Telescope, Filter, and Source columns aren't present, then create and fill in.
         if 'telescope' not in data.colnames:
-            # print("Test!")
             s           = ['Unknown Telescope']
             s           *= len(data)
             data["telescope"] = s
 
         if 'filter' not in data.colnames:
-            # print("Test!")
             s           = ['Unknown Filter']
             s           *= len(data)
             data["filter"] = s
 
         if 'source' not in data.colnames:
-            # print("Test!")
             s           = ['Unknown Source']
             s           *= len(data)
             data["source"] = s
 
         if 'limit' not in data.colnames:
-            # print("Test!")
             s           = ['']
             s           *= len(data)
             data["limit"] = s

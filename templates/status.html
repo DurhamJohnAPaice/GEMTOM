@@ -4,6 +4,7 @@
 <head>
 <meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 
 
@@ -141,6 +142,8 @@ On this page, you can find the status of the telescope and recent observations.
     }
 </style>
 
+
+
 <!-- <p>{{ images_daily_text_1 }}</p> -->
 {% if extragalactic_sources_id %}
     {% for image_url, source_id, source_name, source_ra, source_dec, source_jpg in images_daily_text_1 %}
@@ -155,6 +158,10 @@ On this page, you can find the status of the telescope and recent observations.
             {% endfor %}
         </div>
         RA = {{source_ra}}  ;  Dec = {{source_dec}}<br>
+        <!-- <div>
+            {% load plotly_dash %}
+            {% plotly_app name="DynamicGraphApp" %}
+        </div> -->
         {% if source_jpg %}
             <div class="image-row">
                 <div class="image-container2">
