@@ -40,7 +40,7 @@ import numpy as np
 from django_plotly_dash import DjangoDash
 import dash_ag_grid as dag
 import json
-import dash_table.Format as Format
+# import dash_table.Format as Format
 
 ## For the Transient View
 from pathlib import Path
@@ -110,6 +110,11 @@ class TargetImportView(LoginRequiredMixin, TemplateView):
             request,
             'Targets created: {}'.format(len(result['targets']))
         )
+
+        # ## Lastly, get the BlackGEM lightcurve...
+        # print(data)
+        # print(request)
+
         for error in result['errors']:
             messages.warning(request, error)
         return redirect(reverse('tom_targets:list'))
@@ -173,78 +178,24 @@ def add_to_GEMTOM(id, name, ra, dec):
 
     gemtom_dataframe = gemtom_dataframe.reindex(gemtom_dataframe.index)
 
-    # print(gemtom_dataframe)
-
     gemtom_dataframe.to_csv("./Data/processed_file.csv", index=False)
     csv_stream = StringIO(open(os.getcwd()+"/Data/processed_file.csv", "rb").read().decode('utf-8'), newline=None)
 
     ## And finally, read them in!
     result = import_targets(csv_stream)
-    # for target in result['targets']:
-    #     target.give_user_access(request.user)
-    # messages.success(
-    #     request,
-    #     'Targets created: {}'.format(len(result['targets']))
-    # )
-    # for error in result['errors']:
-    #     messages.warning(request, error)
+
     return redirect(reverse('tom_targets:list'))
 
-def ID_to_GEMTOM(request):
-    '''
-    Imports a target from the BlackGEM ID
-    '''
-
-    transient_id = request.POST.get('id')
-
-    print(transient_id)
-
-    # import pandas as pd
-    # from pathlib import Path
-    # from blackpy import BlackGEM
-    #
-    # user_home = str(Path.home())
-    # creds_user_file = user_home + "/.bg_follow_user_john_creds"
-    # creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
-    # bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
-    #
-    # params = {'transient_id': transient_id,}
-    #
-    # qu = """\
-    # SELECT iau_name
-    #       ,ra_deg
-    #       ,dec_deg
-    #       ,id
-    #   FROM runcat
-    #  WHERE id = %(transient_id)s
-    # """
-    #
-    # query = qu % (params)
-    #
-    # l_results = bg.run_query(query)
-    # source_data = pd.DataFrame(l_results, columns=['name','ra','dec','id',])
-    #
-    # gemtom_dataframe_latter = pd.DataFrame({
-    #     'type' : ['SIDEREAL'],
-    #     'public' : ['Public']
-    # })
-    #
-    # gemtom_dataframe = pd.concat([source_data, gemtom_dataframe_latter]).reset_index(drop=True)
-    #
-    # gemtom_dataframe.to_csv("./Data/processed_file.csv", index=False)
-    # csv_stream = StringIO(open(os.getcwd()+"/Data/processed_file.csv", "rb").read().decode('utf-8'), newline=None)
-    #
-    # ## And finally, read them in!
-    # result = import_targets(csv_stream)
-    # for target in result['targets']:
-    #     target.give_user_access(request.user)
-    # messages.success(
-    #     request,
-    #     'Targets created: {}'.format(len(result['targets']))
-    # )
-    # for error in result['errors']:
-    #     messages.warning(request, error)
-    return redirect(reverse('tom_targets:list'))
+# def ID_to_GEMTOM(request):
+#     '''
+#     Imports a target from the BlackGEM ID
+#     '''
+#
+#     transient_id = request.POST.get('id')
+#
+#     print(transient_id)
+#
+#     return redirect(reverse('tom_targets:list'))
 
 
 
@@ -777,17 +728,16 @@ def blackgem_recent_transients():
 
     return recent_transients
 
-def update_recent_transients(days_since_last_update):
-    '''
-    Fetches BlackGEM's recent transients and updates
-    '''
-
-    get_recent_blackgem_transients(days_since_last_update)
+# def update_recent_transients(days_since_last_update):
+#     '''
+#     Fetches BlackGEM's recent transients and updates
+#     '''
+#
+#     get_recent_blackgem_transients(days_since_last_update)
 
 
 
 def get_recent_blackgem_transients(days_since_last_update):
-    print(days_since_last_update)
 
     obs_date = date.today() - timedelta(1)
     extended_obs_date = obs_date.strftime("%Y-%m-%d")
@@ -811,6 +761,7 @@ def get_recent_blackgem_transients(days_since_last_update):
         dates.append(this_date)
 
 
+    update_data = False
 
     data_list = []
 
@@ -846,52 +797,94 @@ def get_recent_blackgem_transients(days_since_last_update):
 
     ## If there's any new data, combine it together
     if data_list:
+        update_data = True
         df_new = pd.concat(data_list).reset_index(drop=True)
 
-    ## Find the index at which data is older than 30 days
-    old_datestamp = datestamp - timedelta(30)
-    old_date = old_datestamp.strftime("%Y-%m-%d")
-    old_date_index = (previous_history['last_obs'].values == old_date).argmax()
-    n = 0
-    while old_date_index == 0:
-        n += 1
-        old_datestamp = datestamp - timedelta(30+n)
+    ## --- Remove data older than 30 days ---
+    ## First, is there any data older than 30 days?
+    oldest_date = previous_history['last_obs'].iloc[-1]
+    oldest_datestamp = datetime.strptime(oldest_date, "%Y-%m-%d")
+    age_of_oldest_data = (datestamp - oldest_datestamp).days
+    print("Oldest data is " + str(age_of_oldest_data) + " days old (" + oldest_date + ").")
+
+    ## If there is...
+    if age_of_oldest_data > 30:
+        update_data = True
+        print("Removing data older than 30 days...")
+
+        ## We need to find the index at which data is older than 30 days
+        ## First, what day was it 31 days ago?
+        old_datestamp = datestamp - timedelta(31)
         old_date = old_datestamp.strftime("%Y-%m-%d")
+        print("Looking for data from 31 days ago (" + old_date + ")...")
+
+        ## Find the first occurance of this value in the list.
         old_date_index = (previous_history['last_obs'].values == old_date).argmax()
-        if n == 29:
-            break
 
-    # print(old_date_index)
-    # print(len(previous_history))
-    # print(len(df_new))
-    ## If there's new data, combine it with the old, but only up to 30 days
-    if data_list:
-        df = pd.concat([df_new, previous_history.iloc[:old_date_index]])
+        ## Sometimes that date doesn't show up.
+        ## In those circumstances, we iterate back through time until we find the next date.
+        n = 0
+        while old_date_index == 0:
+            print("No data from " + old_date + "; continuing to the next date...")
+            n += 1
+
+            ## Each time, we find the new date, and the index of its first occurance.
+            old_datestamp = datestamp - timedelta(31+n)
+            old_date = old_datestamp.strftime("%Y-%m-%d")
+            old_date_index = (previous_history['last_obs'].values == old_date).argmax()
+
+            ## To prevent an infinite loop, which shouldn't happen, we do this.
+            if n == age_of_oldest_data:
+                print("This shouldn't print! Please check your data, something's gone wrong...")
+                break
+
+        print("Data found from " + old_date + ".")
+        ## When we save data, save only up to this index.
+
+        ## If there's new data...
+        if data_list:
+            ## ...combine it with the old.
+            df = pd.concat([df_new, previous_history.iloc[:old_date_index]]).reset_index(drop=True)
+        else:
+            ## Otherwise, just use the old data.
+            df = previous_history.iloc[:old_date_index].reset_index(drop=True)
+
+        oldest_date = df['last_obs'].iloc[-1]
+        oldest_datestamp = datetime.strptime(oldest_date, "%Y-%m-%d")
+        age_of_oldest_data = (datestamp - oldest_datestamp).days
+        print("Oldest data is now " + str(age_of_oldest_data) + " days old.")
     else:
-        df = previous_history.iloc[:old_date_index].reset_index(drop=True)
+        ## If there's no data older than 30 days, just use it all!
+        if data_list:
+            df = pd.concat([df_new, previous_history]).reset_index(drop=True)
+        else:
+            df = previous_history
 
-    ## Make new columns and create new, truncated old columns
-    ## Remove bugged values
-    df['q_max'] = df['q_max'].replace(99,np.nan)
-    df['u_max'] = df['u_max'].replace(99,np.nan)
-    df['i_max'] = df['i_max'].replace(99,np.nan)
+    if update_data:
+        print("Updating Recent History...")
+        ## Make new columns and create new, truncated old columns
+        ## Remove bugged values
+        df['q_max'] = df['q_max'].replace(99,np.nan)
+        df['u_max'] = df['u_max'].replace(99,np.nan)
+        df['i_max'] = df['i_max'].replace(99,np.nan)
 
-    ## Round values for displaying
-    df['ra_sml']        = round(df['ra'],4)
-    df['dec_sml']       = round(df['dec'],4)
-    df['snr_zogy_sml']  = round(df['snr_zogy'],1)
-    df['iauname_short'] = df['iauname'].str[5:]
-    df['q_min_sml']     = round(df['q_min'],1)
-    df['u_min_sml']     = round(df['u_min'],1)
-    df['i_min_sml']     = round(df['i_min'],1)
-    df['q_max_sml']     = round(df['q_max'],1)
-    df['u_max_sml']     = round(df['u_max'],1)
-    df['i_max_sml']     = round(df['i_max'],1)
-    df['q_dif']         = round(df['q_max']-df['q_min'],2)
-    df['u_dif']         = round(df['u_max']-df['u_min'],2)
-    df['i_dif']         = round(df['i_max']-df['i_min'],2)
+        ## Round values for displaying
+        df['ra_sml']        = round(df['ra'],4)
+        df['dec_sml']       = round(df['dec'],4)
+        df['snr_zogy_sml']  = round(df['snr_zogy'],1)
+        df['iauname_short'] = df['iauname'].str[5:]
+        df['q_min_sml']     = round(df['q_min'],1)
+        df['u_min_sml']     = round(df['u_min'],1)
+        df['i_min_sml']     = round(df['i_min'],1)
+        df['q_max_sml']     = round(df['q_max'],1)
+        df['u_max_sml']     = round(df['u_max'],1)
+        df['i_max_sml']     = round(df['i_max'],1)
+        df['q_dif']         = round(df['q_max']-df['q_min'],2)
+        df['u_dif']         = round(df['u_max']-df['u_min'],2)
+        df['i_dif']         = round(df['i_max']-df['i_min'],2)
 
-    df.to_csv("./data/BlackGEM_Transients_Last30Days.csv", index=False)
+
+        df.to_csv("./data/BlackGEM_Transients_Last30Days.csv", index=False)
 
 
 
@@ -922,7 +915,7 @@ class TransientsView(TemplateView):
         yesterday_date_string = yesterday_date.strftime("%Y%m%d")
 
         if days_since_last_update > 0:
-            update_recent_transients(days_since_last_update)
+            get_recent_blackgem_transients(days_since_last_update)
             recent_transients = blackgem_recent_transients()
             dates = list(recent_transients.last_obs)
             dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
@@ -1102,7 +1095,7 @@ class TransientsView(TemplateView):
 
             # Format columns
             formatted_columns = [
-                {'name': k, 'id': k, 'type': 'numeric', 'format': Format.Format(precision=2, scheme=Format.Scheme.fixed).group(True), 'presentation': 'input'} if isinstance(row_data[k], (int, float)) else {'name': k, 'id': k}
+                {'name': k, 'id': k, 'type': 'numeric', 'format': dash_table.Format.Format(precision=2, scheme=dash_table.Format.Scheme.fixed).group(True), 'presentation': 'input'} if isinstance(row_data[k], (int, float)) else {'name': k, 'id': k}
                 for k in row_data.keys()
             ]
 
@@ -1542,6 +1535,82 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
         return redirect(form.get('referrer', '/'))
 
 
+def add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid):
+
+    form = { \
+        'observation_record': None, \
+        'target': target_name, \
+        'files': "./data/GEMTOM_BlackGEM_Test.csv", \
+        'data_product_type': 'blackgem_data', \
+        'referrer': '/targets/' + target_id + '/'}
+    # print(form)
+
+    print("-- BlackGEM: Getting Data...", end="\r")
+
+    successful_uploads = []
+    iffe = ""
+    iffe2 = ""
+    iffe3 = ""
+
+    try:
+        BlackGEM_dataframe = get_lightcurve_from_BGEM_ID(target_blackgemid)
+        photometry = BGEM_to_GEMTOM_photometry(BlackGEM_dataframe)
+        print(BlackGEM_dataframe)
+        print(BlackGEM_dataframe.columns)
+
+        print("-- BlackGEM: Getting Data... Done.")
+
+        ## Save ZTF Data
+        df = photometry
+        # print(df)
+        if not os.path.exists("./data/" + target_name + "/none/"):
+            os.makedirs("./data/" + target_name + "/none/")
+        filepath = "./data/" + target_name + "/none/" + target_name + "_BGEM_Data.csv"
+        df.to_csv(filepath, index=False)
+
+        target_instance = Target.objects.get(pk=target_id)
+
+        dp = DataProduct(
+            target=target_instance,
+            observation_record=None,
+            data=target_name + "/none/" + target_name + "_BGEM_Data.csv",
+            product_id=None,
+            data_product_type='blackgem_data'
+        )
+        # print(dp)
+        dp.save()
+
+        ## Ingest the data
+        try:
+            run_hook('data_product_post_upload', dp)
+            reduced_data = run_data_processor(dp)
+
+            if not settings.TARGET_PERMISSIONS_ONLY:
+                for group in form.cleaned_data['groups']:
+                    assign_perm('tom_dataproducts.view_dataproduct', group, dp)
+                    assign_perm('tom_dataproducts.delete_dataproduct', group, dp)
+                    assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
+            successful_uploads.append(str(dp))
+
+        except InvalidFileFormatException as iffe:
+            print("Invalid File Format Exception!")
+            print(iffe)
+            ReducedDatum.objects.filter(data_product=dp).delete()
+            dp.delete()
+
+        except Exception as iffe2:
+            print("Exception!")
+            print(iffe2)
+            ReducedDatum.objects.filter(data_product=dp).delete()
+            dp.delete()
+
+    except Exception as iffe3:
+        print(iffe3)
+
+    return successful_uploads, dp, iffe, iffe2, iffe3, form
+
+
+
 class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):
     """
     View that handles the updating of BlackGEM data. Requires authentication.
@@ -1564,9 +1633,6 @@ class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):
         target_name         = query_params.pop('target', None)
         target_id           = query_params.pop('target_id', None)
         target_blackgemid   = query_params.pop('blackgem_id', None)
-        # print(target_id[0])
-        # print(target_ra[0])
-        # print(target_dec[0])
 
         out = StringIO()
 
@@ -1575,90 +1641,30 @@ class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):
         if isinstance(target_id, list):         target_id           = target_id[-1]
         if isinstance(target_blackgemid, list): target_blackgemid   = target_blackgemid[-1]
 
-        form = { \
-            'observation_record': None, \
-            'target': target_name, \
-            'files': "./data/GEMTOM_BlackGEM_Test.csv", \
-            'data_product_type': 'blackgem_data', \
-            'referrer': '/targets/' + target_id + '/'}
-        # print(form)
+        ## Upload to GEMTOM
+        successful_uploads, dp, iffe, iffe2, iffe3, form = add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid)
 
-        print("-- BlackGEM: Getting Data...", end="\r")
-        try:
-            BlackGEM_dataframe = get_lightcurve_from_BGEM_ID(target_blackgemid)
-            photometry = BGEM_to_GEMTOM_photometry(BlackGEM_dataframe)
-            print(BlackGEM_dataframe)
-            print(BlackGEM_dataframe.columns)
-
-            print("-- BlackGEM: Getting Data... Done.")
-
-            ## Save ZTF Data
-            df = photometry
-            # print(df)
-            if not os.path.exists("./data/" + target_name + "/none/"):
-                os.makedirs("./data/" + target_name + "/none/")
-            filepath = "./data/" + target_name + "/none/" + target_name + "_BGEM_Data.csv"
-            df.to_csv(filepath, index=False)
-
-            target_instance = Target.objects.get(pk=target_id)
-
-            dp = DataProduct(
-                target=target_instance,
-                observation_record=None,
-                data=target_name + "/none/" + target_name + "_BGEM_Data.csv",
-                product_id=None,
-                data_product_type='blackgem_data'
+        ## Return messages for sucess or failute
+        if successful_uploads:
+            print("Successful upload!")
+            messages.success(
+                self.request,
+                'Successfully uploaded: {0}'.format('\n'.join([p for p in successful_uploads]))
             )
-            # print(dp)
-            dp.save()
-
-            ## Ingest the data
-            successful_uploads = []
-
-            try:
-                run_hook('data_product_post_upload', dp)
-                reduced_data = run_data_processor(dp)
-
-                if not settings.TARGET_PERMISSIONS_ONLY:
-                    for group in form.cleaned_data['groups']:
-                        assign_perm('tom_dataproducts.view_dataproduct', group, dp)
-                        assign_perm('tom_dataproducts.delete_dataproduct', group, dp)
-                        assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
-                successful_uploads.append(str(dp))
-
-            except InvalidFileFormatException as iffe:
-                print("Invalid File Format Exception!")
-                print(iffe)
-                ReducedDatum.objects.filter(data_product=dp).delete()
-                dp.delete()
+        else:
+            print("Upload unsuccessful!")
+            if iffe:
                 messages.error(
                     self.request,
                     'File format invalid for file {0} -- Error: {1}'.format(str(dp), iffe)
                 )
-            except Exception as iffe:
-                print("Exception!")
-                print(iffe)
-                ReducedDatum.objects.filter(data_product=dp).delete()
-                dp.delete()
-                messages.error(self.request, 'There was a problem processing your file: {0}'.format(str(dp)))
-
-            if successful_uploads:
-                print("Successful upload!")
-                messages.success(
+            if iffe2:
+                messages.error(self.request, 'There was a problem processing your file: {0} -- Error: {1}'.format(str(dp), iffe2))
+            if iffe3:
+                messages.error(
                     self.request,
-                    'Successfully uploaded: {0}'.format('\n'.join([p for p in successful_uploads]))
+                    'Error while fetching BlackGEM data; ' + str(iffe2)
                 )
-            else:
-                print("Upload unsuccessful!")
-
-
-        except Exception as e:
-            messages.error(
-                self.request,
-                'Error while fetching BlackGEM data; ' + str(e)
-            )
-
-
 
         return redirect(form.get('referrer', '/'))
 

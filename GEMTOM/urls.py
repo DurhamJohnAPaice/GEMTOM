@@ -29,7 +29,7 @@ urlpatterns = [
     path('transient/<int:bgem_id>/', BGEM_ID_View, name='bgem_id'),
     path('status/<int:obs_date>/', NightView, name='night'),
     path('status_to_GEMTOM/', status_to_GEMTOM, name='status_to_GEMTOM'),
-    path('ID_to_GEMTOM/', ID_to_GEMTOM, name='ID_to_GEMTOM'),
+    # path('ID_to_GEMTOM/', ID_to_GEMTOM, name='ID_to_GEMTOM'),
     path('handle_input/', handle_input, name='handle_input'),
     path('search_BGEM_ID/', search_BGEM_ID, name='search_BGEM_ID'),
     # path('dash/', include('django_plotly_dash.urls')),
