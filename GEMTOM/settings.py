@@ -336,7 +336,8 @@ OPEN_URLS = []
 
 HOOKS = {
     # 'target_post_save': 'tom_common.hooks.target_post_save',
-    'target_post_save': 'GEMTOM.hooks.after_uploading_targets',
+    'target_post_save': 'GEMTOM.hooks.after_uploading_target',
+    'target_post_upload': 'GEMTOM.hooks.after_uploading_target',
     # 'observation_change_state': 'tom_common.hooks.observation_change_state',
     'observation_change_state': 'hooks.observation_change_state',
     'data_product_post_upload': 'tom_dataproducts.hooks.data_product_post_upload',

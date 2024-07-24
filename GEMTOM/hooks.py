@@ -3,11 +3,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 def after_uploading_target(target):
-    logger.info(
-        'New target created: %s',
-        target
-    )
-    print('New target created:', target)
+    # logger.info(
+    #     'New target made: %s',
+    #     target
+    # )
+    print('New target made:', target)
 
 
 def observation_change_state(observation, previous_status):

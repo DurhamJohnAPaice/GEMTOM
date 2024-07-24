@@ -1051,7 +1051,7 @@ class TransientsView(TemplateView):
             fig.update_layout(hovermode="x", xaxis=dict(tickformat ='d'),
                 title="Lightcurves",
                 xaxis_title="MJD",
-                yaxis_title="Flux",)
+                yaxis_title="Magnitude",)
             fig.update_yaxes(autorange="reversed")
             # lightcurve = plot(fig, output_type='div')
 
@@ -1280,7 +1280,7 @@ def BGEM_ID_View(request, bgem_id):
     fig.update_layout(hovermode="x", xaxis=dict(tickformat ='d'),
         title="Lightcurves",
         xaxis_title="MJD",
-        yaxis_title="Flux",)
+        yaxis_title="Magnitude",)
     fig.update_yaxes(autorange="reversed")
     lightcurve = plot(fig, output_type='div')
 
