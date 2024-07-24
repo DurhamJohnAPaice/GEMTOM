@@ -1081,7 +1081,8 @@ class TransientsView(TemplateView):
 
             add_to_GEMTOM(id, name, ra, dec)
 
-            return html.P(f"Target added to GEMTOM as " + name + ". Please see the Targets page.")
+            return [html.P(f"Transient added to GEMTOM as " + name, style={'display': 'inline-block'}), html.A(". Please see the Targets page", href="/targets/", target="_blank", style={'text-decoration':'None', 'display': 'inline-block'}), html.P(".", style={'display': 'inline-block'})]
+            # return [html.P(f"Target added to GEMTOM as " + name + ". Please see the ", style={'display': 'inline-block'}), html.P("Targets page.", style={'display': 'inline-block'})]
 
     ## Then, assumble all the rest of the information
     @app.callback(
@@ -1139,9 +1140,9 @@ class TransientsView(TemplateView):
 
             return html.Div(
                     [
-                    html.A("'Transients' webpage for this source", href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid=" + str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
+                    html.A("'Transients' webpage for this transient", href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid=" + str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
                     html.Br(), html.Br(),
-                    html.A("GEMTOM page for this source", href='/transient/'+str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
+                    html.A("GEMTOM page for this transient", href='/transient/'+str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
                     html.Br(), html.Br(),
                     html.Div(html.Button('Add to GEMTOM', id='call-function-button', n_clicks=0, style={
                         'font-family': 'Arial',
