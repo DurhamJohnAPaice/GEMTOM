@@ -234,6 +234,19 @@ FACILITIES = {
 
 ## Integrating Single-Target Data Service quieries
 ## https://tom-toolkit.readthedocs.io/en/stable/managing_data/single_target_data_service.html
+SINGLE_TARGET_DATA_SERVICES = {
+    'ATLAS': {
+        'class': 'tom_dataproducts.single_target_data_service.atlas.AtlasForcedPhotometryService',
+        'url': "https://fallingstar-data.com/forcedphot",
+        'api_key': os.getenv('ATLAS_FORCED_PHOTOMETRY_API_KEY', 'd9403159bb9a3077b64139b864a228b701650fdb')
+    },
+    'PANSTARRS': {
+        'class': 'tom_dataproducts.single_target_data_service.panstarrs_service.panstarrs.PanstarrsSingleTargetDataService',
+        'url': 'https://catalogs.mast.stsci.edu/api/v0.1/panstarrs',  # MAST Base URL
+        # MAST_API_TOKEN is not required for public data
+        'api_key': os.getenv('MAST_API_TOKEN', 'MAST_API_TOKEN not set')
+    },
+}
 
 # Define the valid data product types for your TOM.
 # This is a dictionary of tuples to be used as ChoiceField options, with the first element being the type and the
@@ -247,6 +260,8 @@ DATA_PRODUCT_TYPES = {
     'image_file': ('image_file', 'Image File'),
     'ztf_data': ('ztf_data', 'ZTF Photometry'),
     'blackgem_data': ('blackgem_data', 'BlackGEM Photometry'),
+    'atlas_photometry': ('atlas_photometry', 'Atlas Photometry'),
+    'panstarrs_photometry': ('panstarrs_photometry', 'PanSTARRS Photometry'),
 
     # 'new_photometry': ('photometry', 'New Photometry'),
     # 'test_type': ('test_type', 'Test Type')
@@ -263,6 +278,8 @@ DATA_PROCESSORS = {
     # 'photometry': 'processors.new_photometry_processor.NewPhotometryProcessor',
     'spectroscopy': 'tom_dataproducts.processors.spectroscopy_processor.SpectroscopyProcessor',
     # 'ztf': 'processors.ztf_processor.ZTFProcessor',
+    'atlas_photometry': 'tom_dataproducts.processors.atlas_processor.AtlasProcessor',
+    'panstarrs_photometry': 'tom_dataproducts.processors.panstarrs_processor.PanstarrsProcessor',
 }
 
 TOM_FACILITY_CLASSES = [
