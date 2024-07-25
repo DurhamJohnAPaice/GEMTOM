@@ -198,7 +198,78 @@ def add_to_GEMTOM(id, name, ra, dec):
 #     return redirect(reverse('tom_targets:list'))
 
 
+def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 
+    ## Lightcurve
+    filters = ['u', 'g', 'q', 'r', 'i', 'z']
+    colors = ['darkviolet', 'forestgreen', 'darkorange', 'orangered', 'crimson', 'dimgrey']
+    symbols = ['triangle-up', 'diamond-wide', 'circle', 'diamond-tall', 'pentagon', 'star']
+
+    fig = go.Figure()
+    # print(df_bgem_lightcurve['x.mag_zogy'])
+    # print(df_bgem_lightcurve['x.magerr_zogy'])
+    print(df_bgem_lightcurve.columns)
+    print(df_limiting_mag.columns)
+
+    for f in filters:
+        df_2 = df_bgem_lightcurve.loc[df_bgem_lightcurve['i.filter'] == f]
+        df_limiting_mag_2 = df_limiting_mag.loc[df_limiting_mag['filter'] == f]
+
+        print(f+":")
+        print(df_2['x.mag_zogy'])
+        print(df_2['x.magerr_zogy'])
+
+        fig.add_trace(go.Scatter(
+                    x               = df_2['i."mjd-obs"'],
+                    y               = df_2['x.mag_zogy'],
+                    error_y         = dict(
+                                        type='data',
+                                        array = df_2['x.magerr_zogy'],
+                                        thickness=1,
+                                        width=3,
+                                      ),
+                    mode            = 'markers',
+                    marker_color    = colors[filters.index(f)],
+                    name            = filters[filters.index(f)],
+                    hovertemplate   =
+                        'MJD: %{x:.3f}<br>' +
+                        'Mag: %{y:.3f} ± %{customdata[0]:.3f}<br>' +
+                        'Flux: %{customdata[1]:.3f} ± %{customdata[2]:.3f} µJy',
+
+                    customdata = [(df_2['x.magerr_zogy'].iloc[i], df_2['x.flux_zogy'].iloc[i], df_2['x.fluxerr_zogy'].iloc[i]) for i in range(len(df_2['x.fluxerr_zogy']))]
+        ))
+        fig.add_trace(go.Scatter(
+                    x               = df_limiting_mag_2['mjd'],
+                    y               = df_limiting_mag_2['limiting_mag'],
+                    mode            = 'markers',
+                    marker          = dict(symbol='arrow-wide', angle=180, size=12),
+                    marker_color    = colors[filters.index(f)],
+                    opacity         = 0.2,
+                    name            = filters[filters.index(f)],
+                    hovertemplate   =
+                        '<i>MJD: %{x:.3f}</i><br>' +
+                        '<i>Limit: %{y:.3f}</i>',
+                    hoverlabel      = dict(bgcolor="white")
+
+        ))
+
+    fig.update_layout(height=600)
+    fig.update_layout(hovermode="x", xaxis=dict(tickformat ='d'),
+    # fig.update_layout(xaxis=dict(tickformat ='d'),
+        title="Lightcurves",
+        xaxis_title="MJD",
+        yaxis_title="Magnitude",)
+    fig.update_yaxes(autorange="reversed")
+
+    return fig
+
+
+def plot_BGEM_location_on_sky(df_bgem_lightcurve):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df_bgem_lightcurve['x.ra_psf_d'], y=df_bgem_lightcurve['x.dec_psf_d'], mode='markers', name='Line and Marker'))
+    fig.update_layout(width=400, height=400)
+
+    return fig
 
 
 class BlackGEMView(TemplateView):
@@ -1016,47 +1087,11 @@ class TransientsView(TemplateView):
         if row_data:
             bgem_id = row_data['runcat_id']
 
-            df = get_lightcurve_from_BGEM_ID(bgem_id)
-
-            # Create a Plotly graph
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=df['x.ra_psf_d'], y=df['x.dec_psf_d'], mode='markers', name='Line and Marker'))
-            fig.update_layout(width=400, height=400)
-            location_on_sky = plot(fig, output_type='div')
-
-            ## Lightcurve
-            filters = ['u', 'g', 'q', 'r', 'i', 'z']
-            colors = ['darkviolet', 'forestgreen', 'darkorange', 'orangered', 'crimson', 'dimgrey']
-            symbols = ['triangle-up', 'diamond-wide', 'circle', 'diamond-tall', 'pentagon', 'star']
-
-            fig = go.Figure()
-
-            for f in filters:
-                df_2 = df.loc[df['i.filter'] == f]
-                fig.add_trace(go.Scatter(
-                            x               = df_2['i."mjd-obs"'],
-                            y               = df_2['x.mag_zogy'],
-                            error_y         = dict(
-                                                type='data',
-                                                array = df_2['x.magerr_zogy'],
-                                                thickness=1,
-                                                width=3,
-                                              ),
-                            mode            = 'markers',
-                            marker_color    = colors[filters.index(f)],
-                            name            = filters[filters.index(f)],
-                ))
-
-            fig.update_layout(height=600)
-            fig.update_layout(hovermode="x", xaxis=dict(tickformat ='d'),
-                title="Lightcurves",
-                xaxis_title="MJD",
-                yaxis_title="Magnitude",)
-            fig.update_yaxes(autorange="reversed")
-            # lightcurve = plot(fig, output_type='div')
+            ## --- Lightcurve ---
+            df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
+            fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
 
             return fig
-            # return bgem_id
 
         return go.Figure()
 
@@ -1197,6 +1232,51 @@ class TransientSearchView(TemplateView):
         # Pass the plot_div to the template
         return render(request, 'transient/index.html', {'plot_div': plot_div})
 
+def get_limiting_magnitudes_from_BGEM_ID(blackgem_id):
+
+    creds_user_file = str(Path.home()) + "/.bg_follow_user_john_creds"
+    creds_db_file = str(Path.home()) + "/.bg_follow_transientsdb_creds"
+
+    # Instantiate the BlackGEM object
+    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+
+    qu = """\
+    SELECT i1.id
+          ,i1."date-obs"
+          ,i1."mjd-obs"
+          ,i1."t-lmag"
+          ,i1.filter
+      FROM image i1
+          ,(SELECt i0.id AS imageid
+             FROM image i0
+                 ,(SELECT x.object
+                     FROM assoc a
+                         ,extractedsource x
+                    WHERE a.runcat = '%(blackgem_id)s'
+                      AND a.xtrsrc = x.id
+                   GROUP BY x.object
+                  ) t0
+            WHERE i0.object = t0.object
+           EXCEPT
+           SELECT x.image AS imageid
+             FROM assoc a
+                 ,extractedsource x
+            WHERE a.runcat = 31744960
+              AND a.xtrsrc = x.id
+            ) t1
+     WHERE i1.id = t1.imageid
+       AND i1."tqc-flag" <> 'red'
+    ORDER BY i1."date-obs"
+    """
+
+    params = {'blackgem_id': blackgem_id}
+    query = qu % (params)
+    l_results = bg.run_query(query)
+
+    df_limiting_mag = pd.DataFrame(l_results, columns=['id','date_obs','mjd','limiting_mag','filter'])
+    print(df_limiting_mag)
+
+    return(df_limiting_mag)
 
 def get_lightcurve_from_BGEM_ID(transient_id):
 
@@ -1210,13 +1290,14 @@ def get_lightcurve_from_BGEM_ID(transient_id):
 
     # Create an instance of the Transients Catalog
     tc = TransientsCatalog(bg)
+    df_limiting_mag = get_limiting_magnitudes_from_BGEM_ID(transient_id)
 
     # Get all the associated extracted sources for this transient
     # Note that you can specify the columns yourself, but here we use the defaults
     bg_columns, bg_results = tc.get_associations(transient_id)
-    df_bg_assocs = pd.DataFrame(bg_results, columns=bg_columns)
+    df_bgem_lightcurve = pd.DataFrame(bg_results, columns=bg_columns)
 
-    return df_bg_assocs
+    return df_bgem_lightcurve, df_limiting_mag
 
 def BGEM_to_GEMTOM_photometry(df_bg_assocs):
 
@@ -1229,59 +1310,23 @@ def BGEM_to_GEMTOM_photometry(df_bg_assocs):
 
     return gemtom_photometry
 
-
 def BGEM_ID_View(request, bgem_id):
     '''
     Finds and displays data from a certain date.
     '''
 
-    df = get_lightcurve_from_BGEM_ID(bgem_id)
-    print(df)
-    print(df.columns)
+    df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
+    print(df_bgem_lightcurve)
+    print(df_bgem_lightcurve.columns)
 
     response = "You're looking at BlackGEM transient %s."
 
-    # Example DataFrame
-
-    # Create a Plotly graph
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df['x.ra_psf_d'], y=df['x.dec_psf_d'], mode='markers', name='Line and Marker'))
-    fig.update_layout(width=400, height=400)
+    ## --- Location on Sky ---
+    fig = plot_BGEM_location_on_sky(df_bgem_lightcurve)
     location_on_sky = plot(fig, output_type='div')
 
-    ## Lightcurve
-    filters = ['u', 'g', 'q', 'r', 'i', 'z']
-    colors = ['darkviolet', 'forestgreen', 'darkorange', 'orangered', 'crimson', 'dimgrey']
-    symbols = ['triangle-up', 'diamond-wide', 'circle', 'diamond-tall', 'pentagon', 'star']
-
-    fig = go.Figure()
-
-    for f in filters:
-        df_2 = df.loc[df['i.filter'] == f]
-        fig.add_trace(go.Scatter(
-                    x               = df_2['i."mjd-obs"'],
-                    y               = df_2['x.mag_zogy'],
-                    error_y         = dict(
-                                        type='data',
-                                        array = df_2['x.magerr_zogy'],
-                                        thickness=1,
-                                        width=3,
-                                      ),
-                    mode            = 'markers',
-                    marker_color    = colors[filters.index(f)],
-                    name            = filters[filters.index(f)],
-                    # text            = round(df_2['x.flux_zogy'],3)
-                    # symbol=symbols[filters.index(f)],
-                    # label=f
-        ))
-
-    # fig.add_trace(go.Scatter(x=df['i."mjd-obs"'], y=df['x.mag_zogy'], mode='markers', name='Line and Marker'))
-    fig.update_layout(height=600)
-    fig.update_layout(hovermode="x", xaxis=dict(tickformat ='d'),
-        title="Lightcurves",
-        xaxis_title="MJD",
-        yaxis_title="Magnitude",)
-    fig.update_yaxes(autorange="reversed")
+    ## --- Lightcurve ---
+    fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
     lightcurve = plot(fig, output_type='div')
 
     # Pass the plot_div to the template
@@ -1320,7 +1365,7 @@ def BGEM_ID_View(request, bgem_id):
 
     app = DjangoDash('EachObservation')
 
-    df_new = df.rename(columns={
+    df_new = df_bgem_lightcurve.rename(columns={
         'a.xtrsrc'          : "xtrsrc",
         'x.ra_psf_d'        : "ra_psf_d",
         'x.dec_psf_d'       : "dec_psf_d",
@@ -1394,8 +1439,8 @@ def BGEM_ID_View(request, bgem_id):
         "iau_name"          : iau_name,
         "ra"                : ra,
         "dec"               : dec,
-        "dataframe"         : df,
-        "columns"           : df.columns,
+        "dataframe"         : df_bgem_lightcurve,
+        "columns"           : df_bgem_lightcurve.columns,
         "location_on_sky"   : location_on_sky,
         "lightcurve"        : lightcurve,
     }
@@ -1536,7 +1581,7 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
         return redirect(form.get('referrer', '/'))
 
 def get_blackgem_id_from_iauname(iauname):
-    
+
     creds_user_file = str(Path.home()) + "/.bg_follow_user_john_creds"
     creds_db_file = str(Path.home()) + "/.bg_follow_transientsdb_creds"
 
@@ -1574,8 +1619,8 @@ def add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid):
     iffe3 = ""
 
     try:
-        BlackGEM_dataframe = get_lightcurve_from_BGEM_ID(target_blackgemid)
-        photometry = BGEM_to_GEMTOM_photometry(BlackGEM_dataframe)
+        df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(target_blackgemid)
+        photometry = BGEM_to_GEMTOM_photometry(df_bgem_lightcurve)
         print(BlackGEM_dataframe)
         print(BlackGEM_dataframe.columns)
 

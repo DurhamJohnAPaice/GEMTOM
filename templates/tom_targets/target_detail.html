@@ -58,14 +58,11 @@
       <li class="nav-item">
         <a class="nav-link active" id="observe-tab" href="#observe" role="tab" data-toggle="tab">Observe</a>
       </li>
-      <li class="nav-item">
+      <!-- <li class="nav-item">
         <a class="nav-link" id="observations-tab" href="#observations" role="tab" data-toggle="tab">Observations</a>
-      </li>
+      </li> -->
       <li class="nav-item">
-        <a class="nav-link" id="manage-data-tab" href="#manage-data" role="tab" data-toggle="tab">Manage Data</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="manage-groups-tab" href="#manage-groups" role="tab" data-toggle="tab">Manage Groups</a>
+        <a class="nav-link" id="manage-data-tab" href="#manage-data" role="tab" data-toggle="tab">Data</a>
       </li>
       <li class="nav-item">
         <a class="nav-link" id="photometry-tab" href="#photometry" role="tab" data-toggle="tab">Photometry</a>
@@ -74,12 +71,17 @@
         <a class="nav-link" id="spectroscopy-tab" href="#spectroscopy" role="tab" data-toggle="tab">Spectroscopy</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" id="ztf-tab" href="#ztf" role="tab" data-toggle="tab">ZTF Lightcurve</a>
+        <a class="nav-link" id="ztf-tab" href="#ztf" role="tab" data-toggle="tab">ZTF</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="manage-groups-tab" href="#manage-groups" role="tab" data-toggle="tab">Groups</a>
       </li>
     </ul>
     <div class="tab-content">
       <div class="tab-pane active" id="observe">
         {% blackgem_for_target target %}
+        <hr/>
+        {% observe_staralt target %}
         <hr/>
         <h4>Observe</h4>
         {% observing_buttons object %}
@@ -106,7 +108,7 @@
         {% endif %}
         {% if user.is_authenticated %}
         <hr>
-        {% query_forced_photometry object %}        
+        {% query_forced_photometry object %}
         <hr>
         {% endif %}
         {% dataproduct_list_for_target object %}

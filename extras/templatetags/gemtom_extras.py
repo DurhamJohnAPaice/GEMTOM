@@ -340,6 +340,28 @@ def ztf_for_target(context, target, width=700, height=600, background=None, labe
         'plot': offline.plot(fig, output_type='div', show_link=False),
     }
 
+@register.inclusion_tag('tom_dataproducts/partials/observe_staralt.html')
+def observe_staralt(target):
+    """
+    Includes a link to staralt
+    """
+    target_name = target.name
+    print("\n\n\n\n\n")
+    # print(target.ra)
+    # print(target.dec)
+    print(target_name[:4])
+    print("\n\n\n\n\n")
+    if target_name[:4] == 'BGEM': target_name = target.name[5:12]
+    else:
+        target_name = target_name.replace(" ","")
+        target_name = target_name[:9]
+    print(target_name)
+    return {
+        'target_name' : target_name,
+        'staralt_ra'  : round(target.ra, 3),
+        'staralt_dec' : round(target.dec, 3)
+        }
+    # return target
 
 @register.inclusion_tag('tom_dataproducts/partials/blackgem_for_target.html', takes_context=True)
 def blackgem_for_target(context, target, width=700, height=400, background=None, label_color=None, grid=True):

@@ -1,0 +1,10 @@
+{% load bootstrap4 targets_extras %}
+<h4>STARALT</h4>
+<div>
+  {% csrf_token %}
+  Click <a href=https://astro.ing.iac.es/staralt/ target="_blank">here</a> to go to STARALT to calculate visibility for this target.<br>
+  Enter the following into the coordinates box:<br>
+  {{ target_name }}
+  {{ staralt_ra }}
+  {{ staralt_dec }}
+</div>
