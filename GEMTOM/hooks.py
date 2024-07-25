@@ -2,11 +2,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def after_uploading_target(target):
-    # logger.info(
-    #     'New target made: %s',
-    #     target
-    # )
+def after_uploading_target(target, created):
     print('New target made:', target)
 
 
