@@ -1,2 +1,2 @@
-name,ra,dec,galactic_lng,galactic_lat,name2,type,groups
-Test,156.31499999999943,36.459,186.86839838857273,57.78338144707817,Test Target,SIDEREAL,"Public, Private"
+name,ra,dec,BlackGEM ID,type,public
+BGEM J122505.39+125243.5,186.27247468624606,12.878776894597237,31747681,SIDEREAL,Public

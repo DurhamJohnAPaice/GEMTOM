@@ -1535,6 +1535,26 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
 
         return redirect(form.get('referrer', '/'))
 
+def get_blackgem_id_from_iauname(iauname):
+    
+    creds_user_file = str(Path.home()) + "/.bg_follow_user_john_creds"
+    creds_db_file = str(Path.home()) + "/.bg_follow_transientsdb_creds"
+
+    # Instantiate the BlackGEM object
+    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+
+    qu= """\
+    SELECT id
+      FROM runcat
+     WHERE iau_name = '%(iau_name)s'
+    """
+    params = {'iau_name': iauname}
+    query = qu % (params)
+    l_results = bg.run_query(query)
+
+    blackgem_id = l_results[0][0]
+
+    return blackgem_id
 
 def add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid):
 
