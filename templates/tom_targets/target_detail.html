@@ -81,7 +81,18 @@
       <div class="tab-pane active" id="observe">
         {% blackgem_for_target target %}
         <hr/>
-        {% observe_staralt target %}
+        <div class="row">
+          <div class="col-md-6" style=
+            "border-right:thin solid #dddddd;
+            text-align:center">
+              {% update_classification target %}
+          </div>
+          <div class="col-md-6" style=
+            "text-align:center;
+            vertical-align: middle;">
+              {% observe_staralt target %}
+          </div>
+        </div>
         <hr/>
         <h4>Observe</h4>
         {% observing_buttons object %}

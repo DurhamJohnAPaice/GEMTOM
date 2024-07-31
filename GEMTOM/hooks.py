@@ -10,9 +10,10 @@ def after_uploading_target(target, created):
 
     target_name = target.name
     target_id = str(target.id)
-    target_blackgemid = get_blackgem_id_from_iauname(target_name)
-    print(target_blackgemid)
-    add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid)
+    if target_name[0:4] == "BGEM":
+        target_blackgemid = get_blackgem_id_from_iauname(target_name)
+        print(target_blackgemid)
+        add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid)
 
 
 

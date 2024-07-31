@@ -22,13 +22,21 @@ urlpatterns = [
     path('targets/import/', TargetImportView.as_view(), name='import'),
     path('', include('tom_common.urls')),
     # path('about/', AboutView.as_view(), name='about'),
-    path('status/', StatusView.as_view(), name='status'),
+
+    path('live_feed/', LiveFeed.as_view(), name='live_feed'),
+
+    path('update_classification/', update_classification, name='update_classification'),
+
     path('recent_transients/', TransientsView.as_view(), name='recent_transients'),
     path('transient/', TransientSearchView.as_view(), name='transient'),
     # path('plot/', plot_graph_view, name='plot_graph'),
     path('transient/<int:bgem_id>/', BGEM_ID_View, name='bgem_id'),
+
+    path('status/', StatusView.as_view(), name='status'),
     path('status/<int:obs_date>/', NightView, name='night'),
     path('status_to_GEMTOM/', status_to_GEMTOM, name='status_to_GEMTOM'),
+    path('update_history/', manually_update_history, name='update_history'),
+
     # path('ID_to_GEMTOM/', ID_to_GEMTOM, name='ID_to_GEMTOM'),
     path('handle_input/', handle_input, name='handle_input'),
     path('search_BGEM_ID/', search_BGEM_ID, name='search_BGEM_ID'),

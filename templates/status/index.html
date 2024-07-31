@@ -86,7 +86,7 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
 </style>
 
 {% if extragalactic_sources_id %}
-    {% for image_url, source_id, source_name, source_ra, source_dec, source_jpg in images_daily_text_1 %}
+    {% for image_url, source_id, source_name, source_ra, source_dec, check in images_daily_text_1 %}
         <h6> BlackGEM ID = {{ source_id }} ({{source_name}})</h6>
         <div class="image-row">
             {% for url in image_url %}
@@ -100,26 +100,16 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
         RA = {{source_ra}}  ;  Dec = {{source_dec}}<br>
         <em><a href='/transient/{{ source_id }}'>GEMTOM page for this transient</a></em><br>
         <div style="height:3px;font-size:1px;">&nbsp;</div>
-        <!-- {% if source_jpg %}
-            <div class="image-row">
-                <div class="image-container2">
-                    <img src="{{ source_jpg }}" alt="source_jpg">
-                </div>
-            </div>
-            <em><a href="#" onclick='window.open("http://bgtom:BG_t0m!@xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid={{source_id}}");return false;'>Request Lightcurve Update</a></em><br>
-            <small><em>(Requesting a Lightcurve will send a request to an external server. Refresh the page in ~5 minutes to see the result!)</em></small>
-        {% else %}
-            <em><a href="#" onclick='window.open("http://bgtom:BG_t0m!@xmm-ssc.irap.omp.eu/claxson/lcrequest.php?runcatid={{source_id}}");return false;'>Request Lightcurve</a></em><br>
-            <small><em>(Requesting a Lightcurve will send a request to an external server. Refresh the page in ~5 minutes to see the result!)</em></small>
-        {% endif %} -->
-        <form method="post" action="{% url 'status_to_GEMTOM' %}" class="image-form">
-            {% csrf_token %}
-            <input type="hidden" name="id" value="{{ source_id }}">
-            <input type="hidden" name="name" value="{{ source_name }}">
-            <input type="hidden" name="ra" value="{{ source_ra }}">
-            <input type="hidden" name="dec" value="{{ source_dec }}">
-            <button type="submit" class="btn btn-primary">Add to GEMTOM</button>
-        </form>
+        {% if check %}
+            <form method="post" action="{% url 'status_to_GEMTOM' %}" class="image-form">
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ source_id }}">
+                <input type="hidden" name="name" value="{{ source_name }}">
+                <input type="hidden" name="ra" value="{{ source_ra }}">
+                <input type="hidden" name="dec" value="{{ source_dec }}">
+                <button type="submit" class="btn btn-primary">Add to GEMTOM</button>
+            </form>
+        {% endif %}
         <hr>
     {% endfor %}
 {% else %}

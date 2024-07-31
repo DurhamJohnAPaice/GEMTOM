@@ -1,0 +1,35 @@
+{% load static bootstrap4 targets_extras crispy_forms_tags %}
+<head>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/custom_styles.css' %}">
+</head>
+<div>
+  <h4>Classification</h4>
+  {% csrf_token %}
+  <!-- Click <a href=https://astro.ing.iac.es/staralt/ target="_blank">here</a> to go to STARALT to calculate visibility for this target.<br> -->
+  <!-- Enter the following into the coordinates box:
+  {{ target_name }}
+  {{ target_id }} -->
+  <!-- <form method="get" action="{% url 'update_classification' %}" class="image-form">
+      {% csrf_token %}
+      <label for="user_input">Input Classification (e.g. SN, CV, LMXB, etc.):</label><br>
+      <input type="text" name="field_value" placeholder="Enter text" required>
+      <input type="hidden" name="id" value="{{ target_id }}">
+      <input type="hidden" name="name" value="{{ target_name }}">
+      <button type="submit" class="btn btn-primary">Update Classification</button>
+  </form> -->
+  <form method="post" action="{% url 'update_classification' %}" class="image-form">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <input type="hidden" name="id" value="{{ target_id }}">
+      <input type="hidden" name="name" value="{{ target_name }}">
+      <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
+  <!-- <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit">Submit</button>
+  </form> -->
+  <br>
+  <em><a href="{% static 'tom_common/object_types.csv' %}">Description of target types</a></em><br>
+
+</div>

@@ -22,7 +22,7 @@ On this page, you can find the data for a specific BlackGEM transient.
 <h6>{{ iau_name }}<br></h6>
 <h6>RA: {{ ra }}, Dec: {{ dec }}<br></h6>
 
-<a href="#" onclick='window.open("https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}");return false;'><em>Transients</em> webpage for this source</a>
+<a href="#" onclick='window.open("https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}");return false;'><em>BlackView</em> webpage for this source</a>
 <br>&nbsp;
 <form method="post" action="{% url 'status_to_GEMTOM' %}" class="image-form">
     {% csrf_token %}

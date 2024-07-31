@@ -1,22 +1,45 @@
-{% extends 'tom_common/base.html' %}
+{% extends 'tom_common/base_home.html' %}
 {% load static targets_extras observation_extras dataproduct_extras tom_common_extras %}
 {% block title %}Home{% endblock %}
 {% block content %}
 <div class="row">
   <div class="col-md-8">
+    <div style="text-align:center">
 
       <!-- background: white url("img/background.png"); -->
 
-    <h2 class="text-center">GEMTOM - A BlackGEM TOM</h2>
-    <!-- <p class="text-center"><img src="https://raw.githubusercontent.com/TOMToolkit/tomtoolkit.github.io/master/assets/img/customize_templates_doc/sciencecat.jpg" class="img-fluid mx-auto"></p> -->
-    <p class="text-center"><img src="static/tom_common/img/blackgem-logo-black.png" class="img-fluid mx-auto"></p>
-    <!-- <p class="text-center"><img src="{% static 'tom_common/img/blackgem-logo-white-trans.png' %}" class="img-fluid mx-auto"></p> -->
-    <p class="text-center"><img src="static/tom_common/img/J1820_Warped_Disc_Final.png" class="img-fluid mx-auto"></p>
+      <!-- <p class="text-center"><img src="https://raw.githubusercontent.com/TOMToolkit/tomtoolkit.github.io/master/assets/img/customize_templates_doc/sciencecat.jpg" class="img-fluid mx-auto"></p> -->
+      <!-- <p class="text-center"><img src="static/tom_common/img/blackgem-logo-black.png" class="img-fluid mx-auto"></p> -->
+      <p class="text-center"><img src="static/tom_common/img/GEMTOM Logo Trans.png" class="img-fluid mx-auto"></p>
+      <!-- <p class="text-center"><img src="{% static 'tom_common/img/blackgem-logo-white-trans.png' %}" class="img-fluid mx-auto"></p> -->
+      <!-- <p class="text-center"><img src="static/tom_common/img/J1820_Warped_Disc_Final.png" class="img-fluid mx-auto"></p> -->
+      <br>
+      <h2 class="text-center">GEMTOM - A BlackGEM TOM</h2>
 
 
-    <p>GEMTOM is a TOM (Target and Observation Manager) for BlackGEM, a new optical triple-telescope in the
-        southern hemisphere. It is currently a work in progress. Please watch this space.</p>
-    <p>Learn about GEMTOM <a href="about">here</a>!</p>
+      <p>GEMTOM is a TOM (Target and Observation Manager) for BlackGEM, a new optical triple-telescope in the
+          southern hemisphere. It is currently a work in progress. Please watch this space!</p>
+      <br>
+      <h5><a href="status">Check the status of last night's observations</a></h5>
+      <br>
+
+    </div>
+
+    <hr>
+    <div class="row">
+        <div class="col-md-6" style="text-align:center">
+            <a href="transient"><h5>Search for a specific BlackGEM ID</h5></a>
+
+            <form method="get" action="{% url 'search_BGEM_ID' %}">
+                <input id="bgem_id" type="text" name="user_input" placeholder="Enter text" required>
+                <button type="submit" class="btn btn-primary" style=>Query BlackGEM</button>
+            </form>
+        </div>
+        <div class="col-md-6" style="text-align:center">
+            <a href="recent_transients"><h5>Recent Transients</h5></a>
+        </div>
+    </div>
+    <hr>
 
     <!-- <p></p> -->
 

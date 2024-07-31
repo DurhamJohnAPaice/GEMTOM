@@ -6,6 +6,8 @@ from django.conf import settings
 from plotly import offline
 import plotly.graph_objs as go
 import numpy as np
+from django import forms
+# from ...forms import *
 # from django import forms
 # from django.contrib.auth.models import Group
 # from django.core.paginator import Paginator
@@ -340,17 +342,116 @@ def ztf_for_target(context, target, width=700, height=600, background=None, labe
         'plot': offline.plot(fig, output_type='div', show_link=False),
     }
 
+class ClassificationForm(forms.Form):
+    """
+
+    """
+    CHOICES = [
+        ("Other",                "Other"),
+        ("SN",                   "SN"),
+        ("SN I",                 "SN I"),
+        ("SN Ia",                "SN Ia"),
+        ("SN Ib",                "SN Ib"),
+        ("SN Ic",                "SN Ic"),
+        ("SN Ib/c",              "SN Ib/c"),
+        ("SN Ic-BL",             "SN Ic-BL"),
+        ("SN Ibn",               "SN Ibn"),
+        ("SN II",                "SN II"),
+        ("SN IIP",               "SN IIP"),
+        ("SN IIL",               "SN IIL"),
+        ("SN IIn",               "SN IIn"),
+        ("SN IIb",               "SN IIb"),
+        ("SN I-faint",           "SN I-faint"),
+        ("SN I-rapid",           "SN I-rapid"),
+        ("SLSN-I",               "SLSN-I"),
+        ("SLSN-II",              "SLSN-II"),
+        ("SLSN-R",               "SLSN-R"),
+        ("Afterglow",            "Afterglow"),
+        ("LBV",                  "LBV"),
+        ("ILRT",                 "ILRT"),
+        ("Nova",                 "Nova"),
+        ("CV",                   "CV"),
+        ("Varstar",              "Varstar"),
+        ("AGN",                  "AGN"),
+        ("Galaxy",               "Galaxy"),
+        ("QSO",                  "QSO"),
+        ("Blazar",               "Blazar"),
+        ("Light-Echo",           "Light-Echo"),
+        ("Std-spec",             "Std-spec"),
+        ("Gap",                  "Gap"),
+        ("Gap I",                "Gap I"),
+        ("Gap II",               "Gap II"),
+        ("LRN",                  "LRN"),
+        ("FBOT",                 "FBOT"),
+        ("Kilonova",             "Kilonova"),
+        ("Imposter-SN",          "Imposter-SN"),
+        ("SN Ia-pec",            "SN Ia-pec"),
+        ("SN Ia-SC",             "SN Ia-SC"),
+        ("SN Ia-91bg-like",      "SN Ia-91bg-like"),
+        ("SN Ia-91T-like",       "SN Ia-91T-like"),
+        ("SN Iax[02cx-like]",    "SN Iax[02cx-like]"),
+        ("SN Ia-CSM",            "SN Ia-CSM"),
+        ("SN Ib-pec",            "SN Ib-pec"),
+        ("SN Ic-pec",            "SN Ic-pec"),
+        ("SN Icn",               "SN Icn"),
+        ("SN Ibn/Icn",           "SN Ibn/Icn"),
+        ("SN II-pec",            "SN II-pec"),
+        ("SN IIn-pec",           "SN IIn-pec"),
+        ("SN Ib-Ca-rich",        "SN Ib-Ca-rich"),
+        ("SN Ib/c-Ca-rich",      "SN Ib/c-Ca-rich"),
+        ("SN Ic-Ca-rich",        "SN Ic-Ca-rich"),
+        ("SN Ia-Ca-rich",        "SN Ia-Ca-rich"),
+        ("TDE",                  "TDE"),
+        ("TDE-H",                "TDE-H"),
+        ("TDE-He",               "TDE-He"),
+        ("TDE-H-He",             "TDE-H-He"),
+        ("FRB",                  "FRB"),
+        ("WR",                   "WR"),
+        ("WR-WN",                "WR-WN"),
+        ("WR-WC",                "WR-WC"),
+        ("WR-WO",                "WR-WO"),
+        ("M dwarf",              "M dwarf"),
+        ("NA/Unknown",           "NA/Unknown"),
+        ("Computed-Ia",          "Computed-Ia"),
+        ("Computed-IIP",         "Computed-IIP"),
+        ("Computed-IIb",         "Computed-IIb"),
+        ("Computed-PISN",        "Computed-PISN"),
+        ("Computed-IIn",         "Computed-IIn"),
+    ]
+    dropdown = forms.ChoiceField(
+        choices=CHOICES,
+        label="",
+        widget=forms.Select(attrs={'class': 'custom-dropdown'})
+    )
+
+@register.inclusion_tag('tom_dataproducts/partials/update_classification.html')
+def update_classification(target):
+    """
+    Handles updating a classification
+    """
+    target_name = target.name
+    target_id = target.id
+
+    form = ClassificationForm()
+
+    return {
+        'target_name' : target_name,
+        'target_id'   : target_id,
+        'form'        : form
+        }
+
+
 @register.inclusion_tag('tom_dataproducts/partials/observe_staralt.html')
 def observe_staralt(target):
     """
     Includes a link to staralt
     """
     target_name = target.name
-    print("\n\n\n\n\n")
+    # print("\n\n\n\n\n")
     # print(target.ra)
     # print(target.dec)
-    print(target_name[:4])
-    print("\n\n\n\n\n")
+    # print(target_name[:4])
+    # print("\n\n\n\n\n")
     if target_name[:4] == 'BGEM': target_name = target.name[5:12]
     else:
         target_name = target_name.replace(" ","")

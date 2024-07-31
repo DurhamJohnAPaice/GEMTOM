@@ -1,0 +1,36 @@
+body {
+  padding-top: 5rem;
+  margin: 0;
+}
+
+#bgem_id
+{
+    height:35px;
+    width:150px;
+}
+
+.content {
+  padding: 3rem 1rem;
+}
+
+.navbar-brand > img {
+  max-height: 25px;
+}
+
+.input-group-text {
+  font-family: monospace;
+}
+
+.nav-item {
+  cursor: pointer;
+}
+
+#login-buttons > li {
+  margin: 0 2px 0 2px;
+}
+
+/* see https://github.com/twbs/bootstrap/issues/23295 */
+textarea {
+    overflow-y: auto;
+    overflow-x: hidden;
+}

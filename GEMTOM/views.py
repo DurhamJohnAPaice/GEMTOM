@@ -40,7 +40,6 @@ import numpy as np
 from django_plotly_dash import DjangoDash
 import dash_ag_grid as dag
 import json
-# import dash_table.Format as Format
 
 ## For the Transient View
 from pathlib import Path
@@ -165,7 +164,7 @@ def get_lightcurve(source_id):
 
 def add_to_GEMTOM(id, name, ra, dec):
 
-    get_lightcurve(id)
+    # get_lightcurve(id)
 
     gemtom_dataframe = pd.DataFrame({
         'name' : [name],
@@ -185,17 +184,6 @@ def add_to_GEMTOM(id, name, ra, dec):
     result = import_targets(csv_stream)
 
     return redirect(reverse('tom_targets:list'))
-
-# def ID_to_GEMTOM(request):
-#     '''
-#     Imports a target from the BlackGEM ID
-#     '''
-#
-#     transient_id = request.POST.get('id')
-#
-#     print(transient_id)
-#
-#     return redirect(reverse('tom_targets:list'))
 
 
 def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
@@ -280,6 +268,75 @@ class BlackGEMView(TemplateView):
 
 
 
+
+
+## =============================================================================
+## ------------------------ Codes for the Target pages -------------------------
+
+# def update_classification(request, target, field_name="Classification", value="SN"):
+#     print(Target)
+#     target = Target.objects.get(name='target_name')
+#     target.save(extras={field_name: value})
+
+def update_target_field(target_name, field_name, field_value):
+
+    target = Target.objects.get(name=target_name)
+    target.save(extras={field_name: field_value})
+
+
+# def update_classification(request):
+#     '''
+#     Updates the classification of a target
+#     '''
+#
+#     target_id   = request.GET.get('id')
+#     target_name = request.GET.get('name')
+#     field_name  = "Classification"
+#     field_value = request.GET.get('field_value')
+#
+#     update_target_field(target_name, field_name, field_value)
+#
+#     return redirect(f'/targets/{target_id}')
+
+def update_classification(request):
+    '''
+    Updates the classification of a target
+    '''
+
+    print("\n\n\n\n")
+    print(request.POST)
+    print(request.POST['id'])
+    print("\n\n\n\n")
+
+    target_id   = request.POST['id']
+    target_name = request.POST['name']
+    field_name  = "Classification"
+    field_value = request.POST['dropdown']
+
+    update_target_field(target_name, field_name, field_value)
+
+    return redirect(f'/targets/{target_id}')
+
+
+
+# class update_classification(LoginRequiredMixin, RedirectView):
+#     """
+#     View that handles the updating of BlackGEM data. Requires authentication.
+#     """
+#
+#     def get(self, request, *args, **kwargs):
+#         """
+#         Method that handles the GET requests for this view. Calls the management command to update the reduced data and
+#         adds a hint using the messages framework about automation.
+#         """
+#         target_id = request.POST.get('id')
+#         target_name = request.POST.get('name')
+#         field_name = "Classification"
+#         field_value = "SN"
+#
+#         update_target_field(target_name, field_name, field_value)
+#
+#         return redirect(form.get('referrer', '/'))
 
 
 
@@ -400,6 +457,11 @@ def blackgem_history():
 
     return history
 
+def manually_update_history(request):
+    # Call your function with the hidden value
+    update_history(10)
+    # Redirect to the desired page (e.g., 'home' view)
+    return redirect('status')
 
 def update_history(days_since_last_update):
     '''
@@ -594,7 +656,7 @@ def get_blackgem_stats(obs_date):
     extragalactic_sources_name  = []
     extragalactic_sources_ra    = []
     extragalactic_sources_dec   = []
-    extragalactic_sources_jpg   = []
+    extragalactic_sources_check = []
 
     ## For each image file...
     for file in files:
@@ -619,16 +681,19 @@ def get_blackgem_stats(obs_date):
                         extragalactic_sources_name.append(extragalactic_data['iauname'][row_number])
                         extragalactic_sources_ra.append(  extragalactic_data['ra'][row_number])
                         extragalactic_sources_dec.append( extragalactic_data['dec'][row_number])
-                        extragalactic_sources_jpg.append(get_lightcurve(file[2:10]))
+                        extragalactic_sources_check.append(True)
+                        # extragalactic_sources_jpg.append(get_lightcurve(file[2:10]))
                     else:
                         ## If it's not, state they're all unknown.
                         extragalactic_sources_name.append("Unknown")
                         extragalactic_sources_ra.append("(Unknown)")
                         extragalactic_sources_dec.append("(Unknown)")
-                        extragalactic_sources_jpg.append("")
+                        extragalactic_sources_check.append(False)
+                        # extragalactic_sources_jpg.append("")
 
     ## Combine these together.
-    extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_name, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_jpg]
+    # extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_name, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_jpg]
+    extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_name, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_check]
     # print(extragalactic_sources)
     # print(extragalactic_sources_name)
     # print(extragalactic_sources_ra)
@@ -643,10 +708,9 @@ def get_blackgem_stats(obs_date):
 
     num_new_transients  = str(len(data))
     num_extragalactic   = str(len(extragalactic_sources[0]))
-    extragalactic_ids   = extragalactic_sources
     extragalactic_urls  = images_urls_sorted
 
-    return num_new_transients, num_in_gaia, num_extragalactic, extragalactic_ids, extragalactic_urls, \
+    return num_new_transients, num_in_gaia, num_extragalactic, extragalactic_sources, extragalactic_urls, \
         transients_filename, gaia_filename, extragalactic_filename
 
 
@@ -697,6 +761,7 @@ def status_daily():
             status_daily_text_4 = extragalactic_sources_string
             # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0])
             images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
+            # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
 
 
     else:
@@ -746,7 +811,8 @@ def NightView(request, obs_date):
         "extragalactic_sources_name"    : extragalactic_sources[1],
         "extragalactic_sources_ra"      : extragalactic_sources[2],
         "extragalactic_sources_dec"     : extragalactic_sources[3],
-        "extragalactic_sources_jpg"     : extragalactic_sources[4],
+        "extragalactic_sources_check"   : extragalactic_sources[4],
+        # "extragalactic_sources_jpg"     : extragalactic_sources[4],
         "data_length_plural"            : data_length_plural,
         "data_length_plural_2"          : data_length_plural_2,
         "gaia_plural"                   : gaia_plural,
@@ -760,6 +826,7 @@ def NightView(request, obs_date):
     else:
         observed_string = "Yes!"
         images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
+        # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
 
     context['observed']                 = observed_string
     context['images_daily_text_1']      = images_daily_text_1
@@ -1175,7 +1242,7 @@ class TransientsView(TemplateView):
 
             return html.Div(
                     [
-                    html.A("'Transients' webpage for this transient", href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid=" + str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
+                    html.A("BlackView page for this transient", href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid=" + str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
                     html.Br(), html.Br(),
                     html.A("GEMTOM page for this transient", href='/transient/'+str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
                     html.Br(), html.Br(),
@@ -1201,6 +1268,36 @@ class TransientsView(TemplateView):
         return
 
 
+
+## =============================================================================
+## ------------------- Codes for the Live Feed page ---------------------
+
+
+class LiveFeed(TemplateView):
+    template_name = 'transient_search.html'
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+    def plot_graph_view(request):
+        # Example DataFrame
+        data = {
+            'x': [1, 2, 3, 4, 5],
+            'y': [10, 15, 13, 17, 21]
+        }
+        df = pd.DataFrame(data)
+
+        # Create a Plotly graph
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df['x'], y=df['y'], mode='lines+markers', name='Line and Marker'))
+
+        # Convert the Plotly graph to HTML
+        plot_div = plot(fig, output_type='div')
+
+        # Pass the plot_div to the template
+        return render(request, 'transient/index.html', {'plot_div': plot_div})
 
 
 ## =============================================================================
@@ -1621,8 +1718,8 @@ def add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid):
     try:
         df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(target_blackgemid)
         photometry = BGEM_to_GEMTOM_photometry(df_bgem_lightcurve)
-        print(BlackGEM_dataframe)
-        print(BlackGEM_dataframe.columns)
+        print(df_bgem_lightcurve)
+        print(df_bgem_lightcurve.columns)
 
         print("-- BlackGEM: Getting Data... Done.")
 
