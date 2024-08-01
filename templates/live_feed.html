@@ -1,0 +1,53 @@
+{% extends 'tom_common/base.html' %}
+{% block content %}
+<!-- --------------------------- -->
+
+<head>
+<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-grid.css">
+<link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-theme-balham.css">
+</head>
+
+<div align="center">
+
+<p>
+<!-- On this page, you can find a live feed of several sources (eventually) -->
+On this page, you can search for a BlackGEM transient to see live data from it.<br>
+<b>NOTE:</b> Right now, there is no connection to BlackGEM, just a random number generator for each transient!
+</p>
+
+<!-- <div class="row">
+    <div class="col-md-6">
+        Test 1
+    </div>
+    <div class="col-md-6">
+        Test 2
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6">
+        Test 3
+    </div>
+    <div class="col-md-6">
+        Test 4
+    </div>
+</div> -->
+
+
+<hr>
+
+<h5>Search for a specific BlackGEM ID:</h5>
+
+<form method="get" action="{% url 'search_BGEM_ID_for_live_feed' %}">
+    <label for="user_input">Input ID (e.g. 1516282):</label><br>
+    <input type="text" name="user_input" placeholder="Enter text" required>
+    <button type="submit" class="btn btn-primary">Query BlackGEM</button>
+</form>
+
+<hr>
+
+
+<!-- --------------------------- -->
+{% endblock %}

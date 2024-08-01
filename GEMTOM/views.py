@@ -9,6 +9,7 @@ from astropy import units as u
 import plotly.express as px
 from dash import Dash, dcc, html, Input, Output, State, callback, dash_table
 from io import StringIO
+import dash_bootstrap_components as dbc
 
 from django.views.generic import TemplateView, FormView
 from django.http import HttpResponse, HttpResponseRedirect, FileResponse
@@ -584,18 +585,6 @@ def handle_input(request):
     if user_input:
         return redirect(f'/status/{user_input}')
     return redirect('status')  # Redirect to the original view if no input
-
-
-def search_BGEM_ID(request):
-    '''
-    Redirects to a status page about a certain date.
-    '''
-    user_input = request.GET.get('user_input')
-    print(user_input)
-    if user_input:
-        return redirect(f'/transient/{user_input}')
-    return redirect('transient')  # Redirect to the original view if no input
-
 
 
 def get_blackgem_stats(obs_date):
@@ -1268,40 +1257,20 @@ class TransientsView(TemplateView):
         return
 
 
-
-## =============================================================================
-## ------------------- Codes for the Live Feed page ---------------------
-
-
-class LiveFeed(TemplateView):
-    template_name = 'transient_search.html'
-
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        return context
-
-    def plot_graph_view(request):
-        # Example DataFrame
-        data = {
-            'x': [1, 2, 3, 4, 5],
-            'y': [10, 15, 13, 17, 21]
-        }
-        df = pd.DataFrame(data)
-
-        # Create a Plotly graph
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df['x'], y=df['y'], mode='lines+markers', name='Line and Marker'))
-
-        # Convert the Plotly graph to HTML
-        plot_div = plot(fig, output_type='div')
-
-        # Pass the plot_div to the template
-        return render(request, 'transient/index.html', {'plot_div': plot_div})
-
-
 ## =============================================================================
 ## ------------------- Codes for the Transient Search page ---------------------
+
+
+def search_BGEM_ID(request):
+    '''
+    Redirects to a status page about a certain date.
+    '''
+    user_input = request.GET.get('user_input')
+    print(user_input)
+    if user_input:
+        return redirect(f'/transient/{user_input}')
+    return redirect('transient')  # Redirect to the original view if no input
+
 
 class TransientSearchView(TemplateView):
     template_name = 'transient_search.html'
@@ -1543,6 +1512,225 @@ def BGEM_ID_View(request, bgem_id):
     }
 
     return render(request, "transient/index.html", context)
+
+
+
+
+## =============================================================================
+## ------------------- Codes for the Live Feed page ---------------------
+
+def search_BGEM_ID_for_live_feed(request):
+    '''
+    Redirects to a live feed page for a certain transient
+    '''
+    user_input = request.GET.get('user_input')
+    print(user_input)
+    if user_input:
+        return redirect(f'/live_feed/{user_input}')
+    return redirect('live_feed')  # Redirect to the original view if no input
+
+
+class LiveFeed(TemplateView):
+    template_name = 'live_feed.html'
+
+    # Example DataFrame
+    data = {
+        'x': [1, 2, 3, 4, 5],
+        'y': [10, 15, 13, 17, 21]
+    }
+    df = pd.DataFrame(data)
+
+    # Create a Plotly graph
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df['x'], y=df['y'], mode='lines+markers', name='Line and Marker'))
+
+    # Convert the Plotly graph to HTML
+    plot_div = plot(fig, output_type='div')
+
+    # Pass the plot_div to the template
+    # return render(request, 'live_feed.html', {'plot_div': plot_div})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+def LiveFeed_BGEM_ID_View(request, bgem_id):
+    '''
+    Finds and displays data from a certain date.
+    '''
+
+    df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
+    print(df_bgem_lightcurve)
+    print(df_bgem_lightcurve.columns)
+
+    response = "You're looking at BlackGEM transient %s."
+
+    ## --- Location on Sky ---
+    fig = plot_BGEM_location_on_sky(df_bgem_lightcurve)
+    location_on_sky = plot(fig, output_type='div')
+
+    ## --- Lightcurve ---
+    fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
+    lightcurve = plot(fig, output_type='div')
+
+    # Pass the plot_div to the template
+    # return render(request, 'transient/index.html')
+
+    ## Get the name, ra, and dec:
+
+    user_home = str(Path.home())
+    creds_user_file = user_home + "/.bg_follow_user_john_creds"
+    creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
+
+    # Instantialte the BlackGEM object, with a connection to the database
+    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+
+    qu = """\
+    SELECT id
+          ,iau_name
+          ,ra_deg
+          ,dec_deg
+      FROM runcat
+     WHERE id = '%(bgem_id)s'
+    """
+
+    params = {'bgem_id': bgem_id}
+    query = qu % (params)
+
+    l_results = bg.run_query(query)
+    source_data = pd.DataFrame(l_results, columns=['id','iau_name','ra_deg','dec_deg'])
+    iau_name    = source_data['iau_name'][0]
+    ra          = source_data['ra_deg'][0]
+    dec         = source_data['dec_deg'][0]
+    # print(source_data)
+    # print(l_results)
+
+    ## Detail each observation:
+
+    #
+    # df_new = df_bgem_lightcurve.rename(columns={
+    #     'a.xtrsrc'          : "xtrsrc",
+    #     'x.ra_psf_d'        : "ra_psf_d",
+    #     'x.dec_psf_d'       : "dec_psf_d",
+    #     'x.flux_zogy'       : "flux_zogy",
+    #     'x.fluxerr_zogy'    : "fluxerr_zogy",
+    #     'x.mag_zogy'        : "mag_zogy",
+    #     'x.magerr_zogy'     : "magerr_zogy",
+    #     'i."mjd-obs"'       : "mjd_obs",
+    #     'i."date-obs"'      : "date_obs",
+    #     'i.filter'          : "filter",
+    # })
+    # df_new.style.format({
+    #     # 'runcat_id' : make_runcat_clickable,
+    #     'xtrsrc' : make_xtrsrc_clickable
+    # })
+
+    # df_new['xtrsrc'] = df_new['xtrsrc'].apply(lambda x: f'[{x}](https://staging.apps.blackgem.org/transients/blackview/show_xtrsrc/{x})')
+
+    # print(df_new)
+
+    ## --- Update Data! ---
+    def fetch_data(n):
+        print("Fetching New Data!")
+        df = pd.DataFrame({
+            'Time': range(n),
+            'Mag': range(n, n*2)
+        })
+        return df
+
+    x = []
+    y = []
+    df = pd.DataFrame({
+        'Time': range(5),
+        'Mag': range(5, 10)
+    })
+
+    wait_interval = 5       ## Waiting interval in seconds
+
+    ## --- Update All ---
+    app_all = DjangoDash('Live_Observation_All')
+
+    ## Define the layout of the Dash app
+    app_all.layout = html.Div([
+        dcc.Graph(id='live-update-graph'),
+        html.Br(),
+        html.Br(),
+        # html.H2(
+        #     "BlackGEM ID ......",
+        #     style={"border-right" : "thin solid #dddddd"},
+        # ),
+        # html.Div(
+        #     "Is BlackGEM Observing? (Heck should I know?)",
+        # ),
+        dag.AgGrid(
+            id='live-update-grid',
+            columnDefs=[
+                {'headerName': 'Time', 'field': 'Time'},
+                {'headerName': 'Mag', 'field': 'Mag'}
+            ],
+            rowData=[],
+            style={'height': '400px', 'width': '100%'}
+        ),
+        dcc.Interval(
+            id='interval-component',
+            interval=wait_interval*1000,  # 5 minutes in milliseconds
+            n_intervals=0
+        ),
+    ], style={'height': '800px', 'width': '100%'}
+    )
+
+    # <div class="row">
+    #     <div class="col-md-6" style="border-right:thin solid #dddddd;">
+    #         <h4>BlackGEM ID {{ bgem_id }}</h4>
+    #     </div>
+    #     <div class="col-md-6">
+    #         <h4>Is BlackGEM Observing? <b>Unknown</b><br></h4>
+    #     </div>
+    # </div>
+
+    # Define the callback to update the grid
+    @app_all.callback(
+        [Output('live-update-graph',    'figure'),
+         Output('live-update-grid',     'rowData')],
+        [Input('interval-component',    'n_intervals')]
+    )
+    def update_grid_table(n_intervals):
+        # fetch_data()
+        # df = fetch_data(n_intervals)
+        print("Fetching New Data!")
+        x.append(n_intervals)
+        y.append(16+np.random.poisson(lam=100)/100)
+        df = pd.DataFrame({
+            'Time': x,
+            'Mag': y
+        })
+        figure = px.line(df, x='Time', y='Mag')
+        return figure, df.to_dict('records')
+
+
+
+
+    # print(df_new)
+
+    # ## Render the app
+    # def obs_dash_view(request):
+    #     return render(request, 'transient/index.html')
+
+    context = {
+        "bgem_id"           : bgem_id,
+        "iau_name"          : iau_name,
+        "ra"                : ra,
+        "dec"               : dec,
+        "dataframe"         : df_bgem_lightcurve,
+        "columns"           : df_bgem_lightcurve.columns,
+        "location_on_sky"   : location_on_sky,
+        "lightcurve"        : lightcurve,
+    }
+
+    return render(request, "live_feed/index.html", context)
+
+
+
 
 
 

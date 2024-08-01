@@ -24,12 +24,15 @@ urlpatterns = [
     # path('about/', AboutView.as_view(), name='about'),
 
     path('live_feed/', LiveFeed.as_view(), name='live_feed'),
+    path('search_BGEM_ID_for_live_feed/', search_BGEM_ID_for_live_feed, name='search_BGEM_ID_for_live_feed'),
+    path('live_feed/<int:bgem_id>/', LiveFeed_BGEM_ID_View, name='live_feed_bgem_id'),
 
     path('update_classification/', update_classification, name='update_classification'),
 
     path('recent_transients/', TransientsView.as_view(), name='recent_transients'),
     path('transient/', TransientSearchView.as_view(), name='transient'),
     # path('plot/', plot_graph_view, name='plot_graph'),
+    path('search_BGEM_ID/', search_BGEM_ID, name='search_BGEM_ID'),
     path('transient/<int:bgem_id>/', BGEM_ID_View, name='bgem_id'),
 
     path('status/', StatusView.as_view(), name='status'),
@@ -39,7 +42,6 @@ urlpatterns = [
 
     # path('ID_to_GEMTOM/', ID_to_GEMTOM, name='ID_to_GEMTOM'),
     path('handle_input/', handle_input, name='handle_input'),
-    path('search_BGEM_ID/', search_BGEM_ID, name='search_BGEM_ID'),
     # path('dash/', include('django_plotly_dash.urls')),
     # path('status_daily/', status_daily, name='status_daily'),
     path('blackGEM/', BlackGEMView.as_view(), name='blackGEM'),
