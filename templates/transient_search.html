@@ -26,6 +26,16 @@ In the future, you'll be able to search from given RA/Decs, but for now I'm just
     <button type="submit" class="btn btn-primary">Query BlackGEM</button>
 </form>
 
+<hr>
+
+<h5>Coordinate Search</h5>
+<p><em>Try: 73.6952, -18.2039, 60</em></p>
+
+{% load plotly_dash %}
+<div class="dash-container">
+    {% plotly_app name="ConeSearchTable" ratio=1 %}
+</div>
+
 <!-- myapp/templates/myapp/dash_template.html -->
 
 

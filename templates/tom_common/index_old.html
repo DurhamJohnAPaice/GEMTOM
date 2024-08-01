@@ -1,0 +1,108 @@
+{% extends 'tom_common/base_home.html' %}
+{% load static targets_extras observation_extras dataproduct_extras tom_common_extras %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <div style="text-align:center">
+
+      <!-- background: white url("img/background.png"); -->
+
+      <!-- <p class="text-center"><img src="https://raw.githubusercontent.com/TOMToolkit/tomtoolkit.github.io/master/assets/img/customize_templates_doc/sciencecat.jpg" class="img-fluid mx-auto"></p> -->
+      <!-- <p class="text-center"><img src="static/tom_common/img/blackgem-logo-black.png" class="img-fluid mx-auto"></p> -->
+      <p class="text-center"><img src="static/tom_common/img/GEMTOM Logo Trans.png" class="img-fluid mx-auto"></p>
+      <!-- <p class="text-center"><img src="{% static 'tom_common/img/blackgem-logo-white-trans.png' %}" class="img-fluid mx-auto"></p> -->
+      <!-- <p class="text-center"><img src="static/tom_common/img/J1820_Warped_Disc_Final.png" class="img-fluid mx-auto"></p> -->
+      <br>
+      <h2 class="text-center">GEMTOM - A BlackGEM TOM</h2>
+
+
+      <p>GEMTOM is a TOM (Target and Observation Manager) for BlackGEM, a new optical triple-telescope in the
+          southern hemisphere. It is currently a work in progress. Please watch this space!</p>
+      <br>
+      <h5><a href="status">Check the status of last night's observations</a></h5>
+      <br>
+
+    </div>
+
+    <hr>
+    <div class="row">
+        <div class="col-md-6" style="text-align:center">
+            <div style="margin-bottom: 0.3em">
+                <a href="transient" class="btn btn-outline-primary" role="button" style="font-size:1.2em">Search for a BlackGEM ID</a>
+            </div>
+            <form method="get" action="{% url 'search_BGEM_ID' %}">
+                <input id="bgem_id" type="text" name="user_input" placeholder="Enter text" required>
+                <button type="submit" class="btn btn-light" style=>Search</button>
+            </form>
+        </div>
+        <div class="col-md-6" style="text-align:center">
+            <a href="recent_transients" class="btn btn-outline-primary" role="button" style="font-size:1.2em">Recent Transients</a>
+        </div>
+    </div>
+    <hr>
+
+    <!-- <p></p> -->
+
+    <!-- <h3>Next steps</h3> -->
+    <!-- <ul>
+      <li>
+        Check out the <a href="https://tom-toolkit.readthedocs.io/en/stable/" title="TOM Toolkit home page" target="_blank">TOM
+        Toolkit homepage</a> for the latest news, downloads and documentation.
+      </li>
+      <li>
+        <a href="{% url 'targets:create' %}" title="Create Target">Add your first target</a>.
+      </li>
+      <li>
+        Customize this page by editing the
+        <code>templates/tom_common/index.html</code> file or by editing your
+        project's <code>urls.py</code>.
+      </li>
+      <li>
+        Take a look at some <a href="https://tom-toolkit.readthedocs.io/en/stable/customization/index.html" target="_blank">common first customizations</a>.
+      </li>
+    </ul> -->
+    <h3>Other Resources</h3>
+    <ul>
+      <li>The official <a href="https://www.djangoproject.com/" target="_blank">Django documentation</a>.</li>
+      <li>The official <a href="http://www.astropy.org/" target="_blank">Astropy documentation</a>.</li>
+    </ul>
+    <hr>
+    <p><em><a target="_blank" href="https://github.com/TOMToolkit/tom_base">TOM Toolkit</a> version {{ version }}</em></p>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        Latest Comments
+      </div>
+      {% recent_comments %}
+    </div>
+    <br/>
+    <div class="card">
+      <div class="card-header">
+        Latest Targets
+      </div>
+      {% recent_targets %}
+  </div>
+      <br/>
+      <div class="card">
+        <div class="card-header">
+          Recently Modified Targets
+        </div>
+        {% recently_updated_targets %}
+    </div>
+</div>
+{% endblock %}
+
+
+<hr>
+
+<form class="navbar-form navbar-right" role="form" method="post" action="{% url 'myapp:article_add' %}" enctype="multipart/form-data">
+{% csrf_token %}
+    <div class="form-group">
+        <div class="col-sm-10">
+        <input id="article_url" name="web_url" type="text">
+        </div>
+   </div>
+   <button type="submit" class="btn btn-default"> + </button>
+</form>

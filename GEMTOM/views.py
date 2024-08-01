@@ -1271,6 +1271,24 @@ def search_BGEM_ID(request):
         return redirect(f'/transient/{user_input}')
     return redirect('transient')  # Redirect to the original view if no input
 
+def transient_cone_search(ra, dec, radius=60):
+    user_home = str(Path.home())
+    creds_user_file = user_home + "/.bg_follow_user_john_creds"
+    creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
+
+    # Instantialte the MeerLICHT and TransientsCatalog objects
+    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+    tc = TransientsCatalog(bg)
+
+    # ra  = 73.69518912800072
+    # dec = -18.203891208244954
+
+    ## Cone Search
+    bg_columns, bg_results = tc.conesearch(ra, dec, radius_arcsec=radius)
+    df_bg_cone = pd.DataFrame(bg_results, columns=bg_columns)
+
+    return df_bg_cone
+
 
 class TransientSearchView(TemplateView):
     template_name = 'transient_search.html'
@@ -1297,6 +1315,95 @@ class TransientSearchView(TemplateView):
 
         # Pass the plot_div to the template
         return render(request, 'transient/index.html', {'plot_div': plot_div})
+
+
+
+
+    app = DjangoDash('ConeSearchTable')
+
+    style_dict = {
+      "font-size": "16px",
+      "margin-right": "10px",
+      'width': '200px',
+      'height': '30px',
+      # 'scale':'2'
+    }
+
+    button_style_dict = {
+        "font-size": "16px",
+        "margin-right": "10px",
+        "padding": "7px 24px",
+        # 'border-radius': '5px',
+        'color':'#027bff',
+        'background-color': '#ffffff',
+        'border': '2px solid #027bff',
+        'border-radius': '5px',
+        'cursor': 'pointer',
+    }
+
+    app.layout = html.Div([
+        html.Div([
+            dcc.Input(id='ra-input',        type='number', min=0, max=360,  placeholder=' RA',        style=style_dict),
+            dcc.Input(id='dec-input',       type='number', min=-90, max=90,   placeholder=' Dec',       style=style_dict),
+            dcc.Input(id='radius-input',    type='number', min=0, max=600,  placeholder=' Radius',    style=style_dict),
+            html.Button('Search', id='submit-button', n_clicks=0, style=button_style_dict)
+            # html.Button('Search', id='submit-button', n_clicks=0, style={"font-size": "16px","margin-right": "10px",})
+        ], style={'margin-bottom': '20px', "text-align":"center"}),
+        html.Div(id='results-container', children=[]),
+        # dcc.Location(id='url', refresh=True)  # Hidden component to control the URL
+    ])
+
+    # Define the callback to update the table based on input coordinates
+    @app.callback(
+        Output('results-container', 'children'),
+        Input('submit-button', 'n_clicks'),
+        State('ra-input', 'value'),
+        State('dec-input', 'value'),
+        State('radius-input', 'value'),
+        prevent_initial_call=True
+    )
+    def update_results(n_clicks, ra, dec, radius):
+        print(ra, dec, radius)
+        if ra is not None and dec is not None:
+            df = transient_cone_search(ra, dec, radius)
+            if len(df) == 0:
+                return html.Div([
+                            html.P("RA: " +str(ra)),
+                            html.P("Dec: " +str(dec)),
+                            html.Em("No targets found"),
+                        ], style={"text-align":"center", "font-size": "18px"}
+                    )
+            else:
+                df['id'] = df['id'].apply(lambda x: f'[{x}](/transient/{x})')
+                table = dag.AgGrid(
+                    id='results-table',
+                    columnDefs=[
+                        {'headerName': 'ID', 'field': 'id', 'cellRenderer': 'markdown'},
+                        {'headerName': 'Datapoints', 'field': 'datapoints'},
+                        {'headerName': 'RA', 'field': 'ra_deg'},
+                        {'headerName': 'Dec', 'field': 'dec_deg'},
+                        {'headerName': 'Dist (")', 'field': 'distance_arcsec'},
+                    ],
+                    rowData=df.to_dict('records'),
+                    dashGridOptions={"rowSelection": "single"},
+                    style={'height': '400px', 'width': '100%'}
+                )
+                return table
+        return []
+
+    # # Callback to handle row selection and redirect
+    # @app.callback(
+    #     Output('url', 'href'),
+    #     Input('results-table', 'selectedRows'),
+    #     prevent_initial_call=True
+    # )
+    # def redirect_on_selection(selected_rows):
+    #     if selected_rows:
+    #         print(selected_rows)
+    #         selected_row = selected_rows[0]  # Assuming single row selection
+    #         bgem_id = selected_row['id']
+    #         return f"/transient/{bgem_id}"  # Redirect to the specific page based on the profile endpoint
+
 
 def get_limiting_magnitudes_from_BGEM_ID(blackgem_id):
 

@@ -3,42 +3,46 @@
 {% block title %}Home{% endblock %}
 {% block content %}
 <div class="row">
-  <div class="col-md-8">
-    <div style="text-align:center">
-
-      <!-- background: white url("img/background.png"); -->
-
-      <!-- <p class="text-center"><img src="https://raw.githubusercontent.com/TOMToolkit/tomtoolkit.github.io/master/assets/img/customize_templates_doc/sciencecat.jpg" class="img-fluid mx-auto"></p> -->
-      <!-- <p class="text-center"><img src="static/tom_common/img/blackgem-logo-black.png" class="img-fluid mx-auto"></p> -->
-      <p class="text-center"><img src="static/tom_common/img/GEMTOM Logo Trans.png" class="img-fluid mx-auto"></p>
-      <!-- <p class="text-center"><img src="{% static 'tom_common/img/blackgem-logo-white-trans.png' %}" class="img-fluid mx-auto"></p> -->
-      <!-- <p class="text-center"><img src="static/tom_common/img/J1820_Warped_Disc_Final.png" class="img-fluid mx-auto"></p> -->
-      <br>
-      <h2 class="text-center">GEMTOM - A BlackGEM TOM</h2>
+    <div class="col-md-2"></div>
+    <div class="col-md-8" style="text-align:center">
+        <p class="text-center"><img src="static/tom_common/img/GEMTOM Logo Trans.png" class="img-fluid mx-auto"></p>
+        <br>
+        <!-- <h2 class="text-center">GEMTOM - A BlackGEM TOM</h2> -->
 
 
-      <p>GEMTOM is a TOM (Target and Observation Manager) for BlackGEM, a new optical triple-telescope in the
-          southern hemisphere. It is currently a work in progress. Please watch this space!</p>
-      <br>
-      <h5><a href="status">Check the status of last night's observations</a></h5>
-      <br>
 
     </div>
+    <div class="col-md-2"></div>
+</div>
+<div style="text-align:center">
+    <p>GEMTOM is a TOM (Target and Observation Manager) for BlackGEM. It is currently a work in progress; please watch this space!</p>
+</div>
+<hr>
 
-    <hr>
-    <div class="row">
-        <div class="col-md-6" style="text-align:center">
-            <a href="transient"><h5>Search for a specific BlackGEM ID</h5></a>
+<div class="row">
 
-            <form method="get" action="{% url 'search_BGEM_ID' %}">
-                <input id="bgem_id" type="text" name="user_input" placeholder="Enter text" required>
-                <button type="submit" class="btn btn-primary" style=>Query BlackGEM</button>
-            </form>
+    <div class="col-md-4" style="text-align:center; border-right:thin solid #dddddd;">
+        <div style="margin-bottom: 0.3em">
+            <a href="transient" class="btn btn-outline-primary" role="button" style="font-size:1.2em">Search for a Transient</a>
         </div>
-        <div class="col-md-6" style="text-align:center">
-            <a href="recent_transients"><h5>Recent Transients</h5></a>
+        <form method="get" action="{% url 'search_BGEM_ID' %}">
+            <input id="bgem_id" type="text" name="user_input" placeholder="BlackGEM ID" required>
+            <button type="submit" class="btn btn-light" style=>Search</button>
+        </form>
+    </div>
+
+    <div class="col-md-4" style="text-align:center; border-right:thin solid #dddddd">
+        <div style="margin-top: 1.3em">
+            <a href="status"  class="btn btn-outline-primary" role="button" style="font-size:1.2em">Last night's observations</a>
         </div>
     </div>
+
+    <div class="col-md-4" style="text-align:center">
+        <div style="margin-top: 1.3em">
+            <a href="recent_transients" class="btn btn-outline-primary" role="button" style="font-size:1.2em">Recent Transients</a>
+        </div>
+    </div>
+</div>
     <hr>
 
     <!-- <p></p> -->
@@ -61,36 +65,48 @@
         Take a look at some <a href="https://tom-toolkit.readthedocs.io/en/stable/customization/index.html" target="_blank">common first customizations</a>.
       </li>
     </ul> -->
-    <h3>Other Resources</h3>
-    <ul>
-      <li>The official <a href="https://www.djangoproject.com/" target="_blank">Django documentation</a>.</li>
-      <li>The official <a href="http://www.astropy.org/" target="_blank">Astropy documentation</a>.</li>
-    </ul>
-    <hr>
-    <p><em><a target="_blank" href="https://github.com/TOMToolkit/tom_base">TOM Toolkit</a> version {{ version }}</em></p>
-  </div>
+
+<div class="row">
+
   <div class="col-md-4">
-    <div class="card">
-      <div class="card-header">
-        Latest Comments
-      </div>
-      {% recent_comments %}
-    </div>
-    <br/>
     <div class="card">
       <div class="card-header">
         Latest Targets
       </div>
       {% recent_targets %}
+    </div>
   </div>
-      <br/>
+
+  <div class="col-md-4">
       <div class="card">
         <div class="card-header">
           Recently Modified Targets
         </div>
         {% recently_updated_targets %}
     </div>
+  </div>
+
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          Latest Comments
+        </div>
+        {% recent_comments %}
+      </div>
+    </div>
+
 </div>
+
+<!-- <hr>
+<h3>Other Resources</h3>
+<ul>
+  <li>The official <a href="https://www.djangoproject.com/" target="_blank">Django documentation</a>.</li>
+  <li>The official <a href="http://www.astropy.org/" target="_blank">Astropy documentation</a>.</li>
+</ul> -->
+<hr>
+
+<p><em><a target="_blank" href="https://github.com/TOMToolkit/tom_base">TOM Toolkit</a> version {{ version }}</em></p>
+
 {% endblock %}
 
 
