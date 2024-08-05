@@ -47,6 +47,9 @@ from pathlib import Path
 import plotly.graph_objs as go
 from plotly.offline import plot
 
+## For the Live Feed
+from dash.exceptions import PreventUpdate
+
 ## BlackGEM Stuff
 from blackpy import BlackGEM
 from blackpy.catalogs.blackgem import TransientsCatalog
@@ -1343,14 +1346,15 @@ class TransientSearchView(TemplateView):
 
     app.layout = html.Div([
         html.Div([
+            # html.A("Link to external site", href='https://plot.ly', target="_blank"),
             dcc.Input(id='ra-input',        type='number', min=0, max=360,  placeholder=' RA',        style=style_dict),
             dcc.Input(id='dec-input',       type='number', min=-90, max=90,   placeholder=' Dec',       style=style_dict),
             dcc.Input(id='radius-input',    type='number', min=0, max=600,  placeholder=' Radius',    style=style_dict),
-            html.Button('Search', id='submit-button', n_clicks=0, style=button_style_dict)
+            html.Button('Search', id='submit-button', n_clicks=0, style=button_style_dict),
             # html.Button('Search', id='submit-button', n_clicks=0, style={"font-size": "16px","margin-right": "10px",})
         ], style={'margin-bottom': '20px', "text-align":"center"}),
         html.Div(id='results-container', children=[]),
-        # dcc.Location(id='url', refresh=True)  # Hidden component to control the URL
+        html.Div(id='redirect-trigger', style={'display': 'none'})
     ])
 
     # Define the callback to update the table based on input coordinates
@@ -1370,15 +1374,20 @@ class TransientSearchView(TemplateView):
                 return html.Div([
                             html.P("RA: " +str(ra)),
                             html.P("Dec: " +str(dec)),
+                            html.P("Radius: " +str(radius)),
                             html.Em("No targets found"),
                         ], style={"text-align":"center", "font-size": "18px"}
                     )
             else:
                 df['id'] = df['id'].apply(lambda x: f'[{x}](/transient/{x})')
+                # df['id'] = df['id'].apply(lambda x: f'<a href="/transient/{x}" target="_blank">{x}</a>)')
+                message = html.Div([html.P(html.Em("Ctrl/Cmd-click on links to open the transient in a new tab"))], style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif"})
                 table = dag.AgGrid(
                     id='results-table',
                     columnDefs=[
                         {'headerName': 'ID', 'field': 'id', 'cellRenderer': 'markdown'},
+                        # {'headerName': 'ID', 'field': 'id', 'cellRenderer': 'htmlCellRenderer'},
+                        # {'headerName': 'ID', 'field': 'id'},
                         {'headerName': 'Datapoints', 'field': 'datapoints'},
                         {'headerName': 'RA', 'field': 'ra_deg'},
                         {'headerName': 'Dec', 'field': 'dec_deg'},
@@ -1386,23 +1395,33 @@ class TransientSearchView(TemplateView):
                     ],
                     rowData=df.to_dict('records'),
                     dashGridOptions={"rowSelection": "single"},
-                    style={'height': '400px', 'width': '100%'}
+                    style={'height': '400px', 'width': '100%'},
                 )
-                return table
+                return message, table
         return []
 
+    ## Below is unused code for when I was trying to redirect to the transient page on a single click.
+    ## Unfortunately, it doesn't work! Maybe I'll have better luck in future figuring it out!
     # # Callback to handle row selection and redirect
     # @app.callback(
-    #     Output('url', 'href'),
+    #     Output('redirect-trigger', 'children'),
     #     Input('results-table', 'selectedRows'),
     #     prevent_initial_call=True
     # )
     # def redirect_on_selection(selected_rows):
+    #     print("Bark!")
     #     if selected_rows:
     #         print(selected_rows)
     #         selected_row = selected_rows[0]  # Assuming single row selection
     #         bgem_id = selected_row['id']
-    #         return f"/transient/{bgem_id}"  # Redirect to the specific page based on the profile endpoint
+    #         # url = "/transient/" + str(bgem_id)
+    #         # url = f"{reverse('/transient/'+str(bgem_id)+'/')}"
+    #         url = f"{reverse('tom_targets:list')}"
+    #
+    #         # return f"/transient/{bgem_id}"  # Redirect to the specific page based on the profile endpoint
+    #         return html.Script(f"window.open('{url}', '_blank');")  # JavaScript to open in a new tab
+    #     # return ""
+
 
 
 def get_limiting_magnitudes_from_BGEM_ID(blackgem_id):
@@ -1636,6 +1655,13 @@ def search_BGEM_ID_for_live_feed(request):
         return redirect(f'/live_feed/{user_input}')
     return redirect('live_feed')  # Redirect to the original view if no input
 
+def fetch_random_data(n):
+    print("Fetching New Data!")
+    df = pd.DataFrame({
+        'Time': range(n),
+        'Mag': range(n, n*2)
+    })
+    return df
 
 class LiveFeed(TemplateView):
     template_name = 'live_feed.html'
@@ -1660,6 +1686,148 @@ class LiveFeed(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         return context
+
+    style_dict = {
+      "font-size": "16px",
+      "margin-right": "10px",
+      'width': '150px',
+      'height': '30px',
+      # 'scale':'2'
+    }
+
+    button_style_dict = {
+        "font-size": "16px",
+        "margin-right": "10px",
+        "padding": "7px 24px",
+        # 'border-radius': '5px',
+        'color':'#027bff',
+        'background-color': '#ffffff',
+        'border': '2px solid #027bff',
+        'border-radius': '5px',
+        'cursor': 'pointer',
+    }
+
+    ## Live Feeds
+
+
+    # x = []
+    # y = []
+    df = pd.DataFrame({
+        'Time': range(5),
+        'Mag': range(5, 10)
+    })
+
+    wait_interval = 5       ## Waiting interval in seconds
+
+    app_names = [
+        'Live_Observation_1',
+        'Live_Observation_2',
+        'Live_Observation_3',
+        'Live_Observation_4',]
+
+
+
+    for app_name in app_names:
+
+        app_1 = DjangoDash(app_name)
+
+        app_1.layout = html.Div([
+            html.Div([
+                dcc.Input(id='id-input',        type='text', min=0, max=360,  placeholder=' BlackGEM ID',        style=style_dict),
+                html.Button('Search', id='submit-button', n_clicks=0, style=button_style_dict),
+                dcc.Graph(id='live-update-graph_1'),
+                dcc.Interval(
+                    id='interval-component',
+                    interval=wait_interval*1000,  # 5 minutes in milliseconds
+                    n_intervals=0
+                )
+                # html.Button('Search', id='submit-button', n_clicks=0, style={"font-size": "16px","margin-right": "10px",})
+            ], style={'margin-bottom': '20px', "text-align":"center"}),
+            html.Div(id='results-container', children=[]),
+        ], style={'height': '300px', 'width': '100%'})
+
+        # Define the callback to update the table based on input coordinates
+        @app_1.callback(
+            Output('live-update-graph_1', 'figure'),
+            [Input('submit-button', 'n_clicks'),
+             Input('interval-component', 'n_intervals')],
+            [State('id-input', 'value')],
+            prevent_initial_call=True
+        )
+        def update_results(n_clicks, n_intervals, bgem_id):
+            if bgem_id is None:
+                raise PreventUpdate  # Prevents the callback from updating the output
+
+            print("Click!")
+            if bgem_id is not None:
+                print("BlackGEM ID: " + bgem_id)
+                print(os.getcwd())
+                df = pd.read_csv("./data/blackgem_test_data.csv")
+                df.loc[9+n_intervals] = [df['mjd'].iloc[-1]+n_intervals] + [df['mag'].iloc[-1]+(np.random.poisson(lam=100)/100-1)] + [0] + ["q"]
+
+
+                fig = px.line(df, x='mjd', y='mag', title="BlackGEM ID: " + bgem_id)
+
+                # Adjust layout to reduce whitespace
+                fig.update_layout(
+                    margin=dict(l=20, r=20, t=20, b=20),  # Set margins to reduce whitespace
+                    title_x=0.5,  # Center the title
+                    title_y=0.95,  # Adjust title position
+                )
+
+                return fig
+            return []
+
+
+## Lightcurve
+
+
+    # # Define the callback to update the grid
+    # @app_1.callback(
+    #     Output('live-update-graph',    'figure'),
+    #     Input('interval-component',    'n_intervals'),
+    #     State('id-input', 'value'),
+    # )
+    # def update_grid_table(n_intervals):
+    #     # fetch_data()
+    #     # df = fetch_data(n_intervals)
+    #     print("Fetching New Data!")
+    #     x.append(n_intervals)
+    #     y.append(16+np.random.poisson(lam=100)/100)
+    #     df = pd.DataFrame({
+    #         'Time': x,
+    #         'Mag': y
+    #     })
+    #     figure = px.line(df, x='Time', y='Mag')
+    #     return figure, df.to_dict('records')
+
+
+
+
+    # ## Define the layout of the Dash app
+    # app_1.layout = html.Div([
+    # ]
+    # )
+    # # Define the callback to update the grid
+    # @app_1.callback(
+    #     [Output('live-update-graph',    'figure'),
+    #      Output('live-update-grid',     'rowData')],
+    #     [Input('interval-component',    'n_intervals')]
+    # )
+    # def update_grid_table(n_intervals):
+    #     # fetch_data()
+    #     # df = fetch_data(n_intervals)
+    #     print("Fetching New Data!")
+    #     x.append(n_intervals)
+    #     y.append(16+np.random.poisson(lam=100)/100)
+    #     df = pd.DataFrame({
+    #         'Time': x,
+    #         'Mag': y
+    #     })
+    #     figure = px.line(df, x='Time', y='Mag')
+    #     return figure, df.to_dict('records')
+
+
 
 def LiveFeed_BGEM_ID_View(request, bgem_id):
     '''
