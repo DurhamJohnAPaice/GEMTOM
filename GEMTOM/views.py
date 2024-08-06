@@ -200,16 +200,16 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
     fig = go.Figure()
     # print(df_bgem_lightcurve['x.mag_zogy'])
     # print(df_bgem_lightcurve['x.magerr_zogy'])
-    print(df_bgem_lightcurve.columns)
-    print(df_limiting_mag.columns)
+    # print(df_bgem_lightcurve.columns)
+    # print(df_limiting_mag.columns)
 
     for f in filters:
         df_2 = df_bgem_lightcurve.loc[df_bgem_lightcurve['i.filter'] == f]
         df_limiting_mag_2 = df_limiting_mag.loc[df_limiting_mag['filter'] == f]
 
-        print(f+":")
-        print(df_2['x.mag_zogy'])
-        print(df_2['x.magerr_zogy'])
+        # print(f+":")
+        # print(df_2['x.mag_zogy'])
+        # print(df_2['x.magerr_zogy'])
 
         fig.add_trace(go.Scatter(
                     x               = df_2['i."mjd-obs"'],
@@ -1663,6 +1663,7 @@ def fetch_random_data(n):
     })
     return df
 
+
 class LiveFeed(TemplateView):
     template_name = 'live_feed.html'
 
@@ -1758,21 +1759,73 @@ class LiveFeed(TemplateView):
             if bgem_id is None:
                 raise PreventUpdate  # Prevents the callback from updating the output
 
-            print("Click!")
             if bgem_id is not None:
-                print("BlackGEM ID: " + bgem_id)
-                print(os.getcwd())
-                df = pd.read_csv("./data/blackgem_test_data.csv")
-                df.loc[9+n_intervals] = [df['mjd'].iloc[-1]+n_intervals] + [df['mag'].iloc[-1]+(np.random.poisson(lam=100)/100-1)] + [0] + ["q"]
+                if bgem_id == "test":
+                    print("BlackGEM ID: " + bgem_id)
+                    print(os.getcwd())
+                    df = pd.read_csv("./data/blackgem_test_data.csv")
+                    df.loc[9+n_intervals] = [df['mjd'].iloc[-1]+n_intervals] + [df['mag'].iloc[-1]+(np.random.poisson(lam=100)/100-1)] + [0] + ["q"]
+                    df_x = df['mjd']
+                    df_y = df['mag']
+
+                    min_x = np.min(df_x)
+                    max_x = np.max(df_x)
+                    max_y = np.max(df_y)
+
+                    fig = px.line(df, x='mjd', y='mag')
+                    time_last_update = time_now = Time.now()
+
+                else:
+                    df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
+                    df = df_bgem_lightcurve
+                    df_x = df_bgem_lightcurve['i."mjd-obs"']
+                    df_y = df_bgem_lightcurve['x.mag_zogy']
+
+                    print(np.min(df_x))
+                    print(np.min(df_limiting_mag['mjd']))
+
+                    min_x = np.min([np.min(df_x), np.min(df_limiting_mag['mjd'])])
+                    max_x = np.max([np.max(df_x), np.max(df_limiting_mag['mjd'])])
+                    # min_y = np.min([df_y, df_limiting_mag['x.mag_zogy']])
+                    max_y = np.max([np.max(df_y), np.max(df_limiting_mag['limiting_mag'])])
 
 
-                fig = px.line(df, x='mjd', y='mag', title="BlackGEM ID: " + bgem_id)
+                    fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
+                    time_last_update = Time(df_bgem_lightcurve['i."mjd-obs"'].iloc[-1], format='mjd')
+
+                ## Get time since last update
+                time_now = Time.now()
+                print(time_now.mjd)
+                print(time_last_update.mjd)
+                days_since_last_update = time_now.mjd-time_last_update.mjd
+                message_start = "(Latest datum "
+                if days_since_last_update > 1:
+                    message = message_start + "%.2f" % days_since_last_update + " days ago)"
+                elif days_since_last_update > 1/24:
+                    message = message_start + "%.2f" % ((days_since_last_update)/24), " hours ago)"
+                else:
+                    message = message_start + str(int((days_since_last_update)/86400)) + " seconds ago)"
+                print(message)
+
+                annotation_x = min_x + ((max_x-min_x)/2)
+                annotation_y = max_y + 0.5
+
+                fig.add_annotation(
+                            x               = annotation_x,
+                            y               = annotation_y,
+                            text            = 'Last check at ' + str(time_now)[:19] + ' UT',
+                            showarrow       = False
+
+                )
+
 
                 # Adjust layout to reduce whitespace
                 fig.update_layout(
+                    title="BlackGEM ID: " + bgem_id +"\n" + message,
                     margin=dict(l=20, r=20, t=20, b=20),  # Set margins to reduce whitespace
                     title_x=0.5,  # Center the title
                     title_y=0.95,  # Adjust title position
+                    height=400
                 )
 
                 return fig
@@ -1927,32 +1980,39 @@ def LiveFeed_BGEM_ID_View(request, bgem_id):
 
     ## Define the layout of the Dash app
     app_all.layout = html.Div([
-        dcc.Graph(id='live-update-graph'),
-        html.Br(),
-        html.Br(),
-        # html.H2(
-        #     "BlackGEM ID ......",
-        #     style={"border-right" : "thin solid #dddddd"},
-        # ),
-        # html.Div(
-        #     "Is BlackGEM Observing? (Heck should I know?)",
-        # ),
-        dag.AgGrid(
-            id='live-update-grid',
-            columnDefs=[
-                {'headerName': 'Time', 'field': 'Time'},
-                {'headerName': 'Mag', 'field': 'Mag'}
-            ],
-            rowData=[],
-            style={'height': '400px', 'width': '100%'}
-        ),
-        dcc.Interval(
-            id='interval-component',
-            interval=wait_interval*1000,  # 5 minutes in milliseconds
-            n_intervals=0
-        ),
-    ], style={'height': '800px', 'width': '100%'}
-    )
+        html.Div([
+            dcc.Graph(id='live-update-graph',
+                style={'height': '450px', 'width': '100%'}),
+            html.Br(),
+            # html.H2(
+            #     "BlackGEM ID ......",
+            #     style={"border-right" : "thin solid #dddddd"},
+            # ),
+            # html.Div(
+            #     "Is BlackGEM Observing? (Heck should I know?)",
+            # ),
+            dag.AgGrid(
+                id='live-update-grid',
+                rowData=[],
+                defaultColDef={
+                    'sortable': True,
+                    'filter': True,
+                    'resizable': True,
+                    'editable': False,
+                },
+                columnSize="autoSize",
+                dashGridOptions = {"skipHeaderOnAutoSize": True, "rowSelection": "single"},
+                style={'height': '400px', 'width': '100%'},  # Set explicit height for the table
+                className='ag-theme-balham'  # Add a theme for better appearance
+            ),
+            dcc.Interval(
+                id='interval-component',
+                interval=wait_interval*1000,  # 5 minutes in milliseconds
+                n_intervals=0
+            ),
+        ], style={'margin-bottom': '20px', "text-align":"center"}),
+        html.Div(id='results-container', children=[]),
+    ], style={'height': '800px', 'width': '100%'})
 
     # <div class="row">
     #     <div class="col-md-6" style="border-right:thin solid #dddddd;">
@@ -1963,24 +2023,105 @@ def LiveFeed_BGEM_ID_View(request, bgem_id):
     #     </div>
     # </div>
 
-    # Define the callback to update the grid
+
+    # Define the callback to update the table based on input coordinates
     @app_all.callback(
-        [Output('live-update-graph',    'figure'),
-         Output('live-update-grid',     'rowData')],
-        [Input('interval-component',    'n_intervals')]
+        Output('live-update-graph', 'figure'),
+        Output('live-update-grid', 'rowData'),
+        Output('live-update-grid', 'columnDefs'),
+        Input('interval-component', 'n_intervals'),
+        # [State('bgem_id', 'value')],
+        # prevent_initial_call=True
     )
-    def update_grid_table(n_intervals):
-        # fetch_data()
-        # df = fetch_data(n_intervals)
-        print("Fetching New Data!")
-        x.append(n_intervals)
-        y.append(16+np.random.poisson(lam=100)/100)
-        df = pd.DataFrame({
-            'Time': x,
-            'Mag': y
-        })
-        figure = px.line(df, x='Time', y='Mag')
-        return figure, df.to_dict('records')
+    def update_results(n_intervals):
+        if bgem_id is None:
+            raise PreventUpdate  # Prevents the callback from updating the output
+
+        if bgem_id is not None:
+            if bgem_id == "test":
+                print("BlackGEM ID: " + str(bgem_id))
+                print(os.getcwd())
+                df = pd.read_csv("./data/blackgem_test_data.csv")
+                df.loc[9+n_intervals] = [df['mjd'].iloc[-1]+n_intervals] + [df['mag'].iloc[-1]+(np.random.poisson(lam=100)/100-1)] + [0] + ["q"]
+                df_x = df['mjd']
+                df_y = df['mag']
+
+                min_x = np.min(df_x)
+                max_x = np.max(df_x)
+                max_y = np.max(df_y)
+
+                fig = px.line(df, x='mjd', y='mag')
+                time_last_update = time_now = Time.now()
+
+            else:
+                df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
+                df = df_bgem_lightcurve
+                df_x = df_bgem_lightcurve['i."mjd-obs"']
+                df_y = df_bgem_lightcurve['x.mag_zogy']
+
+                min_x = np.min([np.min(df_x), np.min(df_limiting_mag['mjd'])])
+                max_x = np.max([np.max(df_x), np.max(df_limiting_mag['mjd'])])
+                # min_y = np.min([df_y, df_limiting_mag['x.mag_zogy']])
+                max_y = np.max([np.max(df_y), np.max(df_limiting_mag['limiting_mag'])])
+
+
+                fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
+                time_last_update = Time(df_bgem_lightcurve['i."mjd-obs"'].iloc[-1], format='mjd')
+
+            ## Get time since last update
+            time_now = Time.now()
+            print(time_now.mjd)
+            print(time_last_update.mjd)
+            days_since_last_update = time_now.mjd-time_last_update.mjd
+            message_start = "(Latest datum "
+            if days_since_last_update > 1:
+                message = message_start + "%.2f" % days_since_last_update + " days ago)"
+            elif days_since_last_update > 1/24:
+                message = message_start + "%.2f" % ((days_since_last_update)/24), " hours ago)"
+            else:
+                message = message_start + str(int((days_since_last_update)/86400)) + " seconds ago)"
+            print(message)
+
+            annotation_x = min_x + ((max_x-min_x)/2)
+            annotation_y = max_y + 0.5
+
+            fig.add_annotation(
+                        x               = annotation_x,
+                        y               = annotation_y,
+                        text            = 'Last check at ' + str(time_now)[:19] + ' UT',
+                        showarrow       = False
+
+            )
+
+
+            # Adjust layout to reduce whitespace
+            fig.update_layout(
+                title="BlackGEM ID: " + str(bgem_id) +"\n" + message,
+                margin=dict(l=20, r=20, t=20, b=20),  # Set margins to reduce whitespace
+                title_x=0.5,  # Center the title
+                title_y=0.95,  # Adjust title position
+                height=400
+            )
+
+            ## Rename to play nice with the Dash AgGrid
+            df_new = df.rename(columns={
+                'a.xtrsrc'          : "xtrsrc",
+                'x.ra_psf_d'        : "ra_psf_d",
+                'x.dec_psf_d'       : "dec_psf_d",
+                'x.flux_zogy'       : "flux_zogy",
+                'x.fluxerr_zogy'    : "fluxerr_zogy",
+                'x.mag_zogy'        : "mag_zogy",
+                'x.magerr_zogy'     : "magerr_zogy",
+                'i."mjd-obs"'       : "mjd_obs",
+                'i."date-obs"'      : "date_obs",
+                'i.filter'          : "filter",
+            })
+
+            columnDefs = [{'headerName': col, 'field': col, 'type': 'leftAligned'} for col in df_new.columns]  # Column definitions
+
+
+            return fig, df_new.to_dict('records'), columnDefs
+        return []
 
 
 
