@@ -23,7 +23,11 @@ On this page, you can find the data for a specific BlackGEM transient.
 <h6>RA: {{ ra }}, Dec: {{ dec }}<br></h6>
 
 <a href="#" onclick='window.open("https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}");return false;'><em>BlackView</em> webpage for this source</a>
-<br>&nbsp;
+<br>
+{% if tns_flag %}
+    <p><em><a href="#" onclick='window.open("https://sandbox.wis-tns.org/object/{{ tns_flag_name }}");return false;'>TNS Object within 10 arcseconds! ({{tns_flag_name}})</a></em></p>
+{% endif %}
+&nbsp;
 <form method="post" action="{% url 'status_to_GEMTOM' %}" class="image-form">
     {% csrf_token %}
     <input type="hidden" name="id" value="{{ bgem_id }}">
@@ -62,12 +66,34 @@ On this page, you can find the data for a specific BlackGEM transient.
         justify-content: center;
         align-items: center;
     }
+    .dash-container-small {
+        width: 100%;
+        height: 200px;
+        justify-content: center;
+        align-items: center;
+    }
 </style>
 
 
 {% load plotly_dash %}
 <div class="dash-container">
-    {% plotly_app name="EachObservation" ratio=0.5 %}
+    {% plotly_app name="EachObservation" ratio=0.4 %}
+</div>
+
+<hr>
+<!-- <p>TNS Readout (within 100 arcsec):</p> -->
+<h5>TNS Search</h5>
+{{ tns_text }} <br>
+<!-- {% for tns_object in tns_list %}
+    {{ tns_object }} <br>
+{% endfor %} -->
+<!-- {% for tns_object in tns_objects_data %}
+    {{ tns_object }} <br>
+{% endfor %} -->
+
+<p><em>Right-click on an object name to go to the TNS server page for that object.</em></p>
+<div class="dash-container-small">
+    {% plotly_app name="TNS_Sources" ratio=0.2 %}
 </div>
 
 <hr>

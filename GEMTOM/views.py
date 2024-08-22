@@ -55,7 +55,8 @@ from blackpy import BlackGEM
 from blackpy.catalogs.blackgem import TransientsCatalog
 
 from tom_common.hooks import run_hook
-from tom_observations.models import Target
+# from tom_observations.models import Target
+from tom_targets.models import Target
 from tom_common.hints import add_hint
 from tom_dataproducts.exceptions import InvalidFileFormatException
 
@@ -1502,9 +1503,85 @@ def BGEM_to_GEMTOM_photometry(df_bg_assocs):
 
     return gemtom_photometry
 
+## =========================
+## ----- TNS Functions -----
+
+from collections import OrderedDict
+
+TNS                 = "sandbox.wis-tns.org"
+url_tns_api         = "https://" + TNS + "/api/get"
+
+TNS_BOT_ID          = "187806"
+TNS_BOT_NAME        = "BotGEM"
+TNS_API_KEY         = os.getenv('TNS_API_TOKEN', 'TNS_API_TOKEN not set')
+
+def set_bot_tns_marker():
+    tns_marker = 'tns_marker{"tns_id": "' + str(TNS_BOT_ID) + '", "type": "bot", "name": "' + TNS_BOT_NAME + '"}'
+    return tns_marker
+
+def search(search_obj):
+    search_url = url_tns_api + "/search"
+    tns_marker = set_bot_tns_marker()
+    headers = {'User-Agent': tns_marker}
+    json_file = OrderedDict(search_obj)
+    search_data = {'api_key': TNS_API_KEY, 'data': json.dumps(json_file)}
+    response = requests.post(search_url, headers = headers, data = search_data)
+    return response
+
+def get(get_obj):
+    get_url = url_tns_api + "/object"
+    tns_marker = set_bot_tns_marker()
+    headers = {'User-Agent': tns_marker}
+    json_file = OrderedDict(get_obj)
+    get_data = {'api_key': TNS_API_KEY, 'data': json.dumps(json_file)}
+    response = requests.post(get_url, headers = headers, data = get_data)
+    return response
+
+def format_to_json(source):
+    parsed = json.loads(source, object_pairs_hook = OrderedDict)
+    result = json.dumps(parsed, indent = 4)
+    return result
+
+##  --- TNS functions for GEMTOM ---
+def get_tns_from_ra_dec(ra, dec, radius):
+
+    search_obj          = [("ra", str(ra)), ("dec", str(dec)), ("radius", str(radius)), ("units", "arcsec"), ("objname", ""),
+                       ("objname_exact_match", 0), ("internal_name", ""),
+                       ("internal_name_exact_match", 0), ("objid", ""), ("public_timestamp", "")]
+
+    response = search(search_obj)
+    json_data = format_to_json(response.text)
+    print(json_data)
+    json_data = json.loads(json_data)
+    if json_data["id_code"] == 429:
+        return "Too many requests!"
+    elif json_data["id_code"] == 401:
+        return "Unauthorised!"
+    else:
+        print("ID Code:", json_data["id_code"])
+        print("ID Code:", json_data["id_code"])
+        print(json_data.keys())
+        print(json_data["data"]["reply"])
+        print(len(json_data["data"]["reply"]))
+        return json_data
+
+def get_ra_dec_from_tns(tns_object_name):
+    get_obj             = [("objname", tns_object_name), ("objid", ""), ("photometry", ""), ("spectra", "")]
+    response = get(get_obj)
+    json_data = format_to_json(response.text)
+    json_data = json.loads(json_data)
+    print(json_data)
+    if json_data["id_code"] == 429:
+        return "Too many requests!"
+    else:
+        return json_data
+
+## ----- TNS Functions -----
+## =========================
+
 def BGEM_ID_View(request, bgem_id):
     '''
-    Finds and displays data from a certain date.
+    Displays data of a certain transient
     '''
 
     df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
@@ -1545,8 +1622,17 @@ def BGEM_ID_View(request, bgem_id):
     params = {'bgem_id': bgem_id}
     query = qu % (params)
 
+    ## 6385260
+
     l_results = bg.run_query(query)
     source_data = pd.DataFrame(l_results, columns=['id','iau_name','ra_deg','dec_deg'])
+    if len(source_data) == 0:
+
+        context = {
+            "bgem_id"           : bgem_id,
+        }
+
+        return render(request, "transient/index_2.html", context)
     iau_name    = source_data['iau_name'][0]
     ra          = source_data['ra_deg'][0]
     dec         = source_data['dec_deg'][0]
@@ -1620,6 +1706,130 @@ def BGEM_ID_View(request, bgem_id):
     ], style={'height': '400px', 'width': '100%'}
     )
 
+    ## TNS:
+    search_radius = 2000
+    tns_data = get_tns_from_ra_dec(ra, dec, search_radius)
+    if tns_data == "Too many requests!":
+        tns_text = "Too many TNS requests. Please check later."
+        tns_list = []
+    elif tns_data == "Unauthorised!":
+        tns_text = "Note: TNS Unauthorised. Please check."
+        tns_list = []
+    else:
+        tns_reply = tns_data["data"]["reply"]
+        tns_reply_length = len(tns_data["data"]["reply"])
+        if tns_reply_length == 0:
+            tns_text = "No TNS object found within " + str(search_radius) + " arcseconds."
+            tns_list = []
+        else:
+            tns_text = "TNS results within " + str(search_radius) + " arcseconds"
+            tns_list = tns_reply
+
+    tns_object_names    = []
+    tns_object_ids      = []
+    for tns_object in tns_list:
+        tns_object_names.append(tns_object["objname"])
+        tns_object_ids.append(tns_object["objid"])
+    print(tns_object_names)
+
+    # tns_objects_data = []
+    tns_object_prefix       = []
+    tns_object_ra           = []
+    tns_object_dec          = []
+    tns_object_sep          = []
+    tns_object_internalname = []
+    bgem_object_radec       = SkyCoord(ra*u.deg, dec*u.deg, frame='icrs')
+    for tns_object_name in tns_object_names:
+        # tns_object_ra, tns_object_dec = get_ra_dec_from_tns(tns_object_name)
+        tns_object_data = get_ra_dec_from_tns(tns_object_name)
+        if tns_data == "Too many requests!":
+            tns_object_data = "Too many TNS requests. Please check later."
+            break
+        else:
+            # print(tns_object_data)
+            # print(tns_object_data["data"])
+            # print(tns_object_data["data"]["reply"])
+
+            ## Get RA and Dec, and find distance to our current target.
+            this_object_ra      = tns_object_data["data"]["reply"]["radeg"]
+            this_object_dec     = tns_object_data["data"]["reply"]["decdeg"]
+            this_object_radec   = SkyCoord(this_object_ra*u.deg, this_object_dec*u.deg, frame='icrs')
+            this_object_sep     = bgem_object_radec.separation(this_object_radec)
+
+            # print(this_object_radec)
+            # print(bgem_object_radec)
+            # print(this_object_sep.arcsecond)
+
+            ## Save the individual details
+            tns_object_prefix.append(tns_object_data["data"]["reply"]["name_prefix"])
+            tns_object_ra.append(this_object_ra)
+            tns_object_dec.append(this_object_dec)
+            tns_object_sep.append(this_object_sep.arcsecond)
+            tns_object_internalname.append(tns_object_data["data"]["reply"]["internal_names"])
+    # print(tns_objects_data)
+    print(tns_object_ra)
+    print(tns_object_dec)
+    # tns_objects_data = zip(tns_object_names, tns_object_ra, tns_object_dec)
+
+    tns_objects_data = pd.DataFrame({
+        'ObjID': tns_object_ids,
+        'Prefix': tns_object_prefix,
+        'Name': tns_object_names,
+        'RA': tns_object_ra,
+        'Dec': tns_object_dec,
+        'Internal_Name': tns_object_internalname,
+        'Separation': tns_object_sep,
+    })
+
+    tns_objects_potential = tns_objects_data.loc[tns_objects_data['Separation'] < 10]
+    if len(tns_objects_potential) > 0:
+        tns_flag = True
+        tns_flag_name = tns_objects_potential["Name"].iloc[0]
+    else:
+        tns_flag = False
+        tns_flag_name = ""
+
+    tns_objects_data['Name'] = tns_objects_data['Name'].apply(lambda x: f'[{x}](https://sandbox.wis-tns.org/object/{x})')
+
+    # TNS_object_url = "https://sandbox.wis-tns.org/object/2024ot"
+
+    tns_objects_data = tns_objects_data.sort_values(by=['Separation'])
+
+    ## TNS Dash App
+    app = DjangoDash('TNS_Sources')
+    app.layout = html.Div([
+        dag.AgGrid(
+            id='tns-grid',
+            rowData=tns_objects_data.to_dict('records'),
+            columnDefs=[
+                        {'headerName': 'ObjID',         'field':  'ObjID'},
+                        {'headerName': 'Prefix',        'field':  'Prefix'},
+                        {'headerName': 'Name', 'field':  'Name', 'cellRenderer': 'markdown'},
+                        # {'headerName': 'Name',          'field':  'Name'},
+                        {'headerName': 'RA',            'field':  'RA'  },
+                        {'headerName': 'Dec',           'field':  'Dec' },
+                        {'headerName': 'Internal Name', 'field':  'Internal_Name' },
+                        {'headerName': 'Separation (arcsec)',    'field':  'Separation' },
+            ],
+            defaultColDef={
+                'sortable': True,
+                'filter': True,
+                'resizable': True,
+                'editable': True,
+            },
+            columnSize="autoSize",
+            dashGridOptions={
+                "skipHeaderOnAutoSize": False,
+                "rowSelection": "single",
+            },
+            style={'height': '200px', 'width': '100%'},  # Set explicit height for the grid
+            className='ag-theme-balham'  # Add a theme for better appearance
+        ),
+        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
+        html.Div(id='output-div'),  # Div to display the information
+    ], style={'height': '200px', 'width': '100%'}
+    )
+
     # print(df_new)
 
     # ## Render the app
@@ -1635,6 +1845,12 @@ def BGEM_ID_View(request, bgem_id):
         "columns"           : df_bgem_lightcurve.columns,
         "location_on_sky"   : location_on_sky,
         "lightcurve"        : lightcurve,
+        "tns_flag"          : tns_flag,
+        "tns_flag_name"     : tns_flag_name,
+        "tns_data"          : tns_data,
+        "tns_text"          : tns_text,
+        "tns_list"          : tns_list,
+        # "tns_objects_data"  : tns_objects_data,
     }
 
     return render(request, "transient/index.html", context)
@@ -2434,6 +2650,34 @@ class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):
                 )
 
         return redirect(form.get('referrer', '/'))
+
+def UpdateBlackGEMFunc(target_name, target_id, target_blackgemid):
+
+    ## Upload to GEMTOM
+    successful_uploads, dp, iffe, iffe2, iffe3, form = add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid)
+
+    ## Return messages for sucess or failute
+    if successful_uploads:
+        print("Successful upload!")
+        messages.success(
+            self.request,
+            'Successfully uploaded: {0}'.format('\n'.join([p for p in successful_uploads]))
+        )
+    else:
+        print("Upload unsuccessful!")
+        if iffe:
+            messages.error(
+                self.request,
+                'File format invalid for file {0} -- Error: {1}'.format(str(dp), iffe)
+            )
+        if iffe2:
+            messages.error(self.request, 'There was a problem processing your file: {0} -- Error: {1}'.format(str(dp), iffe2))
+        if iffe3:
+            messages.error(
+                self.request,
+                'Error while fetching BlackGEM data; ' + str(iffe2)
+            )
+
 
 #
 # class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):

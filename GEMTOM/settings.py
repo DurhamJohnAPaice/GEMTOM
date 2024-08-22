@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'tom_setup',
     'extras',
     'django_plotly_dash.apps.DjangoPlotlyDashConfig',
+    # 'django_dramatiq',
 ]
 
 SITE_ID = 1
@@ -247,6 +248,21 @@ SINGLE_TARGET_DATA_SERVICES = {
         'api_key': os.getenv('MAST_API_TOKEN', 'MAST_API_TOKEN not set')
     },
 }
+
+## Dramatiq server for forced photometry:
+# DRAMATIQ_BROKER = {
+#     "BROKER": "dramatiq.brokers.redis.RedisBroker",
+#     "OPTIONS": {
+#         "url": "redis://your-redis-service-url:your-redis-port"
+#     },
+#     "MIDDLEWARE": [
+#         "dramatiq.middleware.AgeLimit",
+#         "dramatiq.middleware.TimeLimit",
+#         "dramatiq.middleware.Callbacks",
+#         "dramatiq.middleware.Retries",
+#         "django_dramatiq.middleware.DbConnectionsMiddleware",
+#     ]
+# }
 
 # Define the valid data product types for your TOM.
 # This is a dictionary of tuples to be used as ChoiceField options, with the first element being the type and the

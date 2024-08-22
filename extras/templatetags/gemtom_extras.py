@@ -440,6 +440,14 @@ def update_classification(target):
         'form'        : form
         }
 
+@register.inclusion_tag('tom_dataproducts/partials/query_forced_photometry.html')
+def query_forced_photometry(target):
+    target_name = target.name
+    target_id = target.id
+    return {
+        'target_name' : target_name,
+        'target_id'   : target_id,
+    }
 
 @register.inclusion_tag('tom_dataproducts/partials/observe_staralt.html')
 def observe_staralt(target):
@@ -463,6 +471,186 @@ def observe_staralt(target):
         'staralt_dec' : round(target.dec, 3)
         }
     # return target
+
+## Testing for updating BGEM LC:
+
+def get_limiting_magnitudes_from_BGEM_ID(blackgem_id):
+
+    creds_user_file = str(Path.home()) + "/.bg_follow_user_john_creds"
+    creds_db_file = str(Path.home()) + "/.bg_follow_transientsdb_creds"
+
+    # Instantiate the BlackGEM object
+    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+
+    qu = """\
+    SELECT i1.id
+          ,i1."date-obs"
+          ,i1."mjd-obs"
+          ,i1."t-lmag"
+          ,i1.filter
+      FROM image i1
+          ,(SELECt i0.id AS imageid
+             FROM image i0
+                 ,(SELECT x.object
+                     FROM assoc a
+                         ,extractedsource x
+                    WHERE a.runcat = '%(blackgem_id)s'
+                      AND a.xtrsrc = x.id
+                   GROUP BY x.object
+                  ) t0
+            WHERE i0.object = t0.object
+           EXCEPT
+           SELECT x.image AS imageid
+             FROM assoc a
+                 ,extractedsource x
+            WHERE a.runcat = 31744960
+              AND a.xtrsrc = x.id
+            ) t1
+     WHERE i1.id = t1.imageid
+       AND i1."tqc-flag" <> 'red'
+    ORDER BY i1."date-obs"
+    """
+
+    params = {'blackgem_id': blackgem_id}
+    query = qu % (params)
+    l_results = bg.run_query(query)
+
+    df_limiting_mag = pd.DataFrame(l_results, columns=['id','date_obs','mjd','limiting_mag','filter'])
+    print(df_limiting_mag)
+
+    return(df_limiting_mag)
+
+def get_lightcurve_from_BGEM_ID(transient_id):
+
+    print("Getting lightcurve for transient ID " + str(transient_id) + "...")
+
+    creds_user_file = str(Path.home()) + "/.bg_follow_user_john_creds"
+    creds_db_file = str(Path.home()) + "/.bg_follow_transientsdb_creds"
+
+    # Instantiate the BlackGEM object
+    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+
+    # Create an instance of the Transients Catalog
+    tc = TransientsCatalog(bg)
+    df_limiting_mag = get_limiting_magnitudes_from_BGEM_ID(transient_id)
+
+    # Get all the associated extracted sources for this transient
+    # Note that you can specify the columns yourself, but here we use the defaults
+    bg_columns, bg_results = tc.get_associations(transient_id)
+    df_bgem_lightcurve = pd.DataFrame(bg_results, columns=bg_columns)
+
+    return df_bgem_lightcurve, df_limiting_mag
+
+
+def add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid):
+
+    form = { \
+        'observation_record': None, \
+        'target': target_name, \
+        'files': "./data/GEMTOM_BlackGEM_Test.csv", \
+        'data_product_type': 'blackgem_data', \
+        'referrer': '/targets/' + target_id + '/'}
+    # print(form)
+
+    print("-- BlackGEM: Getting Data...", end="\r")
+
+    successful_uploads = []
+    iffe = ""
+    iffe2 = ""
+    iffe3 = ""
+
+    try:
+        df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(target_blackgemid)
+        photometry = BGEM_to_GEMTOM_photometry(df_bgem_lightcurve)
+        print(df_bgem_lightcurve)
+        print(df_bgem_lightcurve.columns)
+
+        print("-- BlackGEM: Getting Data... Done.")
+
+        ## Save ZTF Data
+        df = photometry
+        # print(df)
+        if not os.path.exists("./data/" + target_name + "/none/"):
+            os.makedirs("./data/" + target_name + "/none/")
+        filepath = "./data/" + target_name + "/none/" + target_name + "_BGEM_Data.csv"
+        df.to_csv(filepath, index=False)
+
+        target_instance = Target.objects.get(pk=target_id)
+
+        dp = DataProduct(
+            target=target_instance,
+            observation_record=None,
+            data=target_name + "/none/" + target_name + "_BGEM_Data.csv",
+            product_id=None,
+            data_product_type='blackgem_data'
+        )
+        # print(dp)
+        dp.save()
+
+        ## Ingest the data
+        try:
+            run_hook('data_product_post_upload', dp)
+            reduced_data = run_data_processor(dp)
+
+            if not settings.TARGET_PERMISSIONS_ONLY:
+                for group in form.cleaned_data['groups']:
+                    assign_perm('tom_dataproducts.view_dataproduct', group, dp)
+                    assign_perm('tom_dataproducts.delete_dataproduct', group, dp)
+                    assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
+            successful_uploads.append(str(dp))
+
+        except InvalidFileFormatException as iffe:
+            print("Invalid File Format Exception!")
+            print(iffe)
+            ReducedDatum.objects.filter(data_product=dp).delete()
+            dp.delete()
+
+        except Exception as iffe2:
+            print("Exception!")
+            print(iffe2)
+            ReducedDatum.objects.filter(data_product=dp).delete()
+            dp.delete()
+
+    except Exception as iffe3:
+        print(iffe3)
+
+    return successful_uploads, dp, iffe, iffe2, iffe3, form
+
+
+
+@register.inclusion_tag('tom_dataproducts/partials/update_blackgem_data.html', takes_context=True)
+def update_blackgem_data(context, target, width=700, height=400, background=None, label_color=None, grid=True):
+    print(target.__dict__)
+    print(context.__dict__)
+    target_name = target.name
+    target_id = target.id
+    # target_blackgemid = target.id
+
+    ## Upload to GEMTOM
+    successful_uploads, dp, iffe, iffe2, iffe3, form = add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid)
+
+    ## Return messages for sucess or failute
+    if successful_uploads:
+        print("Successful upload!")
+        messages.success(
+            self.request,
+            'Successfully uploaded: {0}'.format('\n'.join([p for p in successful_uploads]))
+        )
+    else:
+        print("Upload unsuccessful!")
+        if iffe:
+            messages.error(
+                self.request,
+                'File format invalid for file {0} -- Error: {1}'.format(str(dp), iffe)
+            )
+        if iffe2:
+            messages.error(self.request, 'There was a problem processing your file: {0} -- Error: {1}'.format(str(dp), iffe2))
+        if iffe3:
+            messages.error(
+                self.request,
+                'Error while fetching BlackGEM data; ' + str(iffe2)
+            )
+
 
 @register.inclusion_tag('tom_dataproducts/partials/blackgem_for_target.html', takes_context=True)
 def blackgem_for_target(context, target, width=700, height=400, background=None, label_color=None, grid=True):

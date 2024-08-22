@@ -1,10 +1,11 @@
 <h4>Other Data Sources</h4>
 <a href="#" onclick='window.open("https://asas-sn.osu.edu");return false;' class="btn btn-primary" title="Fetch ASASSN">ASASSN Data Access</a>
+<a href="#" onclick='window.open("https://fallingstar-data.com/forcedphot/");return false;' class="btn btn-primary" title="Fetch ATLAS">ATLAS Forced Photometry</a>
 <!-- <a href="#" onclick='window.open("https://asas-sn.osu.edu");return false;' class="btn btn-primary" title="Fetch ASASSN">ASASSN Data Access</a> -->
-<hr>
+<!-- <hr>
 <h4>Query Forced Photometry Service</h4>
 {% for service in forced_photometry_services %}
 <a href="{% url 'tom_dataproducts:forced-photometry-query' service=service %}?target_id={{ target.id }}" title="{{ service }}" class="btn btn-outline-primary">{{ service }}</a>
 {% empty %}
 No forced photometry services are configured. See the <a href="https://tom-toolkit.readthedocs.io/en/latest/managing_data/forced_photometry.html" target="_blank">TOM documentation</a> for more information.
-{% endfor %}
+{% endfor %} -->

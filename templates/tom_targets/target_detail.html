@@ -48,7 +48,7 @@
       {% target_data object %}
       {% recent_photometry object limit=3 %}
       {% if object.type == 'SIDEREAL' %}
-      {% aladin object %}
+      {% aladin_finderchart object %}
       {% endif %}
 
     </div>
@@ -116,12 +116,15 @@
       <div class="tab-pane" id="manage-data">
         {% if user.is_authenticated %}
           {% upload_dataproduct object %}
+          <hr>
         {% endif %}
         {% if user.is_authenticated %}
-        <hr>
-        {% query_forced_photometry object %}
-        <hr>
+            {% query_single_target_data_service object %}
+            <hr>
+            {% query_forced_photometry object %}
+            <hr>
         {% endif %}
+        <br>
         {% dataproduct_list_for_target object %}
         <hr>
       </div>
