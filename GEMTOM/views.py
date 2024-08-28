@@ -34,8 +34,15 @@ import requests
 from django.template import loader
 from astropy.time import Time
 from bs4 import BeautifulSoup
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 import numpy as np
+import astropy.coordinates as coord
+import matplotlib
+matplotlib.use('Agg')  # Use the 'Agg' backend for rendering plots
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import io
+import urllib, base64
 
 ## For the Recent Transients View
 from django_plotly_dash import DjangoDash
@@ -49,6 +56,7 @@ from plotly.offline import plot
 
 ## For the Live Feed
 from dash.exceptions import PreventUpdate
+import math
 
 ## BlackGEM Stuff
 from blackpy import BlackGEM
@@ -271,7 +279,57 @@ class BlackGEMView(TemplateView):
     def get_context_data(self, **kwargs):
         return {'targets': Target.objects.all()}
 
+def datetime_to_mjd(date):
+    '''
+    From https://gist.github.com/jiffyclub/1294443
+    '''
 
+    year    = date.year
+    month   = date.month
+    day     = date.day
+    hour    = date.hour
+    min     = date.minute
+    sec     = date.second
+    micro   = date.microsecond
+
+    days = sec + (micro / 1.e6)
+    days = min + (days / 60.)
+    days = hour + (days / 60.)
+    days = days / 24.
+
+    day = day + days
+
+    if month == 1 or month == 2:
+        yearp = year - 1
+        monthp = month + 12
+    else:
+        yearp = year
+        monthp = month
+
+    # this checks where we are in relation to October 15, 1582, the beginning
+    # of the Gregorian calendar.
+    if ((year < 1582) or
+        (year == 1582 and month < 10) or
+        (year == 1582 and month == 10 and day < 15)):
+        # before start of Gregorian calendar
+        B = 0
+    else:
+        # after start of Gregorian calendar
+        A = math.trunc(yearp / 100.)
+        B = 2 - A + math.trunc(A / 4.)
+
+    if yearp < 0:
+        C = math.trunc((365.25 * yearp) - 0.75)
+    else:
+        C = math.trunc(365.25 * yearp)
+
+    D = math.trunc(30.6001 * (monthp + 1))
+
+    jd = B + C + D + day + 1720994.5
+
+    mjd = jd - 2400000.5
+
+    return mjd
 
 
 
@@ -480,10 +538,116 @@ def update_history(days_since_last_update):
 
     return redirect('status')  # Redirect to the original view if no input
 
+def get_last_nights_sky_plot():
+    user_home = str(Path.home())
+    creds_user_file = user_home + "/.bg_follow_user_john_creds"
+    creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
+
+    # Instantialte the BlackGEM object, with a connection to the database
+    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+    tc = TransientsCatalog(bg)
+
+    time_now = datetime.now(timezone.utc)
+    mjd_now = datetime_to_mjd(time_now)
+
+    qu = """\
+    select i.id
+          , i.filter
+          ,i."date-obs"
+          ,"tqc-flag"
+          ,i.object as tile
+          ,i.dec_cntr_deg
+          ,i.dec_deg
+          ,s.ra_c
+          ,s.dec_c
+      from image i
+          ,skytile s
+     where i.object = s.field_id
+       AND i."date-obs" BETWEEN '%(time1)s'
+                            AND '%(time0)s'
+    order by "date-obs" desc
+    """
+    time0 = (date.today().isoformat())+" 12:00:00"
+    time1 = (date.today()-timedelta(days=1)).isoformat()+" 12:00:00"
+    params = {'time0': time0,
+              'time1': time1,
+             }
+    query = qu % (params)
+
+
+    l_results = bg.run_query(query)
+    df_images = pd.DataFrame(l_results, columns=['id', 'filter', 'date-obs',
+                                                 'tqc-flag', 'field',
+                                                 'dec_cntr_deg','dec_deg',
+                                                 'ra_c', 'dec_c'
+                                             ])
+
+    ## ===== Plotting =====
+
+    ## Create list for RA, Dec, and times
+    ra_list = df_images['ra_c']
+    dec_list = df_images['dec_c']
+    time_list = np.array([datetime_to_mjd(x) for x in df_images['date-obs']])
+    time_list_2 = (time_list-time_list[-1])
+    time_list_2 /= time_list_2[0]
+
+    ## Adjust RA/Dec to the right coordinates
+    ra = coord.Angle(ra_list, unit=u.degree)
+    ra = ra.wrap_at(180*u.degree)
+    dec = coord.Angle(dec_list, unit=u.degree)
+
+    ## Plot!
+    fig = plt.figure(figsize=(12,8))
+    ax = fig.add_subplot(111, projection="mollweide")
+
+    ## Plot each point as an area reoughly the size of the telescope's FOV
+    fov_radius = 0.82
+    cmap = cm.cool
+    this_z = len(ra)+10
+    for this_ra, this_dec, this_alpha in zip(ra, dec, time_list_2):
+        this_z -= 1
+        color = cmap(this_alpha)
+        lo_ra   = np.radians(this_ra -fov_radius*u.degree).value
+        hi_ra   = np.radians(this_ra +fov_radius*u.degree).value
+        lo_dec  = np.radians(this_dec-fov_radius*u.degree).value
+        hi_dec  = np.radians(this_dec+fov_radius*u.degree).value
+        ax.fill([lo_ra,lo_ra,hi_ra,hi_ra], [lo_dec,hi_dec,hi_dec,lo_dec], color=color, zorder=this_z)  # Adjust color and transparency with 'alpha'
+    ax.grid(True)
+
+    # Add a color bar
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+    sm.set_array([])  # Only needed for creating a colorbar
+    cb = plt.colorbar(sm, ax=ax, orientation='horizontal', pad=0.05)
+    cb.set_label('Time', labelpad=-20)
+    tick_positions = [0.08, 0.92]
+    tick_labels = [str(df_images['date-obs'].iloc[-1])[:-7] + "\n(First Obs)", str(df_images['date-obs'].iloc[0])[:-7] + "\n(Last Obs)",]
+    cb.set_ticks(tick_positions)
+    cb.ax.tick_params(bottom = False)
+    cb.set_ticklabels(tick_labels)
+
+    # plt.show()
+    # fileOut = "./Data/BlackGEM_LastNightsSkymap.png"
+    # plt.savefig(fileOut, bbox_inches='tight')
+    # plt.close("all")
+
+    # Save the plot to a BytesIO object
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format='png', bbox_inches='tight')
+    buffer.seek(0)
+    image_png = buffer.getvalue()
+    buffer.close()
+
+    # Encode the image in base64
+    image_base64 = base64.b64encode(image_png)
+    image_base64 = image_base64.decode('utf-8')
+
+    return image_base64
 
 
 class StatusView(TemplateView):
     template_name = 'status.html'
+
+    # get_last_nights_sky_plot()
 
     def post(self, request, **kwargs):
         # date = '20240424'
@@ -538,6 +702,7 @@ class StatusView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
         context['status_daily_text_1'], \
             context['status_daily_text_2'], \
             context['status_daily_text_3'], \
@@ -577,6 +742,12 @@ class StatusView(TemplateView):
         # print(context['history'])
         # context['images_daily_text_1'], \
         #     context['images_daily_text_2']  = images_daily()
+
+        ## Test: Plot something with matplotlib
+
+        image_base64 = get_last_nights_sky_plot()
+        context['plot_image'] = image_base64
+
         return context
 
 
@@ -1879,6 +2050,57 @@ def fetch_random_data(n):
     })
     return df
 
+def datetime_to_mjd(date):
+    '''
+    From https://gist.github.com/jiffyclub/1294443
+    '''
+
+    year    = date.year
+    month   = date.month
+    day     = date.day
+    hour    = date.hour
+    min     = date.minute
+    sec     = date.second
+    micro   = date.microsecond
+
+    days = sec + (micro / 1.e6)
+    days = min + (days / 60.)
+    days = hour + (days / 60.)
+    days = days / 24.
+
+    day = day + days
+
+    if month == 1 or month == 2:
+        yearp = year - 1
+        monthp = month + 12
+    else:
+        yearp = year
+        monthp = month
+
+    # this checks where we are in relation to October 15, 1582, the beginning
+    # of the Gregorian calendar.
+    if ((year < 1582) or
+        (year == 1582 and month < 10) or
+        (year == 1582 and month == 10 and day < 15)):
+        # before start of Gregorian calendar
+        B = 0
+    else:
+        # after start of Gregorian calendar
+        A = math.trunc(yearp / 100.)
+        B = 2 - A + math.trunc(A / 4.)
+
+    if yearp < 0:
+        C = math.trunc((365.25 * yearp) - 0.75)
+    else:
+        C = math.trunc(365.25 * yearp)
+
+    D = math.trunc(30.6001 * (monthp + 1))
+
+    jd = B + C + D + day + 1720994.5
+
+    mjd = jd - 2400000.5
+
+    return mjd
 
 class LiveFeed(TemplateView):
     template_name = 'live_feed.html'
@@ -1902,6 +2124,79 @@ class LiveFeed(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        user_home = str(Path.home())
+        creds_user_file = user_home + "/.bg_follow_user_john_creds"
+        creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
+        bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+
+        ## Get most recent pointing.
+        query = """\
+        select i.id
+              , i.filter
+              ,i."date-obs"
+              ,"tqc-flag"
+              ,i.object as tile
+              ,i.dec_cntr_deg
+              ,i.dec_deg
+              ,s.ra_c
+              ,s.dec_c
+          from image i
+              ,skytile s
+         where i.object = s.field_id
+        order by "date-obs" desc
+        limit 20;
+        """
+        l_results = bg.run_query(query)
+        df_images = pd.DataFrame(l_results, columns=['id', 'filter', 'date-obs',
+                                                     'tqc-flag', 'field',
+                                                     'dec_cntr_deg','dec_deg',
+                                                     'ra_c', 'dec_c'
+                                                 ])
+        # df_images.round({'s-seeing': 2})
+        # print(df_images)
+        # print(list(df_images['dec_cntr_deg']))
+        # list_min = 0
+        # list_max = 10
+        # print(df_images['dec_cntr_deg'].iloc[   list_min:list_max])
+        # print(df_images['dec_ref_dms'].iloc[    list_min:list_max])
+        # print(df_images['dec_deg'].iloc[        list_min:list_max])
+        print(df_images["date-obs"].iloc[0])
+        most_recent_image_time = df_images["date-obs"].iloc[0]
+        most_recent_image_mjd = datetime_to_mjd(most_recent_image_time)
+        print(most_recent_image_mjd)
+        time_now = datetime.now(timezone.utc)
+        mjd_now = datetime_to_mjd(time_now)
+        hours_since_last_field      = ((mjd_now - most_recent_image_mjd)*24)
+        minutes_since_last_field    = ((mjd_now - most_recent_image_mjd)*24*60)#-(hours_since_last_field*60)
+        seconds_since_last_minute   = np.floor(((minutes_since_last_field-np.floor(minutes_since_last_field))*60))
+        print("Seconds", seconds_since_last_minute)
+
+        print("")
+        print("======")
+        print("Time since last field: %.2f" % minutes_since_last_field, "minutes.")
+        print("Last field observed:", df_images["field"].iloc[0])
+        print("RA: %.3f" % df_images["ra_c"].iloc[0], "; Dec: %.3f" % df_images["dec_c"].iloc[0])
+
+        context['BlackGEM_hours']   = "%.0f" % np.floor(hours_since_last_field)
+        context['BlackGEM_hrplur']  = "s"
+        context['BlackGEM_minutes'] = "%.0f" % np.floor(minutes_since_last_field)
+        context['BlackGEM_minplur'] = "s"
+        context['BlackGEM_seconds'] = "%.0f" % seconds_since_last_minute
+        context['BlackGEM_secplur'] = "s"
+        if hours_since_last_field == 1:     context['BlackGEM_hrplur']  = ""
+        if minutes_since_last_field == 1:   context['BlackGEM_minplur'] = ""
+        if seconds_since_last_minute == 1:  context['BlackGEM_secplur'] = ""
+        context['BlackGEM_fieldid'] = df_images["field"].iloc[0]
+        context['BlackGEM_RA']      = df_images["ra_c"].iloc[0]
+        context['BlackGEM_Dec']     = df_images["dec_c"].iloc[0]
+        if minutes_since_last_field > 30:
+            context['BlackGEM_message'] = "BlackGEM is probably not observing."
+            context['BlackGEM_colour']  = "Black"
+        else:
+            context['BlackGEM_message'] = "BlackGEM is observing!"
+            context['BlackGEM_colour']  = "MediumSeaGreen"
+
         return context
 
     style_dict = {
