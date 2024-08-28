@@ -538,7 +538,8 @@ def update_history(days_since_last_update):
 
     return redirect('status')  # Redirect to the original view if no input
 
-def get_last_nights_sky_plot():
+def get_any_nights_sky_plot(night):
+
     user_home = str(Path.home())
     creds_user_file = user_home + "/.bg_follow_user_john_creds"
     creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
@@ -563,14 +564,21 @@ def get_last_nights_sky_plot():
       from image i
           ,skytile s
      where i.object = s.field_id
-       AND i."date-obs" BETWEEN '%(time1)s'
-                            AND '%(time0)s'
+       AND i."date-obs" BETWEEN '%(time0)s'
+                            AND '%(time1)s'
     order by "date-obs" desc
     """
-    time0 = (date.today().isoformat())+" 12:00:00"
-    time1 = (date.today()-timedelta(days=1)).isoformat()+" 12:00:00"
-    params = {'time0': time0,
-              'time1': time1,
+
+    time_night_start = datetime.strptime(night, '%Y%m%d')
+    time_night_end = datetime.strptime(night, '%Y%m%d')+timedelta(days=1)
+    time_night_start = time_night_start.strftime("%Y-%m-%d")+" 12:00:00"
+    time_night_end = time_night_end.strftime("%Y-%m-%d")+" 12:00:00"
+
+    print("Time start:", time_night_start)
+    print("Time close:", time_night_end)
+
+    params = {'time0': time_night_start,
+              'time1': time_night_end,
              }
     query = qu % (params)
 
@@ -582,48 +590,67 @@ def get_last_nights_sky_plot():
                                                  'ra_c', 'dec_c'
                                              ])
 
+    num_fields  = len(df_images)
+    num_green   = len(df_images['tqc-flag'][df_images['tqc-flag'] == 'green'])
+    num_yellow  = len(df_images['tqc-flag'][df_images['tqc-flag'] == 'yellow'])
+    num_orange  = len(df_images['tqc-flag'][df_images['tqc-flag'] == 'orange'])
+    num_red     = len(df_images['tqc-flag'][df_images['tqc-flag'] == 'red'])
+    print("Number of Fields:", num_fields)
+    print("Green fields:    ", num_green)
+    print("Yellow fields:   ", num_yellow)
+    print("Orange fields:   ", num_orange)
+    print("Red fields:      ", num_red)
+    field_stats = [num_fields, num_green, num_yellow, num_orange, num_red]
+
     ## ===== Plotting =====
 
     ## Create list for RA, Dec, and times
     ra_list = df_images['ra_c']
     dec_list = df_images['dec_c']
-    time_list = np.array([datetime_to_mjd(x) for x in df_images['date-obs']])
-    time_list_2 = (time_list-time_list[-1])
-    time_list_2 /= time_list_2[0]
+    if len(df_images) > 0:
+        time_list = np.array([datetime_to_mjd(x) for x in df_images['date-obs']])
+        time_list_2 = (time_list-time_list[-1])
+        time_list_2 /= time_list_2[0]
 
-    ## Adjust RA/Dec to the right coordinates
-    ra = coord.Angle(ra_list, unit=u.degree)
-    ra = ra.wrap_at(180*u.degree)
-    dec = coord.Angle(dec_list, unit=u.degree)
+        ## Adjust RA/Dec to the right coordinates
+        ra = coord.Angle(ra_list, unit=u.degree)
+        ra = ra.wrap_at(180*u.degree)
+        dec = coord.Angle(dec_list, unit=u.degree)
 
-    ## Plot!
-    fig = plt.figure(figsize=(12,8))
-    ax = fig.add_subplot(111, projection="mollweide")
+        ## Plot!
+        fig = plt.figure(figsize=(12,8))
+        ax = fig.add_subplot(111, projection="mollweide")
 
-    ## Plot each point as an area reoughly the size of the telescope's FOV
-    fov_radius = 0.82
-    cmap = cm.cool
-    this_z = len(ra)+10
-    for this_ra, this_dec, this_alpha in zip(ra, dec, time_list_2):
-        this_z -= 1
-        color = cmap(this_alpha)
-        lo_ra   = np.radians(this_ra -fov_radius*u.degree).value
-        hi_ra   = np.radians(this_ra +fov_radius*u.degree).value
-        lo_dec  = np.radians(this_dec-fov_radius*u.degree).value
-        hi_dec  = np.radians(this_dec+fov_radius*u.degree).value
-        ax.fill([lo_ra,lo_ra,hi_ra,hi_ra], [lo_dec,hi_dec,hi_dec,lo_dec], color=color, zorder=this_z)  # Adjust color and transparency with 'alpha'
-    ax.grid(True)
+        ## Plot each point as an area reoughly the size of the telescope's FOV
+        fov_radius = 0.82
+        cmap = cm.cool
+        this_z = len(ra)+10
+        for this_ra, this_dec, this_alpha in zip(ra, dec, time_list_2):
+            this_z -= 1
+            color = cmap(this_alpha)
+            lo_ra   = np.radians(this_ra -fov_radius*u.degree).value
+            hi_ra   = np.radians(this_ra +fov_radius*u.degree).value
+            lo_dec  = np.radians(this_dec-fov_radius*u.degree).value
+            hi_dec  = np.radians(this_dec+fov_radius*u.degree).value
+            ax.fill([lo_ra,lo_ra,hi_ra,hi_ra], [lo_dec,hi_dec,hi_dec,lo_dec], color=color, zorder=this_z)  # Adjust color and transparency with 'alpha'
+        ax.grid(True)
 
-    # Add a color bar
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
-    sm.set_array([])  # Only needed for creating a colorbar
-    cb = plt.colorbar(sm, ax=ax, orientation='horizontal', pad=0.05)
-    cb.set_label('Time', labelpad=-20)
-    tick_positions = [0.08, 0.92]
-    tick_labels = [str(df_images['date-obs'].iloc[-1])[:-7] + "\n(First Obs)", str(df_images['date-obs'].iloc[0])[:-7] + "\n(Last Obs)",]
-    cb.set_ticks(tick_positions)
-    cb.ax.tick_params(bottom = False)
-    cb.set_ticklabels(tick_labels)
+        # Add a color bar
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+        sm.set_array([])  # Only needed for creating a colorbar
+        cb = plt.colorbar(sm, ax=ax, orientation='horizontal', pad=0.05)
+        cb.set_label('Time', labelpad=-20)
+        tick_positions = [0.08, 0.92]
+        tick_labels = [str(df_images['date-obs'].iloc[-1])[:-7] + "\n(First Obs)", str(df_images['date-obs'].iloc[0])[:-7] + "\n(Last Obs)",]
+        cb.set_ticks(tick_positions)
+        cb.ax.tick_params(bottom = False)
+        cb.set_ticklabels(tick_labels)
+
+    else:
+        ## Plot!
+        fig = plt.figure(figsize=(12,8))
+        ax = fig.add_subplot(111, projection="mollweide")
+        ax.grid(True)
 
     # plt.show()
     # fileOut = "./Data/BlackGEM_LastNightsSkymap.png"
@@ -641,13 +668,11 @@ def get_last_nights_sky_plot():
     image_base64 = base64.b64encode(image_png)
     image_base64 = image_base64.decode('utf-8')
 
-    return image_base64
-
+    return field_stats, image_base64
 
 class StatusView(TemplateView):
     template_name = 'status.html'
 
-    # get_last_nights_sky_plot()
 
     def post(self, request, **kwargs):
         # date = '20240424'
@@ -694,8 +719,8 @@ class StatusView(TemplateView):
 
         except Exception as e:
             if '404' in str(e):
-                print("BlackGEM did not observe on " + extended_date + " (MJD " + str(mjd) + ").")
-                return HttpResponse("BlackGEM did not observe on " + extended_date + " (MJD " + str(mjd) + ").")
+                print("No transients were recorded by BlackGEM on " + extended_date + " (MJD " + str(mjd) + ").")
+                return HttpResponse("No transients were recorded by BlackGEM on " + extended_date + " (MJD " + str(mjd) + ").")
 
             else:
                 return HttpResponse(e)
@@ -743,10 +768,13 @@ class StatusView(TemplateView):
         # context['images_daily_text_1'], \
         #     context['images_daily_text_2']  = images_daily()
 
-        ## Test: Plot something with matplotlib
-
-        image_base64 = get_last_nights_sky_plot()
-        context['plot_image'] = image_base64
+        field_stats, image_base64 = get_any_nights_sky_plot(yesterday_date_string)
+        context['num_fields']       = field_stats[0]
+        context['green_fields']     = field_stats[1]
+        context['yellow_fields']    = field_stats[2]
+        context['orange_fields']    = field_stats[3]
+        context['red_fields']       = field_stats[4]
+        context['plot_image']       = image_base64
 
         return context
 
@@ -903,11 +931,11 @@ def status_daily():
         ## If there was no data, assume BlackGEM didn't observe.
         if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0"):
             extragalactic_sources_id    = ""
-            status_daily_text_1         = "BlackGEM did not observe last night (" + extended_yesterday_date + ")"
+            status_daily_text_1         = "No transients were recorded by BlackGEM last night (" + extended_yesterday_date + ")"
             status_daily_text_2         = ""
             status_daily_text_3         = ""
             status_daily_text_4         = ""
-            images_daily_text_1         = zip([], ["BlackGEM did not observe last night."])
+            images_daily_text_1         = zip([], ["No transients were recorded by BlackGEM last night."])
 
         else:
             if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
@@ -933,11 +961,11 @@ def status_daily():
         transients_filename         = ""
         gaia_filename               = ""
         extragalactic_filename      = ""
-        status_daily_text_1         = "BlackGEM did not observe last night (" + extended_yesterday_date + ")"
+        status_daily_text_1         = "No transients were recorded by BlackGEM last night (" + extended_yesterday_date + ")"
         status_daily_text_2         = ""
         status_daily_text_3         = ""
         status_daily_text_4         = ""
-        images_daily_text_1         = zip([], ["BlackGEM did not observe last night."])
+        images_daily_text_1         = zip([], ["No transients were recorded by BlackGEM last night."])
 
 
     return status_daily_text_1, status_daily_text_2, status_daily_text_3, status_daily_text_4, images_daily_text_1, extragalactic_sources_id, transients_filename, gaia_filename, extragalactic_filename
@@ -985,8 +1013,8 @@ def NightView(request, obs_date):
     }
 
     if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0") and (extragalactic_sources[0] == "") and (images_urls_sorted == ""):
-        observed_string = "BlackGEM did not observe that night (" + extended_date + ")"
-        images_daily_text_1 = zip([], ["BlackGEM did not observe that night."])
+        observed_string = "No transients were recorded by BlackGEM that night (" + extended_date + ")"
+        images_daily_text_1 = zip([], ["No transients were recorded by BlackGEM that night."])
     else:
         observed_string = "Yes!"
         images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
@@ -997,6 +1025,14 @@ def NightView(request, obs_date):
     context['transients_filename']      = transients_filename
     context['gaia_filename']            = gaia_filename
     context['extragalactic_filename']   = extragalactic_filename
+
+    field_stats, image_base64 = get_any_nights_sky_plot(obs_date)
+    context['num_fields']       = field_stats[0]
+    context['green_fields']     = field_stats[1]
+    context['yellow_fields']    = field_stats[2]
+    context['orange_fields']    = field_stats[3]
+    context['red_fields']       = field_stats[4]
+    context['plot_image'] = image_base64
 
     return render(request, "status/index.html", context)
 
