@@ -14,9 +14,37 @@
 
 <h5>Current Status:</h5>
 <h4 style="color:{{BlackGEM_colour}};">{{ BlackGEM_message }}</h4>
-Most recent field was observed {{ BlackGEM_minutes }} minute{{ BlackGEM_minplur }}, {{ BlackGEM_seconds }} second{{ BlackGEM_secplur }} ago<br>
-<font style="color:grey"><em>Latest Field: &nbsp&nbsp ID: {{BlackGEM_fieldid}} &nbsp&nbsp RA: {{ BlackGEM_RA }} &nbsp&nbsp Dec: {{ BlackGEM_Dec }}</font></em>
+<!-- Most recent field was observed {{ BlackGEM_minutes }} minute{{ BlackGEM_minplur }}, {{ BlackGEM_seconds }} second{{ BlackGEM_secplur }} ago<br>
+<font style="color:grey"><em>Latest Field: &nbsp&nbsp ID: {{BlackGEM_fieldid}} &nbsp&nbsp RA: {{ BlackGEM_RA }} &nbsp&nbsp Dec: {{ BlackGEM_Dec }}</font></em> -->
 <!-- <b>NOTE:</b> Right now, there is no connection to BlackGEM, just a random number generator for each transient! -->
+
+
+<!-- Get the time and details of the latest frame to be observed, and update automatically. -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Refreshing Content</title>
+    <script>
+        function refreshContent() {
+            fetch("{% url 'update_latest_BlackGEM_Field' %}")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('refreshable-element').innerHTML = data.time;
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Call the refreshContent function every 5 seconds (5000 milliseconds)
+        setInterval(refreshContent, 5000);
+    </script>
+</head>
+<body>
+    <div id="refreshable-element">
+        The most recent field was observed {{ BlackGEM_minutes }} minute{{ BlackGEM_minplur }}, {{ BlackGEM_seconds }} second{{ BlackGEM_secplur }} ago<br>
+        <font style="color:grey"><em>Latest Field: &nbsp&nbsp ID: {{BlackGEM_fieldid}} &nbsp&nbsp RA: {{ BlackGEM_RA }} &nbsp&nbsp Dec: {{ BlackGEM_Dec }}</font></em>
+    </div>
+</body>
+
 
 <hr>
 

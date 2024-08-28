@@ -12,7 +12,7 @@ from io import StringIO
 import dash_bootstrap_components as dbc
 
 from django.views.generic import TemplateView, FormView
-from django.http import HttpResponse, HttpResponseRedirect, FileResponse
+from django.http import HttpResponse, HttpResponseRedirect, FileResponse, JsonResponse
 from django.urls import reverse
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -29,7 +29,7 @@ from . import plotly_test
 from . import plotly_app
 from ztfquery import lightcurve
 
-## For the Status View
+## For the History View
 import requests
 from django.template import loader
 from astropy.time import Time
@@ -44,12 +44,10 @@ import matplotlib.cm as cm
 import io
 import urllib, base64
 
-## For the Recent Transients View
+## For the Transients View
 from django_plotly_dash import DjangoDash
 import dash_ag_grid as dag
 import json
-
-## For the Transient View
 from pathlib import Path
 import plotly.graph_objs as go
 from plotly.offline import plot
@@ -404,7 +402,7 @@ def update_classification(request):
 
 
 ## =============================================================================
-## ------------------------ Codes for the Status pages -------------------------
+## ----------------------- Codes for the History pages -------------------------
 
 
 
@@ -524,7 +522,7 @@ def manually_update_history(request):
     # Call your function with the hidden value
     update_history(10)
     # Redirect to the desired page (e.g., 'home' view)
-    return redirect('status')
+    return redirect('history')
 
 def update_history(days_since_last_update):
     '''
@@ -536,7 +534,7 @@ def update_history(days_since_last_update):
     history = pd.read_csv("./data/Recent_BlackGEM_History.csv")
     # print(history)
 
-    return redirect('status')  # Redirect to the original view if no input
+    return redirect('history')  # Redirect to the original view if no input
 
 def get_any_nights_sky_plot(night):
 
@@ -670,8 +668,8 @@ def get_any_nights_sky_plot(night):
 
     return field_stats, image_base64
 
-class StatusView(TemplateView):
-    template_name = 'status.html'
+class HistoryView(TemplateView):
+    template_name = 'history.html'
 
 
     def post(self, request, **kwargs):
@@ -728,15 +726,15 @@ class StatusView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        context['status_daily_text_1'], \
-            context['status_daily_text_2'], \
-            context['status_daily_text_3'], \
-            context['status_daily_text_4'], \
+        context['history_daily_text_1'], \
+            context['history_daily_text_2'], \
+            context['history_daily_text_3'], \
+            context['history_daily_text_4'], \
             context['images_daily_text_1'], \
             context['extragalactic_sources_id'], \
             context['transients_filename'], \
             context['gaia_filename'], \
-            context['extragalactic_filename'] = status_daily()
+            context['extragalactic_filename'] = history_daily()
         history = blackgem_history()
         dates = list(history.Date)
         dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
@@ -781,13 +779,13 @@ class StatusView(TemplateView):
 
 def handle_input(request):
     '''
-    Redirects to a status page about a certain date.
+    Redirects to a history page about a certain date.
     '''
     user_input = request.GET.get('user_input')
     print(user_input)
     if user_input:
-        return redirect(f'/status/{user_input}')
-    return redirect('status')  # Redirect to the original view if no input
+        return redirect(f'/history/{user_input}')
+    return redirect('history')  # Redirect to the original view if no input
 
 
 def get_blackgem_stats(obs_date):
@@ -906,8 +904,8 @@ def get_blackgem_stats(obs_date):
         transients_filename, gaia_filename, extragalactic_filename
 
 
-## Function for checking last night's BlackGEM status.
-def status_daily():
+## Function for checking last night's BlackGEM history.
+def history_daily():
     '''
     Specifically checks last night's observation.
     '''
@@ -923,7 +921,7 @@ def status_daily():
     r = requests.get(url)
     if r.status_code != 404:
         result = "BlackGEM observed last night!"
-        status_daily_text_1 = "Yes!"
+        history_daily_text_1 = "Yes!"
 
         data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
             transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(yesterday_date)
@@ -931,10 +929,10 @@ def status_daily():
         ## If there was no data, assume BlackGEM didn't observe.
         if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0"):
             extragalactic_sources_id    = ""
-            status_daily_text_1         = "No transients were recorded by BlackGEM last night (" + extended_yesterday_date + ")"
-            status_daily_text_2         = ""
-            status_daily_text_3         = ""
-            status_daily_text_4         = ""
+            history_daily_text_1         = "No transients were recorded by BlackGEM last night (" + extended_yesterday_date + ")"
+            history_daily_text_2         = ""
+            history_daily_text_3         = ""
+            history_daily_text_4         = ""
             images_daily_text_1         = zip([], ["No transients were recorded by BlackGEM last night."])
 
         else:
@@ -948,9 +946,9 @@ def status_daily():
                 extragalactic_sources_string += source + ", "
 
             extragalactic_sources_id = extragalactic_sources[0]
-            status_daily_text_2 = "On " + extended_yesterday_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " transient" + data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec)."
-            status_daily_text_3 = "BlackGEM recorded pictures of " + extragalactic_sources_length + " possible extragalactic transient" + extragalactic_sources_plural + "."
-            status_daily_text_4 = extragalactic_sources_string
+            history_daily_text_2 = "On " + extended_yesterday_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " transient" + data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec)."
+            history_daily_text_3 = "BlackGEM recorded pictures of " + extragalactic_sources_length + " possible extragalactic transient" + extragalactic_sources_plural + "."
+            history_daily_text_4 = extragalactic_sources_string
             # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0])
             images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
             # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
@@ -961,14 +959,14 @@ def status_daily():
         transients_filename         = ""
         gaia_filename               = ""
         extragalactic_filename      = ""
-        status_daily_text_1         = "No transients were recorded by BlackGEM last night (" + extended_yesterday_date + ")"
-        status_daily_text_2         = ""
-        status_daily_text_3         = ""
-        status_daily_text_4         = ""
+        history_daily_text_1         = "No transients were recorded by BlackGEM last night (" + extended_yesterday_date + ")"
+        history_daily_text_2         = ""
+        history_daily_text_3         = ""
+        history_daily_text_4         = ""
         images_daily_text_1         = zip([], ["No transients were recorded by BlackGEM last night."])
 
 
-    return status_daily_text_1, status_daily_text_2, status_daily_text_3, status_daily_text_4, images_daily_text_1, extragalactic_sources_id, transients_filename, gaia_filename, extragalactic_filename
+    return history_daily_text_1, history_daily_text_2, history_daily_text_3, history_daily_text_4, images_daily_text_1, extragalactic_sources_id, transients_filename, gaia_filename, extragalactic_filename
 
 
 def NightView(request, obs_date):
@@ -1034,12 +1032,12 @@ def NightView(request, obs_date):
     context['red_fields']       = field_stats[4]
     context['plot_image'] = image_base64
 
-    return render(request, "status/index.html", context)
+    return render(request, "history/index.html", context)
 
 
-def status_to_GEMTOM(request):
+def history_to_GEMTOM(request):
     '''
-    Imports a target from the Status tab
+    Imports a target from the History tab
     '''
 
     id = request.POST.get('id')
@@ -1054,7 +1052,7 @@ def status_to_GEMTOM(request):
 
 
 ## =============================================================================
-## ------------------- Codes for the Recent Transients page --------------------
+## ----------------------- Codes for the Transients page -----------------------
 
 
 def blackgem_recent_transients():
@@ -1065,14 +1063,6 @@ def blackgem_recent_transients():
     recent_transients = pd.read_csv("./data/BlackGEM_Transients_Last30Days.csv")
 
     return recent_transients
-
-# def update_recent_transients(days_since_last_update):
-#     '''
-#     Fetches BlackGEM's recent transients and updates
-#     '''
-#
-#     get_recent_blackgem_transients(days_since_last_update)
-
 
 
 def get_recent_blackgem_transients(days_since_last_update):
@@ -1225,262 +1215,16 @@ def get_recent_blackgem_transients(days_since_last_update):
         df.to_csv("./data/BlackGEM_Transients_Last30Days.csv", index=False)
 
 
-
-class TransientsView(TemplateView):
-    template_name = 'recent_transients.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        ## --- Update Recent Transients ---
-        recent_transients = blackgem_recent_transients()
-        dates = list(recent_transients.last_obs)
-        dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
-
-        ## --- Check to see if the recent history is up to date. If not, update.
-        ## Get yesterday's date...
-        yesterday_date = datetime.today() - timedelta(1)
-        yesterday_date = yesterday_date.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        ## Get the most recent date...
-        most_recent_date = datetime.strptime(dates[0], "%Y%m%d")
-
-        ## Find the difference...
-        difference = yesterday_date - most_recent_date
-        days_since_last_update = difference.days
-        print("Days since last update:", days_since_last_update)
-
-        yesterday_date_string = yesterday_date.strftime("%Y%m%d")
-
-        if days_since_last_update > 0:
-            get_recent_blackgem_transients(days_since_last_update)
-            recent_transients = blackgem_recent_transients()
-            dates = list(recent_transients.last_obs)
-            dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
-
-        return context
-
-
-    ## ===== Plot the transients from the past 30 days =====
-
-    ## --- Step 1: The 'Recent Transients' Table ---
-    ## Uses a Dash AG Grid
-
-    # Initialize the Dash app
-    app = DjangoDash('RecentTransients')
-
-    # Read CSV data
-    df = pd.read_csv('./data/BlackGEM_Transients_Last30Days.csv')
-
-    ## Define the layout of the Dash app
-    app.layout = html.Div([
-        dag.AgGrid(
-            id='csv-grid',
-            rowData=df.to_dict('records'),
-            columnDefs=[
-                {'headerName': 'BGEM ID', 'field': 'runcat_id'},
-                {'headerName': 'IAU Name', 'field': 'iauname_short'},
-                {'headerName': 'RA', 'field': 'ra_sml'},
-                {'headerName': 'Dec', 'field': 'dec_sml'},
-                {'headerName': '#Datapoints', 'field': 'datapoints'},
-                {'headerName': 'S/N', 'field': 'snr_zogy_sml'},
-                {'headerName': 'q min', 'field': 'q_min_sml',   'minWidth': 75, 'maxWidth': 75},
-                {'headerName': 'q dif', 'field': 'q_dif',       'minWidth': 75, 'maxWidth': 75},
-                {'headerName': 'u min', 'field': 'u_min_sml',   'minWidth': 75, 'maxWidth': 75},
-                {'headerName': 'u dif', 'field': 'u_dif',       'minWidth': 75, 'maxWidth': 75},
-                {'headerName': 'i min', 'field': 'i_min_sml',   'minWidth': 75, 'maxWidth': 75},
-                {'headerName': 'i dif', 'field': 'i_dif',       'minWidth': 75, 'maxWidth': 75},
-                {'headerName': 'Last Obs', 'field': 'last_obs', 'maxWidth': 110},
-            ],
-            defaultColDef={
-                'sortable': True,
-                'filter': True,
-                'resizable': True,
-                'editable': True,
-            },
-            columnSize="autoSize",
-            dashGridOptions = {"skipHeaderOnAutoSize": True, "rowSelection": "single"},
-            style={'height': '400px', 'width': '100%'},  # Set explicit height for the table
-            className='ag-theme-balham'  # Add a theme for better appearance
-        ),
-        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data, for when a row is clicked
-
-        ## The following are sections that show information based on the row clicked
-        html.Div(id='information-div'),     ## For Step 2: Displays the Object ID, IAU Name, RA, and Dec
-        dcc.Graph(id='lightcurve-graph'),   ## For Step 3: Displays the Lightcurve
-        html.Div(id='output-div'),          ## For Step 4: Displays the link to Transients, the 'Add to GEMTOM' button, and the full data.
-
-    ], style={'height': '1700px', 'width': '100%'} # Set explicit height for the full app, includine the extra information.
-    )
-
-    ## --- Step 1 Cont': Handle selecting rows ---
-    @app.callback(
-        Output('selected-row-data', 'data'),
-        Input('csv-grid', 'selectedRows')
-    )
-    def update_selected_row(selectedRows):
-        if selectedRows:
-            return selectedRows[0]  # Assuming single row selection
-        return {}
-
-    ## --- Step 2: Display the Object ID, IAU Name, RA, and Dec ---
-    @app.callback(
-        Output('information-div', 'children'),
-        Input('selected-row-data', 'data')
-    )
-    def display_information(row_data):
-        if row_data:
-            return html.Div([
-                html.P("Object " + str(row_data["runcat_id"]), style={'font-size':'20px'}),
-                html.P(str(row_data["iauname"]), style={'font-size':'17px'}),
-                html.P("RA: " + str(row_data["ra"]) + ", Dec: " + str(row_data["dec"]), style={'font-size':'17px'}),
-                ], style={'font-family': 'Arial', 'text-align': 'center'}
-            )
-
-        return html.Div(
-            html.P("Select a row"),
-            style={'font-family': 'Arial', 'text-align': 'center'}
-        )
-
-
-    ## --- Step 3: Make the Lightcurve of a given source ---
-    @app.callback(
-        Output('lightcurve-graph', 'figure'),
-        Input('selected-row-data', 'data'),
-        prevent_initial_call=True  # Prevent the callback from being called when the app loads
-    )
-    def create_lightcurve(row_data):
-
-        if row_data:
-            bgem_id = row_data['runcat_id']
-
-            ## --- Lightcurve ---
-            df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
-            fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
-
-            return fig
-
-        return go.Figure()
-
-    ## --- Step 4: Display the link to Transients, the 'Add to GEMTOM' button, and the full data ---
-
-    ## First, create the 'Add to GEMTOM' button
-    ## Callback to handle button click:
-    @app.callback(
-        Output('button-click-message', 'children'),  # Allow multiple outputs to the same component
-        Input('call-function-button', 'n_clicks'),
-        State('selected-row-data', 'data'),
-        prevent_initial_call=True  # Prevent the callback from being called when the app loads
-    )
-    ## Function to add the transient to GEMTOM:
-    def transient_to_GEMTOM(n_clicks, row_data):
-        if n_clicks > 0 and row_data:
-
-            id      = str(row_data['runcat_id'])
-            name    = str(row_data['iauname'])
-            ra      = str(row_data['ra'])
-            dec     = str(row_data['dec'])
-
-            add_to_GEMTOM(id, name, ra, dec)
-
-            return [html.P(f"Transient added to GEMTOM as " + name, style={'display': 'inline-block'}), html.A(". Please see the Targets page", href="/targets/", target="_blank", style={'text-decoration':'None', 'display': 'inline-block'}), html.P(".", style={'display': 'inline-block'})]
-            # return [html.P(f"Target added to GEMTOM as " + name + ". Please see the ", style={'display': 'inline-block'}), html.P("Targets page.", style={'display': 'inline-block'})]
-
-    ## Then, assumble all the rest of the information
-    @app.callback(
-        Output('output-div', 'children'),
-        Input('selected-row-data', 'data')
-    )
-    def display_selected_row_data(row_data):
-
-        ## When a row is selected, we either need to show the lightcurve or a link to request one:
-        if row_data:
-
-            # Format columns
-            formatted_columns = [
-                {'name': k, 'id': k, 'type': 'numeric', 'format': dash_table.Format.Format(precision=2, scheme=dash_table.Format.Scheme.fixed).group(True), 'presentation': 'input'} if isinstance(row_data[k], (int, float)) else {'name': k, 'id': k}
-                for k in row_data.keys()
-            ]
-
-            ## Main data (Name, RA/Dec, Datapoints, etc.)
-            table_1 = dash_table.DataTable(
-                data=[row_data],
-                columns=[[{'name': k, 'id': k} for k in row_data.keys()][i] for i in [1,3,4,5,6,7,8]],
-                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
-            )
-            ## q mag
-            table_2 = dash_table.DataTable(
-                data=[row_data],
-                columns=[[{'name': k, 'id': k} for k in row_data.keys() if k in ['q_min', 'q_max', 'q_xtrsrc', 'q_rb', 'q_fwhm', 'q_dif']][i] for i in [1,2,0,3,4,5]],
-                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
-            )
-            ## u mag
-            table_3 = dash_table.DataTable(
-                data=[row_data],
-                # columns=[[{'name': k, 'id': k} for k in row_data.keys()][i] for i in [13,14,15,16,17,44]],
-                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['u_min', 'u_max', 'u_xtrsrc', 'u_rb', 'u_fwhm', 'u_dif']],
-                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
-            )
-            ## i mag
-            table_4 = dash_table.DataTable(
-                data=[row_data],
-                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['i_min', 'i_max', 'i_xtrsrc', 'i_rb', 'i_fwhm', 'i_dif']],
-                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
-            )
-            ## Extra 1
-            table_5 = dash_table.DataTable(
-                data=[row_data],
-                columns=[{'name': k, 'id': k} for k in row_data.keys()][23:29],
-                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
-            )
-            ## Extra 2
-            table_6 = dash_table.DataTable(
-                data=[row_data],
-                columns=[{'name': k, 'id': k} for k in row_data.keys()][30:36],
-                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
-            )
-
-            return html.Div(
-                    [
-                    html.A("BlackView page for this transient", href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid=" + str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
-                    html.Br(), html.Br(),
-                    html.A("GEMTOM page for this transient", href='/transient/'+str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
-                    html.Br(), html.Br(),
-                    html.Div(html.Button('Add to GEMTOM', id='call-function-button', n_clicks=0, style={
-                        'font-family': 'Arial',
-                        'font-size': '16px',
-                        'color': 'white',
-                        'background-color': '#007bff',
-                        'border': 'none',
-                        'padding': '10px 20px',
-                        'text-align': 'center',
-                        'text-decoration': 'none',
-                        'display': 'inline-block',
-                        'margin': '4px 2px',
-                        'cursor': 'pointer',
-                        'border-radius': '12px'
-                    })),
-                    html.P(id='button-click-message')  # Div to display the message when button is clicked
-                    ] +
-                [table_1] + [table_2] + [table_3] + [table_4] + [table_5] + [table_6],
-                style={'font-family': 'Arial', 'text-align': 'center'})
-
-        return
-
-
-## =============================================================================
-## ------------------- Codes for the Transient Search page ---------------------
-
-
 def search_BGEM_ID(request):
     '''
-    Redirects to a status page about a certain date.
+    Redirects to a history page about a certain date.
     '''
     user_input = request.GET.get('user_input')
     print(user_input)
     if user_input:
-        return redirect(f'/transient/{user_input}')
-    return redirect('transient')  # Redirect to the original view if no input
+        return redirect(f'/transients/{user_input}')
+    return redirect('transients')  # Redirect to the original view if no input
+
 
 def transient_cone_search(ra, dec, radius=60):
     user_home = str(Path.home())
@@ -1499,137 +1243,6 @@ def transient_cone_search(ra, dec, radius=60):
     df_bg_cone = pd.DataFrame(bg_results, columns=bg_columns)
 
     return df_bg_cone
-
-
-class TransientSearchView(TemplateView):
-    template_name = 'transient_search.html'
-
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        return context
-
-    def plot_graph_view(request):
-        # Example DataFrame
-        data = {
-            'x': [1, 2, 3, 4, 5],
-            'y': [10, 15, 13, 17, 21]
-        }
-        df = pd.DataFrame(data)
-
-        # Create a Plotly graph
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df['x'], y=df['y'], mode='lines+markers', name='Line and Marker'))
-
-        # Convert the Plotly graph to HTML
-        plot_div = plot(fig, output_type='div')
-
-        # Pass the plot_div to the template
-        return render(request, 'transient/index.html', {'plot_div': plot_div})
-
-
-
-
-    app = DjangoDash('ConeSearchTable')
-
-    style_dict = {
-      "font-size": "16px",
-      "margin-right": "10px",
-      'width': '200px',
-      'height': '30px',
-      # 'scale':'2'
-    }
-
-    button_style_dict = {
-        "font-size": "16px",
-        "margin-right": "10px",
-        "padding": "7px 24px",
-        # 'border-radius': '5px',
-        'color':'#027bff',
-        'background-color': '#ffffff',
-        'border': '2px solid #027bff',
-        'border-radius': '5px',
-        'cursor': 'pointer',
-    }
-
-    app.layout = html.Div([
-        html.Div([
-            # html.A("Link to external site", href='https://plot.ly', target="_blank"),
-            dcc.Input(id='ra-input',        type='number', min=0, max=360,  placeholder=' RA',        style=style_dict),
-            dcc.Input(id='dec-input',       type='number', min=-90, max=90,   placeholder=' Dec',       style=style_dict),
-            dcc.Input(id='radius-input',    type='number', min=0, max=600,  placeholder=' Radius',    style=style_dict),
-            html.Button('Search', id='submit-button', n_clicks=0, style=button_style_dict),
-            # html.Button('Search', id='submit-button', n_clicks=0, style={"font-size": "16px","margin-right": "10px",})
-        ], style={'margin-bottom': '20px', "text-align":"center"}),
-        html.Div(id='results-container', children=[]),
-        html.Div(id='redirect-trigger', style={'display': 'none'})
-    ])
-
-    # Define the callback to update the table based on input coordinates
-    @app.callback(
-        Output('results-container', 'children'),
-        Input('submit-button', 'n_clicks'),
-        State('ra-input', 'value'),
-        State('dec-input', 'value'),
-        State('radius-input', 'value'),
-        prevent_initial_call=True
-    )
-    def update_results(n_clicks, ra, dec, radius):
-        print(ra, dec, radius)
-        if ra is not None and dec is not None:
-            df = transient_cone_search(ra, dec, radius)
-            if len(df) == 0:
-                return html.Div([
-                            html.P("RA: " +str(ra)),
-                            html.P("Dec: " +str(dec)),
-                            html.P("Radius: " +str(radius)),
-                            html.Em("No targets found"),
-                        ], style={"text-align":"center", "font-size": "18px"}
-                    )
-            else:
-                df['id'] = df['id'].apply(lambda x: f'[{x}](/transient/{x})')
-                # df['id'] = df['id'].apply(lambda x: f'<a href="/transient/{x}" target="_blank">{x}</a>)')
-                message = html.Div([html.P(html.Em("Ctrl/Cmd-click on links to open the transient in a new tab"))], style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif"})
-                table = dag.AgGrid(
-                    id='results-table',
-                    columnDefs=[
-                        {'headerName': 'ID', 'field': 'id', 'cellRenderer': 'markdown'},
-                        # {'headerName': 'ID', 'field': 'id', 'cellRenderer': 'htmlCellRenderer'},
-                        # {'headerName': 'ID', 'field': 'id'},
-                        {'headerName': 'Datapoints', 'field': 'datapoints'},
-                        {'headerName': 'RA', 'field': 'ra_deg'},
-                        {'headerName': 'Dec', 'field': 'dec_deg'},
-                        {'headerName': 'Dist (")', 'field': 'distance_arcsec'},
-                    ],
-                    rowData=df.to_dict('records'),
-                    dashGridOptions={"rowSelection": "single"},
-                    style={'height': '400px', 'width': '100%'},
-                )
-                return message, table
-        return []
-
-    ## Below is unused code for when I was trying to redirect to the transient page on a single click.
-    ## Unfortunately, it doesn't work! Maybe I'll have better luck in future figuring it out!
-    # # Callback to handle row selection and redirect
-    # @app.callback(
-    #     Output('redirect-trigger', 'children'),
-    #     Input('results-table', 'selectedRows'),
-    #     prevent_initial_call=True
-    # )
-    # def redirect_on_selection(selected_rows):
-    #     print("Bark!")
-    #     if selected_rows:
-    #         print(selected_rows)
-    #         selected_row = selected_rows[0]  # Assuming single row selection
-    #         bgem_id = selected_row['id']
-    #         # url = "/transient/" + str(bgem_id)
-    #         # url = f"{reverse('/transient/'+str(bgem_id)+'/')}"
-    #         url = f"{reverse('tom_targets:list')}"
-    #
-    #         # return f"/transient/{bgem_id}"  # Redirect to the specific page based on the profile endpoint
-    #         return html.Script(f"window.open('{url}', '_blank');")  # JavaScript to open in a new tab
-    #     # return ""
-
 
 
 def get_limiting_magnitudes_from_BGEM_ID(blackgem_id):
@@ -1678,6 +1291,7 @@ def get_limiting_magnitudes_from_BGEM_ID(blackgem_id):
 
     return(df_limiting_mag)
 
+
 def get_lightcurve_from_BGEM_ID(transient_id):
 
     print("Getting lightcurve for transient ID " + str(transient_id) + "...")
@@ -1699,6 +1313,7 @@ def get_lightcurve_from_BGEM_ID(transient_id):
 
     return df_bgem_lightcurve, df_limiting_mag
 
+
 def BGEM_to_GEMTOM_photometry(df_bg_assocs):
 
     gemtom_photometry = pd.DataFrame({
@@ -1709,6 +1324,7 @@ def BGEM_to_GEMTOM_photometry(df_bg_assocs):
     })
 
     return gemtom_photometry
+
 
 ## =========================
 ## ----- TNS Functions -----
@@ -1785,6 +1401,7 @@ def get_ra_dec_from_tns(tns_object_name):
 
 ## ----- TNS Functions -----
 ## =========================
+
 
 def BGEM_ID_View(request, bgem_id):
     '''
@@ -2064,6 +1681,381 @@ def BGEM_ID_View(request, bgem_id):
 
 
 
+## =============================================================================
+## ------------------ Codes for the Unified Transients page --------------------
+
+
+class UnifiedTransientsView(TemplateView):
+    template_name = 'unified_transients.html'
+
+    def plot_graph_view(request):
+        # Example DataFrame
+        data = {
+            'x': [1, 2, 3, 4, 5],
+            'y': [10, 15, 13, 17, 21]
+        }
+        df = pd.DataFrame(data)
+
+        # Create a Plotly graph
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df['x'], y=df['y'], mode='lines+markers', name='Line and Marker'))
+
+        # Convert the Plotly graph to HTML
+        plot_div = plot(fig, output_type='div')
+
+        # Pass the plot_div to the template
+        return render(request, 'transient/index.html', {'plot_div': plot_div})
+
+
+    app = DjangoDash("resizable_container")
+
+    app.layout = html.Div([
+        html.Div(id='resizable-container', children=[
+            dcc.Graph(
+                id='example-graph',
+                figure={
+                    'data': [{'x': [1, 2, 3], 'y': [4, 1, 2], 'type': 'bar', 'name': 'Sample'}],
+                    'layout': {'title': 'Sample Graph'}
+                }
+            )
+        ], style={'width': '50%', 'height': '500px', 'border': '1px solid black', 'transition': 'all 0.5s'}),
+
+        html.Button('Resize Container', id='resize-button')
+    ])
+
+    @app.callback(
+        Output('resizable-container', 'style'),
+        Input('resize-button', 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def resize_container(n_clicks):
+        if n_clicks % 2 == 1:
+            return {'width': '80%', 'height': '700px', 'border': '1px solid black', 'transition': 'all 0.5s'}
+        else:
+            return {'width': '50%', 'height': '500px', 'border': '1px solid black', 'transition': 'all 0.5s'}
+
+
+
+
+    app = DjangoDash('ConeSearchTable')
+
+    style_dict = {
+      "font-size": "16px",
+      "margin-right": "10px",
+      'width': '200px',
+      'height': '30px',
+      # 'scale':'2'
+    }
+
+    button_style_dict = {
+        "font-size": "16px",
+        "margin-right": "10px",
+        "padding": "7px 24px",
+        # 'border-radius': '5px',
+        'color':'#027bff',
+        'background-color': '#ffffff',
+        'border': '2px solid #027bff',
+        'border-radius': '5px',
+        'cursor': 'pointer',
+    }
+
+    app.layout = html.Div([
+        html.Div([
+            # html.A("Link to external site", href='https://plot.ly', target="_blank"),
+            dcc.Input(id='ra-input',        type='number', min=0, max=360,  placeholder=' RA',        style=style_dict),
+            dcc.Input(id='dec-input',       type='number', min=-90, max=90,   placeholder=' Dec',       style=style_dict),
+            dcc.Input(id='radius-input',    type='number', min=0, max=600,  placeholder=' Radius',    style=style_dict),
+            html.Button('Search', id='submit-button', n_clicks=0, style=button_style_dict),
+            # html.Button('Search', id='submit-button', n_clicks=0, style={"font-size": "16px","margin-right": "10px",})
+        ], style={'margin-bottom': '20px', "text-align":"center"}),
+        html.Div(id='results-container', children=[]),
+        html.Div(id='redirect-trigger', style={'display': 'none'})
+    ])
+
+    # Define the callback to update the table based on input coordinates
+    @app.callback(
+        Output('results-container', 'children'),
+        Input('submit-button', 'n_clicks'),
+        State('ra-input', 'value'),
+        State('dec-input', 'value'),
+        State('radius-input', 'value'),
+        prevent_initial_call=False
+    )
+    def update_results(n_clicks, ra, dec, radius):
+        print(ra, dec, radius)
+        if ra is not None and dec is not None:
+            df = transient_cone_search(ra, dec, radius)
+            if len(df) == 0:
+                return html.Div([
+                            html.P("RA: " +str(ra)),
+                            html.P("Dec: " +str(dec)),
+                            html.P("Radius: " +str(radius)),
+                            html.Em("No targets found"),
+                        ], style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif"}
+                    )
+            else:
+                df['id'] = df['id'].apply(lambda x: f'[{x}](/transients/{x})')
+                # df['id'] = df['id'].apply(lambda x: f'<a href="/transients/{x}" target="_blank">{x}</a>)')
+                message = html.Div([html.P(html.Em("Ctrl/Cmd-click on links to open the transient in a new tab"))], style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif"})
+                table = dag.AgGrid(
+                    id='results-table',
+                    columnDefs=[
+                        {'headerName': 'ID', 'field': 'id', 'cellRenderer': 'markdown'},
+                        # {'headerName': 'ID', 'field': 'id', 'cellRenderer': 'htmlCellRenderer'},
+                        # {'headerName': 'ID', 'field': 'id'},
+                        {'headerName': 'Datapoints', 'field': 'datapoints'},
+                        {'headerName': 'RA', 'field': 'ra_deg'},
+                        {'headerName': 'Dec', 'field': 'dec_deg'},
+                        {'headerName': 'Dist (")', 'field': 'distance_arcsec'},
+                    ],
+                    rowData=df.to_dict('records'),
+                    dashGridOptions={"rowSelection": "single"},
+                    style={'height': '200px', 'width': '100%'},
+                    className='ag-theme-balham'  # Add a theme for better appearance
+                )
+                return message, table
+        else:
+            message = html.Div([html.P(html.Em("Enter co-ordinates to search."))], style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif", "color":"grey"})
+
+            return message
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        ## --- Update Recent Transients ---
+        recent_transients = blackgem_recent_transients()
+        dates = list(recent_transients.last_obs)
+        dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
+
+        ## --- Check to see if the recent history is up to date. If not, update.
+        ## Get yesterday's date...
+        yesterday_date = datetime.today() - timedelta(1)
+        yesterday_date = yesterday_date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        ## Get the most recent date...
+        most_recent_date = datetime.strptime(dates[0], "%Y%m%d")
+
+        ## Find the difference...
+        difference = yesterday_date - most_recent_date
+        days_since_last_update = difference.days
+        print("Days since last update:", days_since_last_update)
+
+        yesterday_date_string = yesterday_date.strftime("%Y%m%d")
+
+        if days_since_last_update > 0:
+            get_recent_blackgem_transients(days_since_last_update)
+            recent_transients = blackgem_recent_transients()
+            dates = list(recent_transients.last_obs)
+            dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
+
+        return context
+
+
+    ## ===== Plot the transients from the past 30 days =====
+
+    ## --- Step 1: The 'Recent Transients' Table ---
+    ## Uses a Dash AG Grid
+
+    # Initialize the Dash app
+    app = DjangoDash('RecentTransients')
+
+    # Read CSV data
+    df = pd.read_csv('./data/BlackGEM_Transients_Last30Days.csv')
+
+    ## Define the layout of the Dash app
+    app.layout = html.Div([
+        dag.AgGrid(
+            id='csv-grid',
+            rowData=df.to_dict('records'),
+            columnDefs=[
+                {'headerName': 'BGEM ID', 'field': 'runcat_id'},
+                {'headerName': 'IAU Name', 'field': 'iauname_short'},
+                {'headerName': 'RA', 'field': 'ra_sml'},
+                {'headerName': 'Dec', 'field': 'dec_sml'},
+                {'headerName': '#Datapoints', 'field': 'datapoints'},
+                {'headerName': 'S/N', 'field': 'snr_zogy_sml'},
+                {'headerName': 'q min', 'field': 'q_min_sml',   'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'q dif', 'field': 'q_dif',       'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'u min', 'field': 'u_min_sml',   'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'u dif', 'field': 'u_dif',       'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'i min', 'field': 'i_min_sml',   'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'i dif', 'field': 'i_dif',       'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'Last Obs', 'field': 'last_obs', 'maxWidth': 110},
+            ],
+            defaultColDef={
+                'sortable': True,
+                'filter': True,
+                'resizable': True,
+                'editable': True,
+            },
+            columnSize="autoSize",
+            dashGridOptions = {"skipHeaderOnAutoSize": True, "rowSelection": "single"},
+            style={'height': '400px', 'width': '100%'},  # Set explicit height for the table
+            className='ag-theme-balham'  # Add a theme for better appearance
+        ),
+        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data, for when a row is clicked
+
+        ## The following are sections that show information based on the row clicked
+        html.Div(id='information-div'),     ## For Step 2: Displays the Object ID, IAU Name, RA, and Dec
+        dcc.Graph(id='lightcurve-graph'),   ## For Step 3: Displays the Lightcurve
+        html.Div(id='output-div'),          ## For Step 4: Displays the link to Transients, the 'Add to GEMTOM' button, and the full data.
+
+    ], style={'height': '1700px', 'width': '100%'} # Set explicit height for the full app, includine the extra information.
+    )
+
+    ## --- Step 1 Cont': Handle selecting rows ---
+    @app.callback(
+        Output('selected-row-data', 'data'),
+        Input('csv-grid', 'selectedRows')
+    )
+    def update_selected_row(selectedRows):
+        if selectedRows:
+            return selectedRows[0]  # Assuming single row selection
+        return {}
+
+    ## --- Step 2: Display the Object ID, IAU Name, RA, and Dec ---
+    @app.callback(
+        Output('information-div', 'children'),
+        Input('selected-row-data', 'data')
+    )
+    def display_information(row_data):
+        if row_data:
+            return html.Div([
+                html.P("Object " + str(row_data["runcat_id"]), style={'font-size':'20px'}),
+                html.P(str(row_data["iauname"]), style={'font-size':'17px'}),
+                html.P("RA: " + str(row_data["ra"]) + ", Dec: " + str(row_data["dec"]), style={'font-size':'17px'}),
+                ], style={'font-family': 'Arial', 'text-align': 'center'}
+            )
+
+        return html.Div(
+            html.Em(html.P("Select a row")), style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif", "color":"grey"}
+        )
+
+
+    ## --- Step 3: Make the Lightcurve of a given source ---
+    @app.callback(
+        Output('lightcurve-graph', 'figure'),
+        Input('selected-row-data', 'data'),
+        prevent_initial_call=True  # Prevent the callback from being called when the app loads
+    )
+    def create_lightcurve(row_data):
+
+        if row_data:
+            bgem_id = row_data['runcat_id']
+
+            ## --- Lightcurve ---
+            df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
+            fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
+
+            return fig
+
+        return go.Figure()
+
+    ## --- Step 4: Display the link to Transients, the 'Add to GEMTOM' button, and the full data ---
+
+    ## First, create the 'Add to GEMTOM' button
+    ## Callback to handle button click:
+    @app.callback(
+        Output('button-click-message', 'children'),  # Allow multiple outputs to the same component
+        Input('call-function-button', 'n_clicks'),
+        State('selected-row-data', 'data'),
+        prevent_initial_call=True  # Prevent the callback from being called when the app loads
+    )
+    ## Function to add the transient to GEMTOM:
+    def transient_to_GEMTOM(n_clicks, row_data):
+        if n_clicks > 0 and row_data:
+
+            id      = str(row_data['runcat_id'])
+            name    = str(row_data['iauname'])
+            ra      = str(row_data['ra'])
+            dec     = str(row_data['dec'])
+
+            add_to_GEMTOM(id, name, ra, dec)
+
+            return [html.P(f"Transient added to GEMTOM as " + name, style={'display': 'inline-block'}), html.A(". Please see the Targets page", href="/targets/", target="_blank", style={'text-decoration':'None', 'display': 'inline-block'}), html.P(".", style={'display': 'inline-block'})]
+            # return [html.P(f"Target added to GEMTOM as " + name + ". Please see the ", style={'display': 'inline-block'}), html.P("Targets page.", style={'display': 'inline-block'})]
+
+    ## Then, assumble all the rest of the information
+    @app.callback(
+        Output('output-div', 'children'),
+        Input('selected-row-data', 'data')
+    )
+    def display_selected_row_data(row_data):
+
+        ## When a row is selected, we either need to show the lightcurve or a link to request one:
+        if row_data:
+
+            # Format columns
+            formatted_columns = [
+                {'name': k, 'id': k, 'type': 'numeric', 'format': dash_table.Format.Format(precision=2, scheme=dash_table.Format.Scheme.fixed).group(True), 'presentation': 'input'} if isinstance(row_data[k], (int, float)) else {'name': k, 'id': k}
+                for k in row_data.keys()
+            ]
+
+            ## Main data (Name, RA/Dec, Datapoints, etc.)
+            table_1 = dash_table.DataTable(
+                data=[row_data],
+                columns=[[{'name': k, 'id': k} for k in row_data.keys()][i] for i in [1,3,4,5,6,7,8]],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## q mag
+            table_2 = dash_table.DataTable(
+                data=[row_data],
+                columns=[[{'name': k, 'id': k} for k in row_data.keys() if k in ['q_min', 'q_max', 'q_xtrsrc', 'q_rb', 'q_fwhm', 'q_dif']][i] for i in [1,2,0,3,4,5]],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## u mag
+            table_3 = dash_table.DataTable(
+                data=[row_data],
+                # columns=[[{'name': k, 'id': k} for k in row_data.keys()][i] for i in [13,14,15,16,17,44]],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['u_min', 'u_max', 'u_xtrsrc', 'u_rb', 'u_fwhm', 'u_dif']],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## i mag
+            table_4 = dash_table.DataTable(
+                data=[row_data],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['i_min', 'i_max', 'i_xtrsrc', 'i_rb', 'i_fwhm', 'i_dif']],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## Extra 1
+            table_5 = dash_table.DataTable(
+                data=[row_data],
+                columns=[{'name': k, 'id': k} for k in row_data.keys()][23:29],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## Extra 2
+            table_6 = dash_table.DataTable(
+                data=[row_data],
+                columns=[{'name': k, 'id': k} for k in row_data.keys()][30:36],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+
+            return html.Div(
+                    [
+                    html.A("BlackView page for this transient", href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid=" + str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
+                    html.Br(), html.Br(),
+                    html.A("GEMTOM page for this transient", href='/transients/'+str(row_data['runcat_id']), target="_blank", style={'text-decoration':'None', "font-style": "italic"}),
+                    html.Br(), html.Br(),
+                    html.Div(html.Button('Add to GEMTOM', id='call-function-button', n_clicks=0, style={
+                        'font-family': 'Arial',
+                        'font-size': '16px',
+                        'color': 'white',
+                        'background-color': '#007bff',
+                        'border': 'none',
+                        'padding': '10px 20px',
+                        'text-align': 'center',
+                        'text-decoration': 'none',
+                        'display': 'inline-block',
+                        'margin': '4px 2px',
+                        'cursor': 'pointer',
+                        'border-radius': '12px'
+                    })),
+                    html.P(id='button-click-message')  # Div to display the message when button is clicked
+                    ] +
+                [table_1] + [table_2] + [table_3] + [table_4] + [table_5] + [table_6],
+                style={'font-family': 'Arial', 'text-align': 'center'})
+
+        return
+
 
 ## =============================================================================
 ## ------------------- Codes for the Live Feed page ---------------------
@@ -2138,6 +2130,106 @@ def datetime_to_mjd(date):
 
     return mjd
 
+def find_latest_BlackGEM_field():
+    user_home = str(Path.home())
+    creds_user_file = user_home + "/.bg_follow_user_john_creds"
+    creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
+    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+
+    ## Get most recent pointing.
+    query = """\
+    select i.id
+          , i.filter
+          ,i."date-obs"
+          ,"tqc-flag"
+          ,i.object as tile
+          ,i.dec_cntr_deg
+          ,i.dec_deg
+          ,s.ra_c
+          ,s.dec_c
+      from image i
+          ,skytile s
+     where i.object = s.field_id
+    order by "date-obs" desc
+    limit 20;
+    """
+    l_results = bg.run_query(query)
+    df_images = pd.DataFrame(l_results, columns=['id', 'filter', 'date-obs',
+                                                 'tqc-flag', 'field',
+                                                 'dec_cntr_deg','dec_deg',
+                                                 'ra_c', 'dec_c'
+                                             ])
+    # df_images.round({'s-seeing': 2})
+    # print(df_images)
+    # print(list(df_images['dec_cntr_deg']))
+    # list_min = 0
+    # list_max = 10
+    # print(df_images['dec_cntr_deg'].iloc[   list_min:list_max])
+    # print(df_images['dec_ref_dms'].iloc[    list_min:list_max])
+    # print(df_images['dec_deg'].iloc[        list_min:list_max])
+    print(df_images["date-obs"].iloc[0])
+    most_recent_image_time = df_images["date-obs"].iloc[0]
+    most_recent_image_mjd = datetime_to_mjd(most_recent_image_time)
+    print(most_recent_image_mjd)
+    time_now = datetime.now(timezone.utc)
+    mjd_now = datetime_to_mjd(time_now)
+    hours_since_last_field      = ((mjd_now - most_recent_image_mjd)*24)
+    minutes_since_last_field    = ((mjd_now - most_recent_image_mjd)*24*60)#-(hours_since_last_field*60)
+    seconds_since_last_minute   = np.floor(((minutes_since_last_field-np.floor(minutes_since_last_field))*60))
+    print("Seconds", seconds_since_last_minute)
+
+    print("")
+    print("======")
+    print("Time since last field: %.2f" % minutes_since_last_field, "minutes.")
+    print("Last field observed:", df_images["field"].iloc[0])
+    print("RA: %.3f" % df_images["ra_c"].iloc[0], "; Dec: %.3f" % df_images["dec_c"].iloc[0])
+
+    context = {}
+
+    context['BlackGEM_hours']   = "%.0f" % np.floor(hours_since_last_field)
+    context['BlackGEM_hrplur']  = "s"
+    context['BlackGEM_minutes'] = "%.0f" % np.floor(minutes_since_last_field)
+    context['BlackGEM_minplur'] = "s"
+    context['BlackGEM_seconds'] = "%.0f" % seconds_since_last_minute
+    context['BlackGEM_secplur'] = "s"
+    if hours_since_last_field == 1:     context['BlackGEM_hrplur']  = ""
+    if minutes_since_last_field == 1:   context['BlackGEM_minplur'] = ""
+    if seconds_since_last_minute == 1:  context['BlackGEM_secplur'] = ""
+    context['BlackGEM_fieldid'] = df_images["field"].iloc[0]
+    context['BlackGEM_RA']      = df_images["ra_c"].iloc[0]
+    context['BlackGEM_Dec']     = df_images["dec_c"].iloc[0]
+    if minutes_since_last_field > 30:
+        context['BlackGEM_message'] = "BlackGEM is probably not observing."
+        context['BlackGEM_colour']  = "Black"
+    else:
+        context['BlackGEM_message'] = "BlackGEM is observing!"
+        context['BlackGEM_colour']  = "MediumSeaGreen"
+
+    BlackGEM_minutes = context['BlackGEM_minutes']
+    BlackGEM_minplur = context['BlackGEM_minplur']
+    BlackGEM_seconds = context['BlackGEM_seconds']
+    BlackGEM_secplur = context['BlackGEM_secplur']
+    BlackGEM_fieldid = context['BlackGEM_fieldid']
+    BlackGEM_RA         = context['BlackGEM_RA']
+    BlackGEM_Dec        = context['BlackGEM_Dec']
+
+    return BlackGEM_minutes, BlackGEM_minplur, BlackGEM_seconds, BlackGEM_secplur, BlackGEM_fieldid, BlackGEM_RA, BlackGEM_Dec
+
+def update_latest_BlackGEM_Field(request):
+
+    BlackGEM_minutes, BlackGEM_minplur, BlackGEM_seconds, BlackGEM_secplur, BlackGEM_fieldid, BlackGEM_RA, BlackGEM_Dec = find_latest_BlackGEM_field()
+
+    message_1 = "The most recent field was observed " + BlackGEM_minutes + " minute" + BlackGEM_minplur + ", " + BlackGEM_seconds + " second" + BlackGEM_secplur + " ago<br>"
+    message_2 = "Latest Field: &nbsp&nbsp ID: " + str(BlackGEM_fieldid) + " &nbsp&nbsp RA: " + str(BlackGEM_RA) + " &nbsp&nbsp Dec: " + str(BlackGEM_Dec)
+    message_2 = f"<span style='color: grey; font-style: italic;'>{message_2}</span>"
+
+    print(message_1)
+    print(message_2)
+
+    message = message_1+message_2
+
+    return JsonResponse({'time': message})
+
 class LiveFeed(TemplateView):
     template_name = 'live_feed.html'
 
@@ -2157,6 +2249,8 @@ class LiveFeed(TemplateView):
 
     # Pass the plot_div to the template
     # return render(request, 'live_feed.html', {'plot_div': plot_div})
+
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

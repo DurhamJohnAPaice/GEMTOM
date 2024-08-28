@@ -26,18 +26,21 @@ urlpatterns = [
     path('live_feed/', LiveFeed.as_view(), name='live_feed'),
     path('search_BGEM_ID_for_live_feed/', search_BGEM_ID_for_live_feed, name='search_BGEM_ID_for_live_feed'),
     path('live_feed/<int:bgem_id>/', LiveFeed_BGEM_ID_View, name='live_feed_bgem_id'),
+    path('update_latest_BlackGEM_Field/', update_latest_BlackGEM_Field, name='update_latest_BlackGEM_Field'),
 
     path('update_classification/', update_classification, name='update_classification'),
 
-    path('recent_transients/', TransientsView.as_view(), name='recent_transients'),
-    path('transient/', TransientSearchView.as_view(), name='transient'),
+    # path('recent_transients/', TransientsView.as_view(), name='recent_transients'),
+    # path('old_transient/', TransientSearchView.as_view(), name='old_transient'),
     # path('plot/', plot_graph_view, name='plot_graph'),
     path('search_BGEM_ID/', search_BGEM_ID, name='search_BGEM_ID'),
-    path('transient/<int:bgem_id>/', BGEM_ID_View, name='bgem_id'),
+    path('transients/<int:bgem_id>/', BGEM_ID_View, name='bgem_id'),
 
-    path('status/', StatusView.as_view(), name='status'),
-    path('status/<int:obs_date>/', NightView, name='night'),
-    path('status_to_GEMTOM/', status_to_GEMTOM, name='status_to_GEMTOM'),
+    path('transients/', UnifiedTransientsView.as_view(), name='transients'),
+
+    path('history/', HistoryView.as_view(), name='history'),
+    path('history/<int:obs_date>/', NightView, name='night'),
+    path('history_to_GEMTOM/', history_to_GEMTOM, name='history_to_GEMTOM'),
     path('update_history/', manually_update_history, name='update_history'),
 
     # path('ID_to_GEMTOM/', ID_to_GEMTOM, name='ID_to_GEMTOM'),

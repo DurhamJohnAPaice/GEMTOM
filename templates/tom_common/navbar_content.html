@@ -8,13 +8,10 @@ For customization instructions, see tom_common/base.html
     <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
 </li>
 <li class="nav-item">
-    <a class="nav-link" href="{% url 'status' %}">Status</a>
+    <a class="nav-link" href="{% url 'history' %}">History</a>
 </li>
 <li class="nav-item">
-    <a class="nav-link" href="{% url 'transient' %}">Transient Search</a>
-</li>
-<li class="nav-item">
-    <a class="nav-link" href="{% url 'recent_transients' %}">Recent Transients</a>
+    <a class="nav-link" href="{% url 'transients' %}">Transients</a>
 </li>
 <li class="nav-item dropdown">
     <a class="nav-link dropdown-toggle {% if request.resolver_match.namespace == 'targets' %}active{% endif %}" data-toggle="dropdown">Targets</a>

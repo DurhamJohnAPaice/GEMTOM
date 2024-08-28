@@ -8,20 +8,20 @@
 </head>
 
 
-<p>
-On this page, you can find the status of the telescope and recent observations.
+<!-- <p>
+On this page, you can find the history of blackgem's observations.
 </p>
-<hr>
+<hr> -->
 <p>
-<!-- <strong>Status ground:</strong> -->
+<!-- <strong>History ground:</strong> -->
 </p>
 
 <div style="text-align:center">
 
 <h4>Did BlackGEM observe last night?<br></h4>
-<h3>{{ status_daily_text_1 }} </h3>
-<p>{{ status_daily_text_2 }}<br>
-{{ status_daily_text_3 }}</p>
+<h3>{{ history_daily_text_1 }} </h3>
+<p>{{ history_daily_text_2 }}<br>
+{{ history_daily_text_3 }}</p>
 
 <img src="data:image/png;base64,{{ plot_image }}" alt="Last Night's Sky Plot" width="800">
 
@@ -190,7 +190,7 @@ On this page, you can find the status of the telescope and recent observations.
         <em><a href='/transient/{{ source_id }}'>GEMTOM page for this transient</a></em><br>
         <div style="height:3px;font-size:1px;">&nbsp;</div>
         {% if check %}
-            <form method="post" action="{% url 'status_to_GEMTOM' %}" class="image-form">
+            <form method="post" action="{% url 'history_to_GEMTOM' %}" class="image-form">
                 {% csrf_token %}
                 <input type="hidden" name="id" value="{{ source_id }}">
                 <input type="hidden" name="name" value="{{ source_name }}">
@@ -242,17 +242,17 @@ On this page, you can find the status of the telescope and recent observations.
 
 <!-- <p>Did BlackGEM observe last night?<br></p>
 <!-- <p>{{ result }}</p> -->
-<!-- <p>{{ status_daily_text_1 }}</p> -->
-<!-- <p>{{ status_daily_text_2 }}</p> -->
-<!-- <p>{{ status_daily_text_3 }}</p> -->
-<!-- <p>{{ status_daily_text_4 }}</p> -->
+<!-- <p>{{ history_daily_text_1 }}</p> -->
+<!-- <p>{{ history_daily_text_2 }}</p> -->
+<!-- <p>{{ history_daily_text_3 }}</p> -->
+<!-- <p>{{ history_daily_text_4 }}</p> -->
 <!-- <p>{{ other_data }}</p> -->
 
 
 <!-- <hr>
 <hr>
 
-<h2>BlackGEM Status:</h2>
+<h2>BlackGEM History:</h2>
 
 <div id='if-part1' style='visibility: hidden;'>BlackGEM Observed last night!</div>
 <div id='else-part1' style='visibility: hidden'>BlackGEM did not observe last night.</div>
@@ -274,7 +274,7 @@ On this page, you can find the status of the telescope and recent observations.
 <hr>
 <hr>
 
-<h2>BlackGEM Status 2:</h2>
+<h2>BlackGEM History 2:</h2>
 
 <div id='if-part2' style='visibility: hidden;'>BlackGEM Observed last night!</div>
 <div id='else-part2' style='visibility: hidden'>BlackGEM did not observe last night.</div>

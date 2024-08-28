@@ -113,7 +113,7 @@ Red flags: <font style="color:red;">{{ red_fields }}</font></em>
         <em><a href='/transient/{{ source_id }}'>GEMTOM page for this transient</a></em><br>
         <div style="height:3px;font-size:1px;">&nbsp;</div>
         {% if check %}
-            <form method="post" action="{% url 'status_to_GEMTOM' %}" class="image-form">
+            <form method="post" action="{% url 'history_to_GEMTOM' %}" class="image-form">
                 {% csrf_token %}
                 <input type="hidden" name="id" value="{{ source_id }}">
                 <input type="hidden" name="name" value="{{ source_name }}">
