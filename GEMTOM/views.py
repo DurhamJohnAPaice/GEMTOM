@@ -55,6 +55,8 @@ from plotly.offline import plot
 ## For the Live Feed
 from dash.exceptions import PreventUpdate
 import math
+from astropy.coordinates import EarthLocation, AltAz, get_sun
+from astroplan import Observer
 
 ## BlackGEM Stuff
 from blackpy import BlackGEM
@@ -2221,6 +2223,87 @@ def update_latest_BlackGEM_Field(request):
 
     message_1 = "The most recent field was observed " + BlackGEM_minutes + " minute" + BlackGEM_minplur + ", " + BlackGEM_seconds + " second" + BlackGEM_secplur + " ago<br>"
     message_2 = "Latest Field: &nbsp&nbsp ID: " + str(BlackGEM_fieldid) + " &nbsp&nbsp RA: " + str(BlackGEM_RA) + " &nbsp&nbsp Dec: " + str(BlackGEM_Dec)
+    message_2 = f"<span style='color: grey; font-style: italic;'>{message_2}</span>"
+
+    print(message_1)
+    print(message_2)
+
+    message = message_1+message_2
+
+    return JsonResponse({'time': message})
+
+def get_time_in_la_silla():
+
+    ## Define the observation time
+    obstime = Time.now()  # Replace with your desired date
+    # obstime = Time('2024-08-29 10:00:21')
+
+    ## Define the location
+    location = EarthLocation(lat=-29.25738889*u.deg, lon=-70.73791667*u.deg, height=2200*u.m)
+    observer = Observer(location=location, timezone='UTC')
+
+    ## --- Calculate sunrise, sunset, and twilight times ---
+    sunrise = observer.sun_rise_time(obstime, which='next')
+    sunset = observer.sun_set_time(obstime, which='next')
+
+    # Morning twilight times
+    civil_twilight_morning = observer.twilight_morning_civil(obstime, which='next')
+    nautical_twilight_morning = observer.twilight_morning_nautical(obstime, which='next')
+    astronomical_twilight_morning = observer.twilight_morning_astronomical(obstime, which='next')
+
+    # Evening twilight times
+    civil_twilight_evening = observer.twilight_evening_civil(obstime, which='next')
+    nautical_twilight_evening = observer.twilight_evening_nautical(obstime, which='next')
+    astronomical_twilight_evening = observer.twilight_evening_astronomical(obstime, which='next')
+
+    ## Calculate next event
+    time_of_next_event = min([
+        astronomical_twilight_morning,
+        nautical_twilight_morning,
+        civil_twilight_morning,
+        sunrise,
+        sunset,
+        civil_twilight_evening,
+        nautical_twilight_evening,
+        astronomical_twilight_evening,
+    ])
+
+    time_until_next_event = (time_of_next_event - obstime).value
+    hour_until_next_event = int(np.floor(time_until_next_event*24))
+    mins_until_next_event = int(np.floor(time_until_next_event*60*24)) - hour_until_next_event*60
+    secs_until_next_event = int(np.floor(time_until_next_event*60*60*24)) - mins_until_next_event*60 - hour_until_next_event*3600
+
+    hour_plur = "s"
+    mins_plur = "s"
+    secs_plur = "s"
+    if hour_until_next_event == 1: hour_plur = ""
+    if mins_until_next_event == 1: mins_plur = ""
+    if secs_until_next_event == 1: secs_plur = ""
+
+    time_until_string = \
+        str(hour_until_next_event) + " hour"   + hour_plur + ", " +    \
+        str(mins_until_next_event) + " minute" + mins_plur + ", " +    \
+        str(secs_until_next_event) + " second" + secs_plur + "<br> until "
+
+    if   time_of_next_event == astronomical_twilight_morning:  current_event = "night";                           next_event = "astronomical twilight (dawn)"
+    elif time_of_next_event == nautical_twilight_morning:      current_event = "astronomical twilight (dawn)";    next_event = "nautical twilight (dawn)"
+    elif time_of_next_event == civil_twilight_morning:         current_event = "nautical twilight (dawn)";        next_event = "civil twilight (dawn)"
+    elif time_of_next_event == sunrise:                        current_event = "civil twilight (dawn)";           next_event = "sunrise"
+    elif time_of_next_event == sunset:                         current_event = "daytime";                         next_event = "sunset"
+    elif time_of_next_event == civil_twilight_evening:         current_event = "civil twilight (dusk)";           next_event = "civil twilight (dawn)"
+    elif time_of_next_event == nautical_twilight_evening:      current_event = "nautical twilight (dusk)";        next_event = "nautical twilight (dawn)"
+    elif time_of_next_event == astronomical_twilight_evening:  current_event = "astronomical twilight (dusk)";    next_event = "astronomical twilight (dawn)"
+    message_1 = "It is <b>" + current_event + "</b> in La Silla."
+    message_2 = time_until_string + next_event + "."
+
+    return message_1, message_2
+
+
+def update_time_in_la_silla(request):
+
+    message_1, message_2 = get_time_in_la_silla()
+
+    message_1 = message_1 + "<br>"
     message_2 = f"<span style='color: grey; font-style: italic;'>{message_2}</span>"
 
     print(message_1)

@@ -27,6 +27,7 @@ urlpatterns = [
     path('search_BGEM_ID_for_live_feed/', search_BGEM_ID_for_live_feed, name='search_BGEM_ID_for_live_feed'),
     path('live_feed/<int:bgem_id>/', LiveFeed_BGEM_ID_View, name='live_feed_bgem_id'),
     path('update_latest_BlackGEM_Field/', update_latest_BlackGEM_Field, name='update_latest_BlackGEM_Field'),
+    path('update_time_in_la_silla/', update_time_in_la_silla, name='update_time_in_la_silla'),
 
     path('update_classification/', update_classification, name='update_classification'),
 

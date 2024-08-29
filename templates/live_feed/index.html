@@ -64,7 +64,7 @@
 
     <a href="#" onclick='window.open("https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}");return false;'><em>BlackView</em> webpage for this source</a>
     <br>&nbsp;
-    <form method="post" action="{% url 'status_to_GEMTOM' %}" class="image-form">
+    <form method="post" action="{% url 'history_to_GEMTOM' %}" class="image-form">
         {% csrf_token %}
         <input type="hidden" name="id" value="{{ bgem_id }}">
         <input type="hidden" name="name" value="{{ iau_name }}">
