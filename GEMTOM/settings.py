@@ -349,6 +349,7 @@ HARVESTERS = {
 # ]
 EXTRA_FIELDS = [
     {'name': 'BlackGEM ID', 'type': 'string'},
+    {'name': 'TNS Name', 'type': 'string'},
     {'name': 'Classification', 'type': 'string'},
     # {'name': 'Bark', 'type': 'string'}
 ]
