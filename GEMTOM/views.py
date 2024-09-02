@@ -548,12 +548,7 @@ def update_history(days_since_last_update):
 
 def get_any_nights_sky_plot(night):
 
-    user_home = str(Path.home())
-    creds_user_file = user_home + "/.bg_follow_user_john_creds"
-    creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
-
-    # Instantialte the BlackGEM object, with a connection to the database
-    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+    bg = authenticate_blackgem()
     tc = TransientsCatalog(bg)
 
     time_now = datetime.now(timezone.utc)
@@ -1255,12 +1250,8 @@ def search_BGEM_ID(request):
 
 
 def transient_cone_search(ra, dec, radius=60):
-    user_home = str(Path.home())
-    creds_user_file = user_home + "/.bg_follow_user_john_creds"
-    creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
+    bg = authenticate_blackgem()
 
-    # Instantialte the MeerLICHT and TransientsCatalog objects
-    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
     tc = TransientsCatalog(bg)
 
     # ra  = 73.69518912800072
@@ -1275,11 +1266,8 @@ def transient_cone_search(ra, dec, radius=60):
 
 def get_limiting_magnitudes_from_BGEM_ID(blackgem_id):
 
-    creds_user_file = str(Path.home()) + "/.bg_follow_user_john_creds"
-    creds_db_file = str(Path.home()) + "/.bg_follow_transientsdb_creds"
+    bg = authenticate_blackgem()
 
-    # Instantiate the BlackGEM object
-    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
 
     qu = """\
     SELECT i1.id
@@ -1324,11 +1312,8 @@ def get_lightcurve_from_BGEM_ID(transient_id):
 
     print("Getting lightcurve for transient ID " + str(transient_id) + "...")
 
-    creds_user_file = str(Path.home()) + "/.bg_follow_user_john_creds"
-    creds_db_file = str(Path.home()) + "/.bg_follow_transientsdb_creds"
+    bg = authenticate_blackgem()
 
-    # Instantiate the BlackGEM object
-    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
 
     # Create an instance of the Transients Catalog
     tc = TransientsCatalog(bg)
@@ -1456,13 +1441,7 @@ def BGEM_ID_View(request, bgem_id):
     # return render(request, 'transient/index.html')
 
     ## Get the name, ra, and dec:
-
-    user_home = str(Path.home())
-    creds_user_file = user_home + "/.bg_follow_user_john_creds"
-    creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
-
-    # Instantialte the BlackGEM object, with a connection to the database
-    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+    bg = authenticate_blackgem()
 
     qu = """\
     SELECT id
@@ -1656,6 +1635,8 @@ def BGEM_ID_View(request, bgem_id):
         tns_flag = False
         tns_flag_prefix = ""
         tns_flag_name = ""
+        tns_flag_sep = ""
+
 
     tns_objects_data['Name'] = tns_objects_data['Name'].apply(lambda x: f'[{x}](https://www.wis-tns.org/object/{x})')
 
@@ -1730,6 +1711,86 @@ def BGEM_ID_View(request, bgem_id):
 
 ## =============================================================================
 ## ------------------ Codes for the Unified Transients page --------------------
+
+def get_transient_image(ra, dec):
+
+    # Instantialte the BlackGEM object, with a connection to the database
+    bg = authenticate_blackgem()
+
+    desimoc = MOC.from_fits('./Data/MOC_DESI-Legacy-Surveys_DR10.fits')
+    coords = SkyCoord(ra,dec,unit='deg',frame='icrs')
+    indesi = desimoc.contains_lonlat(coords.ra,coords.dec)
+
+    for i in range(len(ra_list)):
+        ra  = coords[i].ra.value
+        dec = coords[i].dec.value
+        file_name = "../Outputs/"+"%s_cutout.jpg"%(str(ra)+str(dec))
+        # if os.path.isfile(file_name):
+        #     continue
+        if indesi[i]:
+            url = 'https://www.legacysurvey.org/viewer/cutout.jpg?ra=%s&dec=%s&layer=ls-dr10-grz&zoom=14'%(ra,dec)
+        elif float(dec)>-30:
+            image_index_url_red = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=i'%(ra, dec)
+            image_index_url_green = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=r'%(ra, dec)
+            image_index_url_blue = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=g'%(ra, dec)
+
+            urlretrieve(image_index_url_red, '/tmp/image_index_red.txt')
+            urlretrieve(image_index_url_green, '/tmp/image_index_green.txt')
+            urlretrieve(image_index_url_blue, '/tmp/image_index_blue.txt')
+
+            ix_red = np.genfromtxt('/tmp/image_index_red.txt', names=True, dtype=None, encoding='utf-8')
+            ix_green = np.genfromtxt('/tmp/image_index_green.txt', names=True, dtype=None, encoding='utf-8')
+            ix_blue = np.genfromtxt('/tmp/image_index_blue.txt', names=True, dtype=None, encoding='utf-8')
+
+            url = "http://ps1images.stsci.edu/cgi-bin/fitscut.cgi?red=%s&green=%s&blue=%s&filetypes=stack&auxiliary=data&size=%d&ra=%s&dec=%s&output_size=256"%\
+            (ix_red["filename"], ix_green["filename"], ix_blue["filename"], 240, ra, dec)
+        else:
+            url = 'https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red&r=%s&d=%s&e=J2000&h=1&w=1&f=gif'%(ra,dec)
+
+        # print(ix_red)
+        # print(ix_green)
+        # print(ix_blue)
+        # print(url)
+
+        cutout = requests.get(url, stream = True)
+
+        if cutout.status_code == 200:
+            with open(file_name,'wb') as f:
+                shutil.copyfileobj(cutout.raw, f)
+            print('Image successfully Downloaded: ',file_name)
+
+            ## Draw crosshairs
+            with Image.open(file_name) as im:
+                draw = ImageDraw.Draw(im)
+
+                ## Crosshairs - All units in percentages
+                gap = 8
+                size = 25
+                # draw.line((im.size[0]/2, im.size[1]*(100-size)/200, im.size[0]/2, im.size[1]*(100-gap)/200), fill="red", width=2)
+                draw.line((im.size[0]/2, im.size[1]*(100+gap)/200, im.size[0]/2, im.size[1]*(100+size)/200), fill="red", width=2)
+                # draw.line((im.size[0]*(100-size)/200, im.size[1]/2, im.size[1]*(100-gap)/200, im.size[1]/2), fill="red", width=2)
+                draw.line((im.size[0]*(100+gap)/200, im.size[1]/2, im.size[1]*(100+size)/200, im.size[1]/2), fill="red", width=2)
+
+                # ## Scale
+                # draw.line((10, im.size[1]-10, 10+(10/0.262), im.size[1]-10), fill="white", width=2)
+                # draw.text((10, im.size[1]-25), "10 arcseconds", fill="white")
+
+                ## Scale
+                draw.line((im.size[0]/2, im.size[1]/2+10/0.262+5, im.size[0]/2+10/0.262, im.size[1]/2+10/0.262+5), fill="white", width=2)
+                draw.text((im.size[0]/2, im.size[1]/2+10/0.262+10), "10 arcseconds", fill="white")
+
+                ## Circle
+                draw.arc([(im.size[0]/2-10/0.262, im.size[0]/2-10/0.262), (im.size[0]/2+10/0.262, im.size[0]/2+10/0.262)], start=0, end=359, fill=(255,255,255,128))
+
+                # draw.line((0, im.size[0]/2, im.size[0], im.size[1]/2), fill="red", width=2)
+
+                # write to stdout
+                # im.save(sys.stdout, "PNG")
+                im.save(file_name[:-4] + "_cross.png")
+
+        else:
+            print('Image Couldn\'t be retrieved')
+            print(file_name)
 
 
 class UnifiedTransientsView(TemplateView):
@@ -2179,9 +2240,8 @@ def datetime_to_mjd(date):
 
 def find_latest_BlackGEM_field():
     user_home = str(Path.home())
-    creds_user_file = user_home + "/.bg_follow_user_john_creds"
-    creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
-    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+    bg = authenticate_blackgem()
+
 
     ## Get most recent pointing.
     query = """\
@@ -2383,10 +2443,8 @@ class LiveFeed(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        user_home = str(Path.home())
-        creds_user_file = user_home + "/.bg_follow_user_john_creds"
-        creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
-        bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+        bg = authenticate_blackgem()
+
 
         ## Get most recent pointing.
         query = """\
@@ -2675,12 +2733,7 @@ def LiveFeed_BGEM_ID_View(request, bgem_id):
 
     ## Get the name, ra, and dec:
 
-    user_home = str(Path.home())
-    creds_user_file = user_home + "/.bg_follow_user_john_creds"
-    creds_db_file = user_home + "/.bg_follow_transientsdb_creds"
-
-    # Instantialte the BlackGEM object, with a connection to the database
-    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+    bg = authenticate_blackgem()
 
     qu = """\
     SELECT id
@@ -3050,13 +3103,18 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
 
         return redirect(form.get('referrer', '/'))
 
-def get_blackgem_id_from_iauname(iauname):
-
+def authenticate_blackgem():
     creds_user_file = str(Path.home()) + "/.bg_follow_user_john_creds"
     creds_db_file = str(Path.home()) + "/.bg_follow_transientsdb_creds"
 
     # Instantiate the BlackGEM object
     bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+
+    return bg
+
+def get_blackgem_id_from_iauname(iauname):
+    # Instantiate the BlackGEM object
+    bg = authenticate_blackgem()
 
     qu= """\
     SELECT id
