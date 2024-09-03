@@ -15,12 +15,15 @@ Including another URLconf
 """
 from django.urls import path, include
 from .views import *
+from django.conf.urls.static import static
+
 
 
 urlpatterns = [
     # path("status_daily/", views.status_daily, name='status_daily'),
     path('targets/import/', TargetImportView.as_view(), name='import'),
     path('', include('tom_common.urls')),
+    # path('GEMTOM/', include('tom_common.urls')),
     # path('about/', AboutView.as_view(), name='about'),
 
     path('live_feed/', LiveFeed.as_view(), name='live_feed'),
@@ -55,3 +58,9 @@ urlpatterns = [
     path('blackgem_upload/', UpdateBlackGEMView.as_view(), name='update-BlackGEM-data'),
     # path('upload/', UploadView.as_view(), name='upload'),
 ]
+
+# urlpatterns = [path(r'GEMTOM/', include(urlpatterns))]
+
+
+# if settings.DEBUG:
+#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

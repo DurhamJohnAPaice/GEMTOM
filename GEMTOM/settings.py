@@ -97,6 +97,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.media',
+
             ],
         },
     },
@@ -166,7 +168,12 @@ DATE_FORMAT = 'Y-m-d'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
-STATIC_URL = '/static/'
+# FORCE_SCRIPT_NAME = '/GEMTOM'
+# APPEND_SLASH = False
+
+
+# STATIC_URL = 'GEMTOM/static/'
+STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, '_static')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 MEDIA_ROOT = os.path.join(BASE_DIR, 'data')

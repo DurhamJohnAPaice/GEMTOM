@@ -87,6 +87,9 @@ On this page, you can find the data for a specific BlackGEM transient.
         <h5>Location on Sky</h5>
         <!-- Render the Plotly graph -->
         {{ location_on_sky|safe }}
+        <img src="{{ MEDIA_URL }}{{ image_name }}">
+        <!-- <div style="image:url('{{ MEDIA_URL }}{{image_name}}');"></div> -->
+
 
     </div>
 
@@ -112,7 +115,7 @@ On this page, you can find the data for a specific BlackGEM transient.
 
         {% load plotly_dash %}
         <div class="dash-container">
-            {% plotly_app name="EachObservation" ratio=0.55 %}
+            {% plotly_app name="EachObservation" ratio=0.85 %}
         </div>
     </div>
 </div>

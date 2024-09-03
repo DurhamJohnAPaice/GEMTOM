@@ -1,4 +1,5 @@
 Date,MJD,Observed,Number_Of_Transients,Number_of_Gaia_Crossmatches,Number_Of_Extragalactic
+2024-09-02,60555,No,0,0,0
 2024-09-01,60554,No,0,0,0
 2024-08-31,60553,Yes,18002,3292,17
 2024-08-30,60552,Yes,9800,2603,0
@@ -8,4 +9,3 @@ Date,MJD,Observed,Number_Of_Transients,Number_of_Gaia_Crossmatches,Number_Of_Ext
 2024-08-26,60548,Yes,448,1259,21
 2024-08-25,60547,No,0,0,0
 2024-08-24,60546,Yes,460,939,11
-2024-08-23,60545,Yes,172,909,2

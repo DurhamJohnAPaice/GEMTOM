@@ -51,6 +51,9 @@ import json
 from pathlib import Path
 import plotly.graph_objs as go
 from plotly.offline import plot
+from mocpy import MOC
+from PIL import Image, ImageDraw
+import shutil # save img locally
 
 ## For the Live Feed
 from dash.exceptions import PreventUpdate
@@ -104,10 +107,10 @@ class TargetImportView(LoginRequiredMixin, TemplateView):
 
             ## Process them using the BlackGEM_to_GEMTOM code
             processed_file = GEM_to_TOM(data, request)
-            processed_file.to_csv("./Data/processed_file.csv", index=False)
+            processed_file.to_csv("./data/processed_file.csv", index=False)
 
             ## Output them into a StringIO format for the import_targets function
-            csv_stream = StringIO(open(os.getcwd()+"/Data/processed_file.csv", "rb").read().decode('utf-8'), newline=None)
+            csv_stream = StringIO(open(os.getcwd()+"/data/processed_file.csv", "rb").read().decode('utf-8'), newline=None)
 
         ## If they're TOM-specific...
         if 'import_targets' in request.POST:
@@ -193,8 +196,8 @@ def add_to_GEMTOM(id, name, ra, dec, tns_prefix=False, tns_name=False):
 
     gemtom_dataframe = gemtom_dataframe.reindex(gemtom_dataframe.index)
 
-    gemtom_dataframe.to_csv("./Data/processed_file.csv", index=False)
-    csv_stream = StringIO(open(os.getcwd()+"/Data/processed_file.csv", "rb").read().decode('utf-8'), newline=None)
+    gemtom_dataframe.to_csv("./data/processed_file.csv", index=False)
+    csv_stream = StringIO(open(os.getcwd()+"/data/processed_file.csv", "rb").read().decode('utf-8'), newline=None)
 
     ## And finally, read them in!
     result = import_targets(csv_stream)
@@ -275,7 +278,7 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 
 def plot_BGEM_location_on_sky(df_bgem_lightcurve):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df_bgem_lightcurve['x.ra_psf_d'], y=df_bgem_lightcurve['x.dec_psf_d'], mode='markers', name='Line and Marker'))
+    fig.add_trace(go.Scatter(x=df_bgem_lightcurve['x.ra_psf_d'], y=df_bgem_lightcurve['x.dec_psf_d'], mode='markers', name='Line and Marker', marker_color="red"))
     fig.update_layout(width=350, height=350)
 
     return fig
@@ -508,7 +511,7 @@ def get_recent_blackgem_history(days_since_last_update):
         gaia.append(len(data_gaia))
         extagalactic.append(len(extragalactic_sources_id))
 
-    fileOut = "./Data/Recent_BlackGEM_History.csv"
+    fileOut = "./data/Recent_BlackGEM_History.csv"
     new_history = pd.DataFrame({'Date' : dates, 'MJD' : mjds, 'Observed' : observed, 'Number_Of_Transients' : transients, 'Number_of_Gaia_Crossmatches' : gaia, 'Number_Of_Extragalactic' : extagalactic})
 
     output = pd.concat([new_history,previous_history.iloc[:(10-days_since_last_update)]]).reset_index(drop=True)
@@ -656,7 +659,7 @@ def get_any_nights_sky_plot(night):
         ax.grid(True)
 
     # plt.show()
-    # fileOut = "./Data/BlackGEM_LastNightsSkymap.png"
+    # fileOut = "./data/BlackGEM_LastNightsSkymap.png"
     # plt.savefig(fileOut, bbox_inches='tight')
     # plt.close("all")
 
@@ -1245,8 +1248,10 @@ def search_BGEM_ID(request):
     user_input = request.GET.get('user_input')
     print(user_input)
     if user_input:
+    #     return redirect(f'/GEMTOM/transients/{user_input}')
+    # return redirect('/GEMTOM/transients')  # Redirect to the original view if no input
         return redirect(f'/transients/{user_input}')
-    return redirect('transients')  # Redirect to the original view if no input
+    return redirect('/transients')  # Redirect to the original view if no input
 
 
 def transient_cone_search(ra, dec, radius=60):
@@ -1433,6 +1438,9 @@ def BGEM_ID_View(request, bgem_id):
     fig = plot_BGEM_location_on_sky(df_bgem_lightcurve)
     location_on_sky = plot(fig, output_type='div')
 
+    # print(df_bgem_lightcurve['x.ra_psf_d'])
+    # print(df_bgem_lightcurve['x.dec_psf_d'])
+
     ## --- Lightcurve ---
     fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
     lightcurve = plot(fig, output_type='div')
@@ -1531,12 +1539,12 @@ def BGEM_ID_View(request, bgem_id):
                 "skipHeaderOnAutoSize": True,
                 "rowSelection": "single",
             },
-            style={'height': '350px', 'width': '100%'},  # Set explicit height for the grid
+            style={'height': '550px', 'width': '100%'},  # Set explicit height for the grid
             className='ag-theme-balham'  # Add a theme for better appearance
         ),
         dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
         html.Div(id='output-div'),  # Div to display the information
-    ], style={'height': '350px', 'width': '100%'}
+    ], style={'height': '550px', 'width': '100%'}
     )
 
     ## TNS:
@@ -1637,6 +1645,20 @@ def BGEM_ID_View(request, bgem_id):
         tns_flag_name = ""
         tns_flag_sep = ""
 
+    ## --- Find the image ---
+    print("Getting image...")
+    print(os.getcwd())
+    if tns_flag:
+        file_name = "../" + get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve,
+            tns_objects_potential["RA"].iloc[0], tns_objects_potential["Dec"].iloc[0]
+            )
+    else:
+        file_name = "../" + get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve)
+
+    print("Image name:", file_name)
+
+
+
 
     tns_objects_data['Name'] = tns_objects_data['Name'].apply(lambda x: f'[{x}](https://www.wis-tns.org/object/{x})')
 
@@ -1701,9 +1723,12 @@ def BGEM_ID_View(request, bgem_id):
         "tns_data"          : tns_data,
         "tns_text"          : tns_text,
         "tns_list"          : tns_list,
+        "image_name"        : file_name
         # "tns_nearby"        : tns_nearby,
         # "tns_objects_data"  : tns_objects_data,
     }
+
+    print(context["image_name"])
 
     return render(request, "transient/index.html", context)
 
@@ -1712,85 +1737,133 @@ def BGEM_ID_View(request, bgem_id):
 ## =============================================================================
 ## ------------------ Codes for the Unified Transients page --------------------
 
-def get_transient_image(ra, dec):
+def get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve = False, tns_ra=False, tns_dec=False):
 
     # Instantialte the BlackGEM object, with a connection to the database
     bg = authenticate_blackgem()
 
-    desimoc = MOC.from_fits('./Data/MOC_DESI-Legacy-Surveys_DR10.fits')
+    desimoc = MOC.from_fits('./data/MOC_DESI-Legacy-Surveys_DR10.fits')
     coords = SkyCoord(ra,dec,unit='deg',frame='icrs')
     indesi = desimoc.contains_lonlat(coords.ra,coords.dec)
 
-    for i in range(len(ra_list)):
-        ra  = coords[i].ra.value
-        dec = coords[i].dec.value
-        file_name = "../Outputs/"+"%s_cutout.jpg"%(str(ra)+str(dec))
-        # if os.path.isfile(file_name):
-        #     continue
-        if indesi[i]:
-            url = 'https://www.legacysurvey.org/viewer/cutout.jpg?ra=%s&dec=%s&layer=ls-dr10-grz&zoom=14'%(ra,dec)
-        elif float(dec)>-30:
-            image_index_url_red = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=i'%(ra, dec)
-            image_index_url_green = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=r'%(ra, dec)
-            image_index_url_blue = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=g'%(ra, dec)
+    ra  = coords.ra.value
+    dec = coords.dec.value
+    file_name = "./data/" + str(bgem_id) + "/ra%s"%str(ra)+"dec%s_cutout.png"%str(dec)
 
-            urlretrieve(image_index_url_red, '/tmp/image_index_red.txt')
-            urlretrieve(image_index_url_green, '/tmp/image_index_green.txt')
-            urlretrieve(image_index_url_blue, '/tmp/image_index_blue.txt')
+    ## Individual Detections
+    ra_2    = df_bgem_lightcurve["x.ra_psf_d"]
+    dec_2   = df_bgem_lightcurve["x.dec_psf_d"]
+    coords_2 = SkyCoord(ra_2,dec_2,unit='deg',frame='icrs')
+    # print(coords.separation(coords_2).arcsecond)
 
-            ix_red = np.genfromtxt('/tmp/image_index_red.txt', names=True, dtype=None, encoding='utf-8')
-            ix_green = np.genfromtxt('/tmp/image_index_green.txt', names=True, dtype=None, encoding='utf-8')
-            ix_blue = np.genfromtxt('/tmp/image_index_blue.txt', names=True, dtype=None, encoding='utf-8')
+    pa = coords.position_angle(coords_2)
+    sep = coords.separation(coords_2)
 
-            url = "http://ps1images.stsci.edu/cgi-bin/fitscut.cgi?red=%s&green=%s&blue=%s&filetypes=stack&auxiliary=data&size=%d&ra=%s&dec=%s&output_size=256"%\
-            (ix_red["filename"], ix_green["filename"], ix_blue["filename"], 240, ra, dec)
-        else:
-            url = 'https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red&r=%s&d=%s&e=J2000&h=1&w=1&f=gif'%(ra,dec)
+    ra_arcsecond_sep    = sep.arcsecond*np.sin(pa)
+    dec_arcsecond_sep   = sep.arcsecond*np.cos(pa)
 
-        # print(ix_red)
-        # print(ix_green)
-        # print(ix_blue)
-        # print(url)
+    pixel_scale = 0.262/2
 
-        cutout = requests.get(url, stream = True)
+    ra_pixel_sep = -ra_arcsecond_sep/pixel_scale
+    dec_pixel_sep = dec_arcsecond_sep/pixel_scale
 
-        if cutout.status_code == 200:
-            with open(file_name,'wb') as f:
-                shutil.copyfileobj(cutout.raw, f)
-            print('Image successfully Downloaded: ',file_name)
+    if tns_ra and tns_dec:
+        coords_3 = SkyCoord(tns_ra,tns_dec,unit='deg',frame='icrs')
+        # print(coords.separation(coords_2).arcsecond)
 
-            ## Draw crosshairs
-            with Image.open(file_name) as im:
-                draw = ImageDraw.Draw(im)
+        tns_pa = coords.position_angle(coords_3)
+        tns_sep = coords.separation(coords_3)
 
-                ## Crosshairs - All units in percentages
-                gap = 8
-                size = 25
-                # draw.line((im.size[0]/2, im.size[1]*(100-size)/200, im.size[0]/2, im.size[1]*(100-gap)/200), fill="red", width=2)
-                draw.line((im.size[0]/2, im.size[1]*(100+gap)/200, im.size[0]/2, im.size[1]*(100+size)/200), fill="red", width=2)
-                # draw.line((im.size[0]*(100-size)/200, im.size[1]/2, im.size[1]*(100-gap)/200, im.size[1]/2), fill="red", width=2)
-                draw.line((im.size[0]*(100+gap)/200, im.size[1]/2, im.size[1]*(100+size)/200, im.size[1]/2), fill="red", width=2)
+        tns_ra_arcsecond_sep    = tns_sep.arcsecond*np.sin(tns_pa)
+        tns_dec_arcsecond_sep   = tns_sep.arcsecond*np.cos(tns_pa)
 
-                # ## Scale
-                # draw.line((10, im.size[1]-10, 10+(10/0.262), im.size[1]-10), fill="white", width=2)
-                # draw.text((10, im.size[1]-25), "10 arcseconds", fill="white")
+        tns_ra_pixel_sep = -tns_ra_arcsecond_sep/pixel_scale
+        tns_dec_pixel_sep = tns_dec_arcsecond_sep/pixel_scale
 
-                ## Scale
-                draw.line((im.size[0]/2, im.size[1]/2+10/0.262+5, im.size[0]/2+10/0.262, im.size[1]/2+10/0.262+5), fill="white", width=2)
-                draw.text((im.size[0]/2, im.size[1]/2+10/0.262+10), "10 arcseconds", fill="white")
 
-                ## Circle
-                draw.arc([(im.size[0]/2-10/0.262, im.size[0]/2-10/0.262), (im.size[0]/2+10/0.262, im.size[0]/2+10/0.262)], start=0, end=359, fill=(255,255,255,128))
 
-                # draw.line((0, im.size[0]/2, im.size[0], im.size[1]/2), fill="red", width=2)
+    if not os.path.exists("./data/" + str(bgem_id) + "/"):
+        os.makedirs("./data/" + str(bgem_id) + "/")
 
-                # write to stdout
-                # im.save(sys.stdout, "PNG")
-                im.save(file_name[:-4] + "_cross.png")
+    # if os.path.isfile(file_name):
+    #     return file_name
 
-        else:
-            print('Image Couldn\'t be retrieved')
-            print(file_name)
+    if indesi:
+        url = 'https://www.legacysurvey.org/viewer/cutout.jpg?ra=%s&dec=%s&layer=ls-dr10-grz&zoom=15'%(ra,dec)
+    elif float(dec)>-30:
+        image_index_url_red = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=i'%(ra, dec)
+        image_index_url_green = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=r'%(ra, dec)
+        image_index_url_blue = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=g'%(ra, dec)
+
+        urlretrieve(image_index_url_red, '/tmp/image_index_red.txt')
+        urlretrieve(image_index_url_green, '/tmp/image_index_green.txt')
+        urlretrieve(image_index_url_blue, '/tmp/image_index_blue.txt')
+
+        ix_red = np.genfromtxt('/tmp/image_index_red.txt', names=True, dtype=None, encoding='utf-8')
+        ix_green = np.genfromtxt('/tmp/image_index_green.txt', names=True, dtype=None, encoding='utf-8')
+        ix_blue = np.genfromtxt('/tmp/image_index_blue.txt', names=True, dtype=None, encoding='utf-8')
+
+        url = "http://ps1images.stsci.edu/cgi-bin/fitscut.cgi?red=%s&green=%s&blue=%s&filetypes=stack&auxiliary=data&size=%d&ra=%s&dec=%s&output_size=256"%\
+        (ix_red["filename"], ix_green["filename"], ix_blue["filename"], 240, ra, dec)
+    else:
+        url = 'https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red&r=%s&d=%s&e=J2000&h=1&w=1&f=gif'%(ra,dec)
+
+    cutout = requests.get(url, stream = True)
+
+    if cutout.status_code == 200:
+        with open(file_name,'wb') as f:
+            shutil.copyfileobj(cutout.raw, f)
+        print('Image successfully Downloaded: ',file_name)
+
+        ## Draw crosshairs
+        with Image.open(file_name) as im:
+            draw = ImageDraw.Draw(im)
+
+            ## Crosshairs - All units in percentages
+            gap = 8
+            size = 25
+            # draw.line((im.size[0]/2, im.size[1]*(100+gap)/200, im.size[0]/2, im.size[1]*(100+size)/200), fill="red", width=2)
+            # draw.line((im.size[0]*(100+gap)/200, im.size[1]/2, im.size[1]*(100+size)/200, im.size[1]/2), fill="red", width=2)
+
+            ## Scale
+            draw.line((im.size[0]/2, im.size[1]/2+10/pixel_scale+5, im.size[0]/2+10/pixel_scale, im.size[1]/2+10/pixel_scale+5), fill="white", width=2)
+            draw.text((im.size[0]/2, im.size[1]/2+10/pixel_scale+10), "10 arcseconds", fill="white")
+
+            ## Circle
+            draw.arc([(im.size[0]/2-10/pixel_scale, im.size[0]/2-10/pixel_scale), (im.size[0]/2+10/pixel_scale, im.size[0]/2+10/pixel_scale)], start=0, end=359, fill=(255,255,255,128))
+
+            ## TNS Source?
+            if tns_ra and tns_dec:
+
+                tns_ra_pixel    = im.size[0]/2-tns_ra_pixel_sep
+                tns_dec_pixel   = im.size[0]/2-tns_dec_pixel_sep
+
+                draw.rectangle([(tns_ra_pixel-1, tns_dec_pixel-1), (tns_ra_pixel+1, tns_dec_pixel+1)], fill="lightgreen")
+
+                draw.line((tns_dec_pixel, tns_ra_pixel-10, tns_dec_pixel, tns_ra_pixel+10), fill="lightgreen", width=2)
+                draw.line((tns_dec_pixel-10, tns_ra_pixel, tns_dec_pixel+10, tns_ra_pixel), fill="lightgreen", width=2)
+                draw.text((im.size[0]/2, im.size[1]/2+10/pixel_scale+34), "TNS Source", fill="lightgreen")
+
+            ## All BlackGEM Detections
+            draw.text((im.size[0]/2, im.size[1]/2+10/pixel_scale+22), "BlackGEM Detections", fill="red")
+            for this_ra, this_dec in zip(ra_pixel_sep, dec_pixel_sep):
+                # print("Detection!")
+                detections_x = im.size[0]/2-this_ra
+                detections_y = im.size[1]/2-this_dec
+
+                # print(detections_x, detections_y)
+
+                draw.point([(detections_x, detections_y)], fill="red")
+
+
+            # im.save(file_name[:-4] + "_cross.png")
+            im.save(file_name)
+
+    else:
+        print('Image Couldn\'t be retrieved')
+        print(file_name)
+
+    return file_name
 
 
 class UnifiedTransientsView(TemplateView):
