@@ -172,12 +172,17 @@ DATE_FORMAT = 'Y-m-d'
 # APPEND_SLASH = False
 
 
-# STATIC_URL = 'GEMTOM/static/'
-STATIC_URL = 'static/'
+STATIC_URL = 'GEMTOM/static/'
+# STATIC_URL = 'static/'
+print("\n\n\n\n")
 STATIC_ROOT = os.path.join(BASE_DIR, '_static')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+print("\n\n\n\n")
 MEDIA_ROOT = os.path.join(BASE_DIR, 'data')
 MEDIA_URL = '/data/'
+
+print(STATIC_ROOT)
+print(STATICFILES_DIRS)
 
 LOGGING = {
     'version': 1,

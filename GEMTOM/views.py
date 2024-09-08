@@ -3179,6 +3179,8 @@ class UpdateZTFView(LoginRequiredMixin, RedirectView):
 def authenticate_blackgem():
     creds_user_file = str(Path.home()) + "/.bg_follow_user_john_creds"
     creds_db_file = str(Path.home()) + "/.bg_follow_transientsdb_creds"
+    print(creds_user_file)
+    print(creds_db_file)
 
     # Instantiate the BlackGEM object
     bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
