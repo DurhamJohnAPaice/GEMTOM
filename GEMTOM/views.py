@@ -285,6 +285,12 @@ def plot_BGEM_location_on_sky(df_bgem_lightcurve):
     return fig
 
 
+class ComingSoonView(TemplateView):
+    template_name = 'comingsoon.html'
+
+    def get_context_data(self, **kwargs):
+        return {'targets': Target.objects.all()}
+
 class BlackGEMView(TemplateView):
     template_name = 'blackGEM.html'
 
@@ -1792,7 +1798,7 @@ def get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve = False, tns_ra=Fal
         url = "http://ps1images.stsci.edu/cgi-bin/fitscut.cgi?red=%s&green=%s&blue=%s&filetypes=stack&auxiliary=data&size=%d&ra=%s&dec=%s&output_size=256"%\
         (ix_red["filename"], ix_green["filename"], ix_blue["filename"], 240, ra, dec)
     else:
-        print("Field in STSCI...")
+        print("Field in DSS2...")
         pixel_scale = 1
         url = 'https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red&r=%s&d=%s&e=J2000&h=4&w=4&f=gif'%(ra,dec)
 
@@ -1949,9 +1955,9 @@ class UnifiedTransientsView(TemplateView):
     app.layout = html.Div([
         html.Div([
             # html.A("Link to external site", href='https://plot.ly', target="_blank"),
-            dcc.Input(id='ra-input',        type='number', min=0, max=360,  placeholder=' RA',        style=style_dict),
-            dcc.Input(id='dec-input',       type='number', min=-90, max=90,   placeholder=' Dec',       style=style_dict),
-            dcc.Input(id='radius-input',    type='number', min=0, max=600,  placeholder=' Radius',    style=style_dict),
+            dcc.Input(id='ra-input',        type='number', min=0, max=360,  placeholder=' RA (deg)',        style=style_dict),
+            dcc.Input(id='dec-input',       type='number', min=-90, max=90,   placeholder=' Dec (deg)',       style=style_dict),
+            dcc.Input(id='radius-input',    type='number', min=0, max=600,  placeholder=' Radius (arcseconds)',    style=style_dict),
             html.Button('Search', id='submit-button', n_clicks=0, style=button_style_dict),
             # html.Button('Search', id='submit-button', n_clicks=0, style={"font-size": "16px","margin-right": "10px",})
         ], style={'margin-bottom': '20px', "text-align":"center"}),

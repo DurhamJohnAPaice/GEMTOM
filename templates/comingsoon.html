@@ -1,0 +1,63 @@
+{% extends 'tom_common/base.html' %}
+{% block content %}
+
+<h2>Coming Soon</h2>
+
+A list of the main features that have been requested and I intend to work on.
+Feel free to give input or send me ideas!
+<br>
+<br>
+<ul>
+
+    <li>
+        <h5>Server</h5>
+        Biggest goal right now - launching this into production for all of you to play with!
+    </li>
+    <br>
+    <li>
+        <h5>ToO Page</h5>
+        A page for inputting your ToO time on different telescopes. Could have a python-created
+        timetable showing start and stop times. Input requested here - what would make this
+        useful for you?
+    </li>
+    <br>
+    <li>
+        <h5>Cutouts</h5>
+        Reference/difference images for each detection.
+    </li>
+    <br>
+
+    <li>
+        <h5>Expanded 'History' Page</h5>
+        Expand the status page to include objects of other types, not just Extragalactic.<br>
+        Note: <b>This is where you come in!</b> If you have any codes that can comb the recent
+        transients for any signals, pass them my way, and I can feature the results on GEMTOM.
+    </li>
+    <br>
+
+    <!-- <li>
+        <h5></h5>
+
+    </li>
+    <br> -->
+
+    <li>
+        <h6>Miscellaneous Features:</h6>
+        <ul>
+        <li>For the status page, note which targets are Gravitational Wave triggers.</li>
+        <li>Change the ‘BlackGEM is observing!/probably not observing’ message to be also updated with each tick.</li>
+        <li>In the History tab, have the check automatically update the latest row of the history.</li>
+        <li>In the lightcurves, could put a line at the current time.</li>
+        <li>Link to the GEMTOM and BlackView pages for a target from the targets page.</li>
+        <li>RA/Dec to interpret HMS as well as Deg</li>
+        </ul>
+    </li>
+</ul>
+
+
+<!-- <ul>
+  {% for target in targets %}
+  <li>{{ target.name }}</li>
+  {% endfor %}
+</ul> -->
+{% endblock %}
