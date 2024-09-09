@@ -54,6 +54,7 @@ from plotly.offline import plot
 from mocpy import MOC
 from PIL import Image, ImageDraw
 import shutil # save img locally
+from urllib.request import urlretrieve
 
 ## For the Live Feed
 from dash.exceptions import PreventUpdate
@@ -1762,7 +1763,39 @@ def get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve = False, tns_ra=Fal
     ra_arcsecond_sep    = sep.arcsecond*np.sin(pa)
     dec_arcsecond_sep   = sep.arcsecond*np.cos(pa)
 
-    pixel_scale = 0.262/2
+
+    if not os.path.exists("./data/" + str(bgem_id) + "/"):
+        os.makedirs("./data/" + str(bgem_id) + "/")
+
+    # if os.path.isfile(file_name):
+    #     return file_name
+
+    if indesi:
+        pixel_scale = 0.262/2
+        print("Field in DESI...")
+        url = 'https://www.legacysurvey.org/viewer/cutout.jpg?ra=%s&dec=%s&layer=ls-dr10-grz&zoom=15'%(ra,dec)
+    elif float(dec)>-30:
+        pixel_scale = 0.257
+        print("Field in PS1...")
+        image_index_url_red = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=i'%(ra, dec)
+        image_index_url_green = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=r'%(ra, dec)
+        image_index_url_blue = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=g'%(ra, dec)
+
+        urlretrieve(image_index_url_red, '/tmp/image_index_red.txt')
+        urlretrieve(image_index_url_green, '/tmp/image_index_green.txt')
+        urlretrieve(image_index_url_blue, '/tmp/image_index_blue.txt')
+
+        ix_red = np.genfromtxt('/tmp/image_index_red.txt', names=True, dtype=None, encoding='utf-8')
+        ix_green = np.genfromtxt('/tmp/image_index_green.txt', names=True, dtype=None, encoding='utf-8')
+        ix_blue = np.genfromtxt('/tmp/image_index_blue.txt', names=True, dtype=None, encoding='utf-8')
+
+        url = "http://ps1images.stsci.edu/cgi-bin/fitscut.cgi?red=%s&green=%s&blue=%s&filetypes=stack&auxiliary=data&size=%d&ra=%s&dec=%s&output_size=256"%\
+        (ix_red["filename"], ix_green["filename"], ix_blue["filename"], 240, ra, dec)
+    else:
+        print("Field in STSCI...")
+        pixel_scale = 1
+        url = 'https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red&r=%s&d=%s&e=J2000&h=4&w=4&f=gif'%(ra,dec)
+
 
     ra_pixel_sep = -ra_arcsecond_sep/pixel_scale
     dec_pixel_sep = dec_arcsecond_sep/pixel_scale
@@ -1780,33 +1813,6 @@ def get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve = False, tns_ra=Fal
         tns_ra_pixel_sep = -tns_ra_arcsecond_sep/pixel_scale
         tns_dec_pixel_sep = tns_dec_arcsecond_sep/pixel_scale
 
-
-
-    if not os.path.exists("./data/" + str(bgem_id) + "/"):
-        os.makedirs("./data/" + str(bgem_id) + "/")
-
-    # if os.path.isfile(file_name):
-    #     return file_name
-
-    if indesi:
-        url = 'https://www.legacysurvey.org/viewer/cutout.jpg?ra=%s&dec=%s&layer=ls-dr10-grz&zoom=15'%(ra,dec)
-    elif float(dec)>-30:
-        image_index_url_red = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=i'%(ra, dec)
-        image_index_url_green = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=r'%(ra, dec)
-        image_index_url_blue = 'http://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=%s&dec=%s&filters=g'%(ra, dec)
-
-        urlretrieve(image_index_url_red, '/tmp/image_index_red.txt')
-        urlretrieve(image_index_url_green, '/tmp/image_index_green.txt')
-        urlretrieve(image_index_url_blue, '/tmp/image_index_blue.txt')
-
-        ix_red = np.genfromtxt('/tmp/image_index_red.txt', names=True, dtype=None, encoding='utf-8')
-        ix_green = np.genfromtxt('/tmp/image_index_green.txt', names=True, dtype=None, encoding='utf-8')
-        ix_blue = np.genfromtxt('/tmp/image_index_blue.txt', names=True, dtype=None, encoding='utf-8')
-
-        url = "http://ps1images.stsci.edu/cgi-bin/fitscut.cgi?red=%s&green=%s&blue=%s&filetypes=stack&auxiliary=data&size=%d&ra=%s&dec=%s&output_size=256"%\
-        (ix_red["filename"], ix_green["filename"], ix_blue["filename"], 240, ra, dec)
-    else:
-        url = 'https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red&r=%s&d=%s&e=J2000&h=1&w=1&f=gif'%(ra,dec)
 
     cutout = requests.get(url, stream = True)
 
@@ -1830,7 +1836,7 @@ def get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve = False, tns_ra=Fal
             draw.text((im.size[0]/2, im.size[1]/2+10/pixel_scale+10), "10 arcseconds", fill="white")
 
             ## Circle
-            draw.arc([(im.size[0]/2-10/pixel_scale, im.size[0]/2-10/pixel_scale), (im.size[0]/2+10/pixel_scale, im.size[0]/2+10/pixel_scale)], start=0, end=359, fill=(255,255,255,128))
+            draw.arc([(im.size[0]/2-10/pixel_scale, im.size[0]/2-10/pixel_scale), (im.size[0]/2+10/pixel_scale, im.size[0]/2+10/pixel_scale)], start=0, end=359, fill="white")
 
             ## TNS Source?
             if tns_ra and tns_dec:
@@ -2702,9 +2708,9 @@ class LiveFeed(TemplateView):
                 if days_since_last_update > 1:
                     message = message_start + "%.2f" % days_since_last_update + " days ago)"
                 elif days_since_last_update > 1/24:
-                    message = message_start + "%.2f" % ((days_since_last_update)/24), " hours ago)"
+                    message = message_start + "%.2f" % (days_since_last_update*24) + " hours ago)"
                 else:
-                    message = message_start + str(int((days_since_last_update)/86400)) + " seconds ago)"
+                    message = message_start + str(int(days_since_last_update*86400)) + " seconds ago)"
                 print(message)
 
                 annotation_x = min_x + ((max_x-min_x)/2)
@@ -2972,9 +2978,9 @@ def LiveFeed_BGEM_ID_View(request, bgem_id):
             if days_since_last_update > 1:
                 message = message_start + "%.2f" % days_since_last_update + " days ago)"
             elif days_since_last_update > 1/24:
-                message = message_start + "%.2f" % ((days_since_last_update)/24), " hours ago)"
+                message = message_start + "%.2f" % (days_since_last_update*24) + " hours ago)"
             else:
-                message = message_start + str(int((days_since_last_update)/86400)) + " seconds ago)"
+                message = message_start + str(int(days_since_last_update*86400)) + " seconds ago)"
             print(message)
 
             annotation_x = min_x + ((max_x-min_x)/2)

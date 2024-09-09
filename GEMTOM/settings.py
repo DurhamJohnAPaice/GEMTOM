@@ -27,7 +27,9 @@ SECRET_KEY = '$7@(+yk_oyn(i8b!um@yi133)mta(443xtp4_^fh^_sw0x=*v1'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+# DEBUG = False
 
+# ALLOWED_HOSTS = ['*']
 ALLOWED_HOSTS = []
 
 
@@ -172,17 +174,20 @@ DATE_FORMAT = 'Y-m-d'
 # APPEND_SLASH = False
 
 
-STATIC_URL = 'GEMTOM/static/'
-# STATIC_URL = 'static/'
+# STATIC_URL = 'GEMTOM/static/'
+STATIC_URL = 'static/'
 print("\n\n\n\n")
 STATIC_ROOT = os.path.join(BASE_DIR, '_static')
+# STATIC_ROOT = os.path.join('/GEMTOM/_static')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 print("\n\n\n\n")
 MEDIA_ROOT = os.path.join(BASE_DIR, 'data')
 MEDIA_URL = '/data/'
 
-print(STATIC_ROOT)
-print(STATICFILES_DIRS)
+print("STATIC_ROOT: " + STATIC_ROOT)
+print("STATICFILES_DIRS: " + STATICFILES_DIRS[0])
+print("BASE_DIR: " + BASE_DIR)
+print("CWD: " + os.getcwd())
 
 LOGGING = {
     'version': 1,
