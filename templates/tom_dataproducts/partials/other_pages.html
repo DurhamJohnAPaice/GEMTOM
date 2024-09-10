@@ -1,0 +1,17 @@
+{% load static bootstrap4 targets_extras crispy_forms_tags %}
+<head>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/custom_styles.css' %}">
+</head>
+
+<div class="row">
+  <div class="col-md-6" style=
+    "border-right:thin solid #dddddd;
+    text-align:center">
+        <a href='/transients/{{ bgem_id }}' target="_blank">GEMTOM page for this source</a>
+  </div>
+  <div class="col-md-6" style=
+    "text-align:center;
+    vertical-align: middle;">
+        <a href="#" onclick='window.open("https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}");return false;'><em>BlackView</em> webpage for this source</a>
+  </div>
+</div>

@@ -440,6 +440,24 @@ def update_classification(target):
         'form'        : form
         }
 
+@register.inclusion_tag('tom_dataproducts/partials/other_pages.html')
+def other_pages(target):
+    """
+    Links to GEMTOM and BlackView pages
+    """
+    target_name = target.name
+    target_id = target.id
+    # print(target.__dict__)
+    # bgem_id = target|target_extra_field:"bgem_id"
+    bgem_id = target.targetextra_set.get(key='BlackGEM ID').value
+    print(bgem_id)
+
+    return {
+        'target_name' : target_name,
+        'target_id'   : target_id,
+        'bgem_id'     : bgem_id,
+        }
+
 @register.inclusion_tag('tom_dataproducts/partials/query_forced_photometry.html')
 def query_forced_photometry(target):
     target_name = target.name

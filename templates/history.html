@@ -186,7 +186,7 @@ On this page, you can find the history of blackgem's observations.
             {% endfor %}
         </div>
         RA = {{source_ra}}  ;  Dec = {{source_dec}}<br>
-        <em><a href='/transient/{{ source_id }}'>GEMTOM page for this transient</a></em><br>
+        <em><a href='/transients/{{ source_id }}'>GEMTOM page for this transient</a></em><br>
         <div style="height:3px;font-size:1px;">&nbsp;</div>
         {% if check %}
             <form method="post" action="{% url 'history_to_GEMTOM' %}" class="image-form">
