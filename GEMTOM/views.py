@@ -683,9 +683,9 @@ def get_any_nights_sky_plot(night):
 
     return field_stats, image_base64
 
+
 class HistoryView(TemplateView):
     template_name = 'history.html'
-
 
     def post(self, request, **kwargs):
         # date = '20240424'

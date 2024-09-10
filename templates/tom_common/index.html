@@ -21,9 +21,15 @@
 <hr style="margin-left:-100px; margin-right:-100px">
 <div class="row" style="margin-left:-100px; margin-right:-100px">
 
+    <div class="col-md-4" style="text-align:center; border-right:thin solid #dddddd">
+        <div style="margin-top: 1.3em">
+            <a href="history"  class="btn btn-outline-primary" role="button" style="font-size:1.2em">Night Archive</a>
+        </div>
+    </div>
+
     <div class="col-md-4" style="text-align:center; border-right:thin solid #dddddd;">
         <div style="margin-bottom: 0.3em">
-            <a href="transient" class="btn btn-outline-primary" role="button" style="font-size:1.2em">Search for a Transient</a>
+            <a href="transients" class="btn btn-outline-primary" role="button" style="font-size:1.2em">Search for a Transient</a>
         </div>
         <form method="get" action="{% url 'search_BGEM_ID' %}">
             <input id="bgem_id" type="text" name="user_input" placeholder="BlackGEM ID" required>
@@ -31,15 +37,10 @@
         </form>
     </div>
 
-    <div class="col-md-4" style="text-align:center; border-right:thin solid #dddddd">
-        <div style="margin-top: 1.3em">
-            <a href="status"  class="btn btn-outline-primary" role="button" style="font-size:1.2em">Last night's observations</a>
-        </div>
-    </div>
 
     <div class="col-md-4" style="text-align:center">
         <div style="margin-top: 1.3em">
-            <a href="recent_transients" class="btn btn-outline-primary" role="button" style="font-size:1.2em">Recent Transients</a>
+            <a href="live_feed" class="btn btn-outline-danger" role="button" style="font-size:1.2em">● Live Feed</a>
         </div>
     </div>
 </div>
