@@ -213,6 +213,9 @@ def add_to_GEMTOM(id, name, ra, dec, tns_prefix=False, tns_name=False):
 
 def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 
+    time_now = datetime.now(timezone.utc)
+    mjd_now = datetime_to_mjd(time_now)
+
     ## Lightcurve
     filters = ['u', 'g', 'q', 'r', 'i', 'z']
     colors = ['darkviolet', 'forestgreen', 'darkorange', 'orangered', 'crimson', 'dimgrey']
@@ -257,7 +260,7 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
                     mode            = 'markers',
                     marker          = dict(symbol='arrow-wide', angle=180, size=12),
                     marker_color    = colors[filters.index(f)],
-                    opacity         = 0.2,
+                    opacity         = 0.4,
                     name            = filters[filters.index(f)],
                     hovertemplate   =
                         '<i>MJD: %{x:.3f}</i><br>' +
@@ -265,6 +268,11 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
                     hoverlabel      = dict(bgcolor="white")
 
         ))
+        fig.add_vline(x=mjd_now, line_width=1, line_dash="dash", line_color="grey",
+                annotation_text="Now ",
+                annotation_position="bottom left",
+                annotation_font_color = "grey",
+                annotation_textangle = 90,)
 
     fig.update_layout(height=600)
     fig.update_layout(hovermode="x", xaxis=dict(tickformat ='d'),

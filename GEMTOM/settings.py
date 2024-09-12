@@ -176,11 +176,9 @@ DATE_FORMAT = 'Y-m-d'
 
 # STATIC_URL = 'GEMTOM/static/'
 STATIC_URL = 'static/'
-print("\n\n\n\n")
 STATIC_ROOT = os.path.join(BASE_DIR, '_static')
 # STATIC_ROOT = os.path.join('/GEMTOM/_static')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-print("\n\n\n\n")
 MEDIA_ROOT = os.path.join(BASE_DIR, 'data')
 MEDIA_URL = '/data/'
 

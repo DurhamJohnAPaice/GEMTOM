@@ -60,6 +60,13 @@ urlpatterns = [
     # path('upload/', UploadView.as_view(), name='upload'),
 ]
 
+# from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+# urlpatterns += patterns('', (
+#     r'^GEMTOM/static/(?P<path>.*)$',
+#     'django.views.static.serve',
+#     {'document_root': settings.STATIC_ROOT}
+# ))
+
 # urlpatterns = [path(r'GEMTOM/', include(urlpatterns))]
 
 
