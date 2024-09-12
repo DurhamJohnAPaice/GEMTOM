@@ -1,3 +1,18 @@
+## ====== My Ignores ======
+# DS_Store
+.DS_Store
+
+# Data
+/data/*/
+/data/Recent_BlackGEM_History.csv
+/data/BlackGEM_Transients_*.csv
+/data/processed_file.csv
+/data/*.jpg
+/data/*.png
+/data/.DS_Store
+
+## ====== Default Ignores below this point ======
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
