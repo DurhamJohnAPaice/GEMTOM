@@ -1101,7 +1101,62 @@ def blackgem_recent_transients():
     Fetches BlackGEM's recent transients and returns as a pandas dataframe
     '''
 
-    recent_transients = pd.read_csv("./data/BlackGEM_Transients_Last30Days.csv")
+    if os.path.isfile(fname):
+        recent_transients = pd.read_csv("./data/BlackGEM_Transients_Last30Days.csv")
+    else:
+        recent_transients = pd.DataFrame({
+            'index_1'       : 0,
+            'runcat_id'     : 0,
+            'q_xtrsrc'      : 0,
+            'iauname'       : 0,
+            'ra'            : 0,
+            'dec'           : 0,
+            'datapoints'    : 0,
+            'within_10min'  : 0,
+            'snr_zogy'      : 0,
+            'q_min'         : 0,
+            'q_max'         : 0,
+            'q_rb'          : 0,
+            'q_fwhm'        : 0,
+            'u_min'         : 0,
+            'u_max'         : 0,
+            'u_xtrsrc'      : 0,
+            'u_rb'          : 0,
+            'u_fwhm'        : 0,
+            'i_min'         : 0,
+            'i_max'         : 0,
+            'i_xtrsrc'      : 0,
+            'i_rb'          : 0,
+            'i_fwhm'        : 0,
+            'xtrsrc'        : 0,
+            'qui_min'       : 0,
+            'fwhm'          : 0,
+            'desi_cutout'   : 0,
+            'Gmag'          : 0,
+            'last_obs'      : 0,
+            'index_2'       : 0,
+            'tns'           : 0,
+            'ra_gal'        : 0,
+            'dec_gal'       : 0,
+            'D_gal'         : 0,
+            'angDist'       : 0,
+            'metric'        : 0,
+            'ra_sml'        : 0,
+            'dec_sml'       : 0,
+            'snr_zogy_sml'  : 0,
+            'iauname_short' : 0,
+            'q_min_sml'     : 0,
+            'u_min_sml'     : 0,
+            'i_min_sml'     : 0,
+            'q_max_sml'     : 0,
+            'u_max_sml'     : 0,
+            'i_max_sml'     : 0,
+            'q_dif'         : 0,
+            'u_dif'         : 0,
+            'i_dif'         : 0,
+        })
+
+        recent_transients.to_csv("./data/BlackGEM_Transients_Last30Days.csv", index=False)
 
     return recent_transients
 
@@ -2061,7 +2116,7 @@ class UnifiedTransientsView(TemplateView):
     app = DjangoDash('RecentTransients')
 
     # Read CSV data
-    df = pd.read_csv('./data/BlackGEM_Transients_Last30Days.csv')
+    df = blackgem_recent_transients()
 
     ## Define the layout of the Dash app
     app.layout = html.Div([
