@@ -2,6 +2,9 @@
 # DS_Store
 .DS_Store
 
+# I think this is safe to ignore...
+db.sqlite3
+
 # Data
 /data/*/
 /data/Recent_BlackGEM_History.csv
