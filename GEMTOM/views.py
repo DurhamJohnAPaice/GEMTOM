@@ -1101,7 +1101,7 @@ def blackgem_recent_transients():
     Fetches BlackGEM's recent transients and returns as a pandas dataframe
     '''
 
-    if os.path.isfile(fname):
+    if os.path.isfile("./data/BlackGEM_Transients_Last30Days.csv"):
         recent_transients = pd.read_csv("./data/BlackGEM_Transients_Last30Days.csv")
     else:
         recent_transients = pd.DataFrame({
