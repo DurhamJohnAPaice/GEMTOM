@@ -1951,6 +1951,31 @@ def get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve = False, tns_ra=Fal
 
     return file_name
 
+def check_blackgem_recent_transients(recent_transients):
+    dates = list(recent_transients.last_obs)
+    dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
+
+    ## --- Check to see if the recent history is up to date. If not, update.
+    ## Get yesterday's date...
+    yesterday_date = datetime.today() - timedelta(1)
+    yesterday_date = yesterday_date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    ## Get the most recent date...
+    most_recent_date = datetime.strptime(dates[0], "%Y%m%d")
+
+    ## Find the difference...
+    difference = yesterday_date - most_recent_date
+    days_since_last_update = difference.days
+    print("Days since last update:", days_since_last_update)
+
+    yesterday_date_string = yesterday_date.strftime("%Y%m%d")
+
+    if days_since_last_update > 0:
+        get_recent_blackgem_transients(days_since_last_update)
+        return blackgem_recent_transients()
+    else:
+        return recent_transients
+
 
 class UnifiedTransientsView(TemplateView):
     template_name = 'unified_transients.html'
@@ -2091,31 +2116,35 @@ class UnifiedTransientsView(TemplateView):
 
         ## --- Update Recent Transients ---
         recent_transients = blackgem_recent_transients()
-        dates = list(recent_transients.last_obs)
-        dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
-
-        ## --- Check to see if the recent history is up to date. If not, update.
-        ## Get yesterday's date...
-        yesterday_date = datetime.today() - timedelta(1)
-        yesterday_date = yesterday_date.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        ## Get the most recent date...
-        most_recent_date = datetime.strptime(dates[0], "%Y%m%d")
-
-        ## Find the difference...
-        difference = yesterday_date - most_recent_date
-        days_since_last_update = difference.days
-        print("Days since last update:", days_since_last_update)
-
-        yesterday_date_string = yesterday_date.strftime("%Y%m%d")
-
-        if days_since_last_update > 0:
-            get_recent_blackgem_transients(days_since_last_update)
-            recent_transients = blackgem_recent_transients()
-            dates = list(recent_transients.last_obs)
-            dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
+        recent_transients = check_blackgem_recent_transients(recent_transients)
+        # dates = list(recent_transients.last_obs)
+        # dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
+        #
+        # ## --- Check to see if the recent history is up to date. If not, update.
+        # ## Get yesterday's date...
+        # yesterday_date = datetime.today() - timedelta(1)
+        # yesterday_date = yesterday_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        #
+        # ## Get the most recent date...
+        # most_recent_date = datetime.strptime(dates[0], "%Y%m%d")
+        #
+        # ## Find the difference...
+        # difference = yesterday_date - most_recent_date
+        # days_since_last_update = difference.days
+        # print("Days since last update:", days_since_last_update)
+        #
+        # yesterday_date_string = yesterday_date.strftime("%Y%m%d")
+        #
+        # if days_since_last_update > 0:
+        #     get_recent_blackgem_transients(days_since_last_update)
+        #     recent_transients = blackgem_recent_transients()
+        #     dates = list(recent_transients.last_obs)
+        #     dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
 
         return context
+
+
+
 
 
     ## ===== Plot the transients from the past 30 days =====
@@ -2128,6 +2157,7 @@ class UnifiedTransientsView(TemplateView):
 
     # Read CSV data
     df = blackgem_recent_transients()
+    df = check_blackgem_recent_transients(df)
 
     ## Define the layout of the Dash app
     app.layout = html.Div([
