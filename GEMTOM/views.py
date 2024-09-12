@@ -260,7 +260,7 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
                     mode            = 'markers',
                     marker          = dict(symbol='arrow-wide', angle=180, size=12),
                     marker_color    = colors[filters.index(f)],
-                    opacity         = 0.4,
+                    opacity         = 0.3,
                     name            = filters[filters.index(f)],
                     hovertemplate   =
                         '<i>MJD: %{x:.3f}</i><br>' +
@@ -1105,55 +1105,55 @@ def blackgem_recent_transients():
         recent_transients = pd.read_csv("./data/BlackGEM_Transients_Last30Days.csv")
     else:
         recent_transients = pd.DataFrame({
-            'index_1'       : 0,
-            'runcat_id'     : 0,
-            'q_xtrsrc'      : 0,
-            'iauname'       : 0,
-            'ra'            : 0,
-            'dec'           : 0,
-            'datapoints'    : 0,
-            'within_10min'  : 0,
-            'snr_zogy'      : 0,
-            'q_min'         : 0,
-            'q_max'         : 0,
-            'q_rb'          : 0,
-            'q_fwhm'        : 0,
-            'u_min'         : 0,
-            'u_max'         : 0,
-            'u_xtrsrc'      : 0,
-            'u_rb'          : 0,
-            'u_fwhm'        : 0,
-            'i_min'         : 0,
-            'i_max'         : 0,
-            'i_xtrsrc'      : 0,
-            'i_rb'          : 0,
-            'i_fwhm'        : 0,
-            'xtrsrc'        : 0,
-            'qui_min'       : 0,
-            'fwhm'          : 0,
-            'desi_cutout'   : 0,
-            'Gmag'          : 0,
-            'last_obs'      : 0,
-            'index_2'       : 0,
-            'tns'           : 0,
-            'ra_gal'        : 0,
-            'dec_gal'       : 0,
-            'D_gal'         : 0,
-            'angDist'       : 0,
-            'metric'        : 0,
-            'ra_sml'        : 0,
-            'dec_sml'       : 0,
-            'snr_zogy_sml'  : 0,
-            'iauname_short' : 0,
-            'q_min_sml'     : 0,
-            'u_min_sml'     : 0,
-            'i_min_sml'     : 0,
-            'q_max_sml'     : 0,
-            'u_max_sml'     : 0,
-            'i_max_sml'     : 0,
-            'q_dif'         : 0,
-            'u_dif'         : 0,
-            'i_dif'         : 0,
+            'index_1'       : [0],
+            'runcat_id'     : [0],
+            'q_xtrsrc'      : [0],
+            'iauname'       : [' '],
+            'ra'            : [0],
+            'dec'           : [0],
+            'datapoints'    : [0],
+            'within_10min'  : [0],
+            'snr_zogy'      : [0],
+            'q_min'         : [0],
+            'q_max'         : [0],
+            'q_rb'          : [0],
+            'q_fwhm'        : [0],
+            'u_min'         : [0],
+            'u_max'         : [0],
+            'u_xtrsrc'      : [0],
+            'u_rb'          : [0],
+            'u_fwhm'        : [0],
+            'i_min'         : [0],
+            'i_max'         : [0],
+            'i_xtrsrc'      : [0],
+            'i_rb'          : [0],
+            'i_fwhm'        : [0],
+            'xtrsrc'        : [0],
+            'qui_min'       : [0],
+            'fwhm'          : [0],
+            'desi_cutout'   : [0],
+            'Gmag'          : [0],
+            'last_obs'      : ['2010-01-01'],
+            'index_2'       : [0],
+            'tns'           : [0],
+            'ra_gal'        : [0],
+            'dec_gal'       : [0],
+            'D_gal'         : [0],
+            'angDist'       : [0],
+            'metric'        : [0],
+            'ra_sml'        : [0],
+            'dec_sml'       : [0],
+            'snr_zogy_sml'  : [0],
+            'iauname_short' : [0],
+            'q_min_sml'     : [0],
+            'u_min_sml'     : [0],
+            'i_min_sml'     : [0],
+            'q_max_sml'     : [0],
+            'u_max_sml'     : [0],
+            'i_max_sml'     : [0],
+            'q_dif'         : [0],
+            'u_dif'         : [0],
+            'i_dif'         : [0],
         })
 
         recent_transients.to_csv("./data/BlackGEM_Transients_Last30Days.csv", index=False)
@@ -1247,28 +1247,39 @@ def get_recent_blackgem_transients(days_since_last_update):
 
         ## Sometimes that date doesn't show up.
         ## In those circumstances, we iterate back through time until we find the next date.
-        n = 0
-        while old_date_index == 0:
-            print("No data from " + old_date + "; continuing to the next date...")
-            n += 1
 
-            ## Each time, we find the new date, and the index of its first occurance.
-            old_datestamp = datestamp - timedelta(31+n)
-            old_date = old_datestamp.strftime("%Y-%m-%d")
-            old_date_index = (previous_history['last_obs'].values == old_date).argmax()
+        if oldest_date == '2010-01-01':
+            update_data = True
+            print("Finding data for the first time.")
+            old_date = "a long time ago, and will not be saved.."
+        else:
+            n = 0
+            while old_date_index == 0:
+                print("No data from " + old_date + "; continuing to the next date...")
+                n += 1
 
-            ## To prevent an infinite loop, which shouldn't happen, we do this.
-            if n == age_of_oldest_data:
-                print("This shouldn't print! Please check your data, something's gone wrong...")
-                break
+                ## Each time, we find the new date, and the index of its first occurance.
+                old_datestamp = datestamp - timedelta(31+n)
+                old_date = old_datestamp.strftime("%Y-%m-%d")
+                old_date_index = (previous_history['last_obs'].values == old_date).argmax()
 
-        print("Data found from " + old_date + ".")
+                ## To prevent an infinite loop, which shouldn't happen, we do this.
+                if n == age_of_oldest_data:
+                    print("This shouldn't print! Please check your data, something's gone wrong...")
+                    old_date_index = len(previous_history)
+                    old_date = "a long time ago, and will not be saved.."
+                    break
+
+            print("Data found from " + old_date + ".")
         ## When we save data, save only up to this index.
 
         ## If there's new data...
         if data_list:
             ## ...combine it with the old.
-            df = pd.concat([df_new, previous_history.iloc[:old_date_index]]).reset_index(drop=True)
+            if old_date == "a long time ago, and will not be saved..":
+                df = df_new
+            else:
+                df = pd.concat([df_new, previous_history.iloc[:old_date_index]]).reset_index(drop=True)
         else:
             ## Otherwise, just use the old data.
             df = previous_history.iloc[:old_date_index].reset_index(drop=True)
