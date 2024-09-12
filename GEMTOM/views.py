@@ -538,10 +538,17 @@ def blackgem_history():
     Fetches BlackGEM's history and returns as a pandas dataframe
     '''
 
-    # get_recent_blackgem_history()
-
-    # history = pd.read_csv("./data/BlackGEM_History.csv")
-    history = pd.read_csv("./data/Recent_BlackGEM_History.csv")
+    if os.path.isfile("./data/Recent_BlackGEM_History.csv"):
+        history = pd.read_csv("./data/Recent_BlackGEM_History.csv")
+    else:
+        history = pd.DataFrame({
+            'Date' : ['2010-01-01'],
+            'MJD' : [0],
+            'Observed' : ['No'],
+            'Number_Of_Transients' : [0],
+            'Number_of_Gaia_Crossmatches' : [0],
+            'Number_Of_Extragalactic' : [0],
+        })
     # print(history)
 
     return history
