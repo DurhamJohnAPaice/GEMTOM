@@ -210,6 +210,8 @@ def add_to_GEMTOM(id, name, ra, dec, tns_prefix=False, tns_name=False):
 
     return redirect(reverse('tom_targets:list'))
 
+def test_print():
+    print("Hello World!")
 
 def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 
@@ -1431,6 +1433,40 @@ def BGEM_to_GEMTOM_photometry(df_bg_assocs):
 
     return gemtom_photometry
 
+def BGEM_to_GEMTOM_photometry_2(df_bgem_lightcurve, df_limiting_mag=[]):
+
+    print("df_bgem_lightcurve:")
+    print(df_bgem_lightcurve)
+    print("df_limiting_mag:")
+    print(df_limiting_mag)
+
+    gemtom_photometry = pd.DataFrame({
+        'mjd' : df_bgem_lightcurve["i.\"mjd-obs\""],
+        'mag' : df_bgem_lightcurve["x.mag_zogy"],
+        'magerr' : df_bgem_lightcurve["x.magerr_zogy"],
+        'limit' : [''] * len(df_bgem_lightcurve),
+        'filter' : df_bgem_lightcurve["i.filter"],
+    })
+
+    print("GEMTOM Photometry:")
+    print(gemtom_photometry)
+
+    if len(df_limiting_mag) > 0:
+        gemtom_limiting_photometry = pd.DataFrame({
+            'mjd' : df_limiting_mag["mjd"],
+            'mag' : [''] * len(df_limiting_mag),
+            'magerr' : [''] * len(df_limiting_mag),
+            'limit' : df_limiting_mag["limiting_mag"],
+            'filter' : df_limiting_mag["filter"],
+        })
+
+
+        print("GEMTOM Limiting Photometry:")
+        print(gemtom_limiting_photometry)
+
+        gemtom_photometry = pd.concat([gemtom_photometry,gemtom_limiting_photometry]).reset_index(drop=True)
+
+    return gemtom_photometry
 
 ## =========================
 ## ----- TNS Functions -----
@@ -3346,11 +3382,23 @@ def add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid):
 
     try:
         df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(target_blackgemid)
-        photometry = BGEM_to_GEMTOM_photometry(df_bgem_lightcurve)
-        print(df_bgem_lightcurve)
-        print(df_bgem_lightcurve.columns)
+        # photometry = BGEM_to_GEMTOM_photometry(df_bgem_lightcurve)
+        photometry = BGEM_to_GEMTOM_photometry_2(df_bgem_lightcurve, df_limiting_mag)
+        # print(df_bgem_lightcurve)
+        # print(df_bgem_lightcurve.columns)
 
         print("-- BlackGEM: Getting Data... Done.")
+
+        # ## If the magnitude shows an upper limit, remove.
+        # datum_magnitude = str(datum['magnitude'])
+        # print(datum_magnitude)
+        # if ('>' in datum_magnitude) or ('<' in datum_magnitude):
+        #     datum['limit'] = float(datum_magnitude[1:])
+        #     datum['magnitude'] = 0
+        # elif datum_magnitude == '--':
+        #     datum_magnitude = ''
+        # else:
+        #     datum['magnitude'] = float(datum_magnitude)
 
         ## Save ZTF Data
         df = photometry

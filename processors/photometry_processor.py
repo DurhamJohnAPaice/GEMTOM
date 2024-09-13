@@ -42,6 +42,7 @@ class PhotometryProcessor(DataProcessor):
         :rtype: list
         """
 
+        print("Running photometry processor...")
         photometry = []
 
         data = astropy_ascii.read(data_product.data.path)
@@ -69,6 +70,8 @@ class PhotometryProcessor(DataProcessor):
         for column_name in data.colnames:
             if column_name not in ['time', 'mjd', 'hjd', 'jd', 'telescope', 'mag', 'magnitude', 'error', 'limit', 'source', 'filter']:
                 data.remove_column(column_name)
+
+        print("Recognised columns:", data.colnames)
 
         ## If Telescope, Filter, and Source columns aren't present, then create and fill in.
         if 'telescope' not in data.colnames:
@@ -115,9 +118,12 @@ class PhotometryProcessor(DataProcessor):
 
             ## If the magnitude shows an upper limit, remove.
             datum_magnitude = str(datum['magnitude'])
+            print(datum_magnitude)
             if ('>' in datum_magnitude) or ('<' in datum_magnitude):
                 datum['limit'] = float(datum_magnitude[1:])
                 datum['magnitude'] = 0
+            elif datum_magnitude == '--':
+                datum_magnitude = ''
             else:
                 datum['magnitude'] = float(datum_magnitude)
 
@@ -149,5 +155,7 @@ class PhotometryProcessor(DataProcessor):
 
         # for row in photometry:
         #     print(row)
+
+        print("Finished photometry processor.")
 
         return photometry

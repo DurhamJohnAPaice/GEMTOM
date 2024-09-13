@@ -7,6 +7,9 @@ from plotly import offline
 import plotly.graph_objs as go
 import numpy as np
 from django import forms
+import pandas as pd
+from GEMTOM import views
+# from ...GEMTOM.views import plot_BGEM_lightcurve
 # from ...forms import *
 # from django import forms
 # from django.contrib.auth.models import Group
@@ -31,7 +34,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 register = template.Library()
-
 
 @register.inclusion_tag('tom_dataproducts/partials/ztf_for_target.html', takes_context=True)
 def ztf_for_target(context, target, width=700, height=600, background=None, label_color=None, grid=True):
@@ -425,7 +427,7 @@ def add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid):
 
     try:
         df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(target_blackgemid)
-        photometry = BGEM_to_GEMTOM_photometry(df_bgem_lightcurve)
+        photometry = BGEM_to_GEMTOM_photometry_2(df_bgem_lightcurve)
         print(df_bgem_lightcurve)
         print(df_bgem_lightcurve.columns)
 
@@ -516,6 +518,193 @@ def update_blackgem_data(context, target, width=700, height=400, background=None
             )
 
 
+# @register.inclusion_tag('tom_dataproducts/partials/blackgem_for_target.html', takes_context=True)
+# def blackgem_for_target(context, target, width=700, height=400, background=None, label_color=None, grid=True):
+#     """
+#     Renders a photometric plot for a target.
+#
+#     This templatetag requires all ``ReducedDatum`` objects with a data_type of ``photometry`` to be structured with the
+#     following keys in the JSON representation: magnitude, error, filter
+#
+#     :param width: Width of generated plot
+#     :type width: int
+#
+#     :param height: Height of generated plot
+#     :type width: int
+#
+#     :param background: Color of the background of generated plot. Can be rgba or hex string.
+#     :type background: str
+#
+#     :param label_color: Color of labels/tick labels. Can be rgba or hex string.
+#     :type label_color: str
+#
+#     :param grid: Whether to show grid lines.
+#     :type grid: bool
+#     """
+#
+#     color_map = {
+#         'u': 'darkviolet',
+#         'g': 'forestgreen',
+#         'q': 'darkorange',
+#         'r': 'orangered',
+#         'i': 'crimson',
+#         'z': 'dimgrey'
+#     }
+#
+#     try:
+#         photometry_data_type = settings.DATA_PRODUCT_TYPES['blackgem_data'][0]
+#     except (AttributeError, KeyError):
+#         photometry_data_type = 'blackgem_data'
+#     photometry_data = {}
+#     if settings.TARGET_PERMISSIONS_ONLY:
+#         datums = ReducedDatum.objects.filter(target=target, data_type=photometry_data_type)
+#     else:
+#         datums = get_objects_for_user(context['request'].user,
+#                                       'tom_dataproducts.view_reduceddatum',
+#                                       klass=ReducedDatum.objects.filter(
+#                                         target=target,
+#                                         data_type=photometry_data_type))
+#     plot_data = []
+#     all_ydata = []
+#
+#     if len(datums) > 0:
+#         for datum in datums:
+#             photometry_data.setdefault('jd', []).append(datum.timestamp)
+#             photometry_data.setdefault('magnitude', []).append(datum.value.get('magnitude'))
+#             photometry_data.setdefault('error', []).append(datum.value.get('error'))
+#             photometry_data.setdefault('filter', []).append(datum.value.get('filter'))
+#
+#             # print(photometry_data)
+#         # print("Bark!")
+#
+#
+#         photometry_data['magnitude'] = [float(i) for i in photometry_data['magnitude']]
+#         for i in range(0, len(photometry_data['error'])):
+#             if photometry_data['error'][i] == None:
+#                 photometry_data['error'][i] = 0
+#             else:
+#                 photometry_data['error'][i] = float(photometry_data['error'][i])
+#         # photometry_data['error'] = [float(i) for i in photometry_data['error']]
+#
+#         # print("\n\n\n\n\n\n\n")
+#         # print(photometry_data['jd'])
+#         # print(photometry_data['magnitude'])
+#         # print(photometry_data['error'])
+#         # print(photometry_data['filter'])
+#
+#         print(photometry_data)
+#         df = pd.DataFrame.from_dict(photometry_data)
+#         print(df)
+#
+#         ## Seperate out the data based on filter
+#         q_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'q']
+#         u_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'u']
+#         g_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'g']
+#         r_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'r']
+#         i_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'i']
+#         z_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'z']
+#
+#         filtered_data = [
+#             {key: [value[i] for i in q_indices] for key, value in photometry_data.items()},
+#             {key: [value[i] for i in u_indices] for key, value in photometry_data.items()},
+#             {key: [value[i] for i in g_indices] for key, value in photometry_data.items()},
+#             {key: [value[i] for i in r_indices] for key, value in photometry_data.items()},
+#             {key: [value[i] for i in i_indices] for key, value in photometry_data.items()},
+#             {key: [value[i] for i in z_indices] for key, value in photometry_data.items()},
+#         ]
+#
+#         # print(filtered_data)
+#         # print("Bark!")
+#
+#         for filter in filtered_data:
+#             print(len(filter['jd']))
+#             if len(filter['jd']) > 0:
+#                 series = go.Scatter(
+#                     x=filter['jd'],
+#                     y=filter['magnitude'],
+#                     mode='markers',
+#                     name=filter['filter'][0],
+#                     marker_color=color_map[filter['filter'][0]],
+#                     error_y=dict(
+#                         type='data',
+#                         array=filter['error'],
+#                         visible=True
+#                     )
+#                 )
+#                 plot_data.append(series)
+#                 mags = np.array(filter['magnitude'], float)  # converts None --> nan (as well as any strings)
+#                 errs = np.array(filter['error'], float)
+#                 errs[np.isnan(errs)] = 0.  # missing errors treated as zero
+#                 all_ydata.append(mags + errs)
+#                 all_ydata.append(mags - errs)
+#
+#     # scale the y-axis manually so that we know the range ahead of time and can scale the secondary y-axis to match
+#     if all_ydata:
+#         all_ydata = np.concatenate(all_ydata)
+#         ymin = np.nanmin(all_ydata)
+#         ymax = np.nanmax(all_ydata)
+#         yrange = ymax - ymin
+#         ymin_view = ymin - 0.05 * yrange
+#         ymax_view = ymax + 0.05 * yrange
+#     else:
+#         ymin_view = 0.
+#         ymax_view = 0.
+#     yaxis = {
+#         'title': 'Apparent Magnitude',
+#         'range': (ymax_view, ymin_view),
+#         'showgrid': grid,
+#         'color': label_color,
+#         'showline': True,
+#         'linecolor': label_color,
+#         'mirror': True,
+#         'zeroline': False,
+#     }
+#     if target.distance is not None:
+#         dm = 5. * (np.log10(target.distance) - 1.)  # assumes target.distance is in parsecs
+#         yaxis2 = {
+#             'title': 'Absolute Magnitude',
+#             'range': (ymax_view - dm, ymin_view - dm),
+#             'showgrid': False,
+#             'overlaying': 'y',
+#             'side': 'right',
+#             'zeroline': False,
+#         }
+#         plot_data.append(go.Scatter(x=[], y=[], yaxis='y2'))  # dummy data set for abs mag axis
+#     else:
+#         yaxis2 = None
+#
+#     layout = go.Layout(
+#         xaxis={
+#             'showgrid': grid,
+#             'color': label_color,
+#             'showline': True,
+#             'linecolor': label_color,
+#             'mirror': True,
+#         },
+#         yaxis=yaxis,
+#         yaxis2=yaxis2,
+#         height=height,
+#         width=width,
+#         paper_bgcolor=background,
+#         plot_bgcolor=background,
+#         legend={
+#             'font_color': label_color,
+#             'xanchor': 'center',
+#             'yanchor': 'bottom',
+#             'x': 0.5,
+#             'y': 1.,
+#             'orientation': 'h',
+#         },
+#         clickmode='event+select',
+#     )
+#     fig = go.Figure(data=plot_data, layout=layout)
+#
+#     return {
+#         'target': target,
+#         'plot': offline.plot(fig, output_type='div', show_link=False),
+#     }
+
+
 @register.inclusion_tag('tom_dataproducts/partials/blackgem_for_target.html', takes_context=True)
 def blackgem_for_target(context, target, width=700, height=400, background=None, label_color=None, grid=True):
     """
@@ -539,6 +728,8 @@ def blackgem_for_target(context, target, width=700, height=400, background=None,
     :param grid: Whether to show grid lines.
     :type grid: bool
     """
+
+    views.test_print()
 
     color_map = {
         'u': 'darkviolet',
@@ -569,14 +760,16 @@ def blackgem_for_target(context, target, width=700, height=400, background=None,
         for datum in datums:
             photometry_data.setdefault('jd', []).append(datum.timestamp)
             photometry_data.setdefault('magnitude', []).append(datum.value.get('magnitude'))
+            photometry_data.setdefault('limit', []).append(datum.value.get('limit'))
             photometry_data.setdefault('error', []).append(datum.value.get('error'))
             photometry_data.setdefault('filter', []).append(datum.value.get('filter'))
 
             # print(photometry_data)
         # print("Bark!")
 
+        # photometry_data['magnitude'][photometry_data['magnitude'] == 'None'] = ''
 
-        photometry_data['magnitude'] = [float(i) for i in photometry_data['magnitude']]
+        # photometry_data['magnitude'] = [float(i) for i in photometry_data['magnitude']]
         for i in range(0, len(photometry_data['error'])):
             if photometry_data['error'][i] == None:
                 photometry_data['error'][i] = 0
@@ -591,119 +784,151 @@ def blackgem_for_target(context, target, width=700, height=400, background=None,
         # print(photometry_data['filter'])
 
         print(photometry_data)
-        d = dict(zip(
-            photometry_data,
-            photometry_data['filter']
-        ))
+        df = pd.DataFrame.from_dict(photometry_data)
+        # print(df[df['magnitude'] > 0])
+        # print(df[df['limit'] > 0])
 
-        ## Seperate out the data based on filter
-        q_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'q']
-        u_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'u']
-        g_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'g']
-        r_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'r']
-        i_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'i']
-        z_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'z']
 
-        filtered_data = [
-            {key: [value[i] for i in q_indices] for key, value in photometry_data.items()},
-            {key: [value[i] for i in u_indices] for key, value in photometry_data.items()},
-            {key: [value[i] for i in g_indices] for key, value in photometry_data.items()},
-            {key: [value[i] for i in r_indices] for key, value in photometry_data.items()},
-            {key: [value[i] for i in i_indices] for key, value in photometry_data.items()},
-            {key: [value[i] for i in z_indices] for key, value in photometry_data.items()},
-        ]
 
-        print(filtered_data)
-        print("Bark!")
+        df_lightcurve = df.loc[df['magnitude'].notnull()]
+        df_limiting_mag = df.loc[df['magnitude'].isnull()]
 
-        for filter in filtered_data:
-            print(len(filter['jd']))
-            if len(filter['jd']) > 0:
-                series = go.Scatter(
-                    x=filter['jd'],
-                    y=filter['magnitude'],
-                    mode='markers',
-                    name=filter['filter'][0],
-                    marker_color=color_map[filter['filter'][0]],
-                    error_y=dict(
-                        type='data',
-                        array=filter['error'],
-                        visible=True
-                    )
-                )
-                plot_data.append(series)
-                mags = np.array(filter['magnitude'], float)  # converts None --> nan (as well as any strings)
-                errs = np.array(filter['error'], float)
-                errs[np.isnan(errs)] = 0.  # missing errors treated as zero
-                all_ydata.append(mags + errs)
-                all_ydata.append(mags - errs)
+        print(df_lightcurve)
+        print(df_limiting_mag)
 
-    # scale the y-axis manually so that we know the range ahead of time and can scale the secondary y-axis to match
-    if all_ydata:
-        all_ydata = np.concatenate(all_ydata)
-        ymin = np.nanmin(all_ydata)
-        ymax = np.nanmax(all_ydata)
-        yrange = ymax - ymin
-        ymin_view = ymin - 0.05 * yrange
-        ymax_view = ymax + 0.05 * yrange
-    else:
-        ymin_view = 0.
-        ymax_view = 0.
-    yaxis = {
-        'title': 'Apparent Magnitude',
-        'range': (ymax_view, ymin_view),
-        'showgrid': grid,
-        'color': label_color,
-        'showline': True,
-        'linecolor': label_color,
-        'mirror': True,
-        'zeroline': False,
-    }
-    if target.distance is not None:
-        dm = 5. * (np.log10(target.distance) - 1.)  # assumes target.distance is in parsecs
-        yaxis2 = {
-            'title': 'Absolute Magnitude',
-            'range': (ymax_view - dm, ymin_view - dm),
-            'showgrid': False,
-            'overlaying': 'y',
-            'side': 'right',
-            'zeroline': False,
-        }
-        plot_data.append(go.Scatter(x=[], y=[], yaxis='y2'))  # dummy data set for abs mag axis
-    else:
-        yaxis2 = None
+        df_lightcurve = df_lightcurve.rename(columns={
+            'filter'    : 'i.filter',
+            'magnitude' : 'x.mag_zogy',
+            'error'     : 'x.magerr_zogy',
+        })
 
-    layout = go.Layout(
-        xaxis={
-            'showgrid': grid,
-            'color': label_color,
-            'showline': True,
-            'linecolor': label_color,
-            'mirror': True,
-        },
-        yaxis=yaxis,
-        yaxis2=yaxis2,
-        height=height,
-        width=width,
-        paper_bgcolor=background,
-        plot_bgcolor=background,
-        legend={
-            'font_color': label_color,
-            'xanchor': 'center',
-            'yanchor': 'bottom',
-            'x': 0.5,
-            'y': 1.,
-            'orientation': 'h',
-        },
-        clickmode='event+select',
-    )
-    fig = go.Figure(data=plot_data, layout=layout)
+
+        df_lightcurve["x.flux_zogy"] = ['']*len(df_lightcurve)
+        df_lightcurve["x.fluxerr_zogy"] = ['']*len(df_lightcurve)
+
+
+        df_limiting_mag = df_limiting_mag.rename(columns={
+            'limit' : 'limiting_mag',
+        })
+
+        # print(df_lightcurve.columns)
+
+        # test = df_lightcurve['i."mjd-obs"'].to_julian_date()
+        df_lightcurve['i."mjd-obs"']    = pd.DatetimeIndex(df_lightcurve['jd']).to_julian_date() - 2400000.5
+        df_limiting_mag['mjd']          = pd.DatetimeIndex(df_limiting_mag['jd']).to_julian_date() - 2400000.5
+        print(df_lightcurve)
+
+        # df_lightcurve =
+        #
+        fig = views.plot_BGEM_lightcurve(df_lightcurve, df_limiting_mag)
+
+    #     ## Seperate out the data based on filter
+    #     q_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'q']
+    #     u_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'u']
+    #     g_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'g']
+    #     r_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'r']
+    #     i_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'i']
+    #     z_indices = [i for i, f in enumerate(photometry_data['filter']) if f == 'z']
+    #
+    #     filtered_data = [
+    #         {key: [value[i] for i in q_indices] for key, value in photometry_data.items()},
+    #         {key: [value[i] for i in u_indices] for key, value in photometry_data.items()},
+    #         {key: [value[i] for i in g_indices] for key, value in photometry_data.items()},
+    #         {key: [value[i] for i in r_indices] for key, value in photometry_data.items()},
+    #         {key: [value[i] for i in i_indices] for key, value in photometry_data.items()},
+    #         {key: [value[i] for i in z_indices] for key, value in photometry_data.items()},
+    #     ]
+    #
+    #     # print(filtered_data)
+    #     # print("Bark!")
+    #
+    #     for filter in filtered_data:
+    #         print(len(filter['jd']))
+    #         if len(filter['jd']) > 0:
+    #             series = go.Scatter(
+    #                 x=filter['jd'],
+    #                 y=filter['magnitude'],
+    #                 mode='markers',
+    #                 name=filter['filter'][0],
+    #                 marker_color=color_map[filter['filter'][0]],
+    #                 error_y=dict(
+    #                     type='data',
+    #                     array=filter['error'],
+    #                     visible=True
+    #                 )
+    #             )
+    #             plot_data.append(series)
+    #             mags = np.array(filter['magnitude'], float)  # converts None --> nan (as well as any strings)
+    #             errs = np.array(filter['error'], float)
+    #             errs[np.isnan(errs)] = 0.  # missing errors treated as zero
+    #             all_ydata.append(mags + errs)
+    #             all_ydata.append(mags - errs)
+    #
+    # # scale the y-axis manually so that we know the range ahead of time and can scale the secondary y-axis to match
+    # if all_ydata:
+    #     all_ydata = np.concatenate(all_ydata)
+    #     ymin = np.nanmin(all_ydata)
+    #     ymax = np.nanmax(all_ydata)
+    #     yrange = ymax - ymin
+    #     ymin_view = ymin - 0.05 * yrange
+    #     ymax_view = ymax + 0.05 * yrange
+    # else:
+    #     ymin_view = 0.
+    #     ymax_view = 0.
+    # yaxis = {
+    #     'title': 'Apparent Magnitude',
+    #     'range': (ymax_view, ymin_view),
+    #     'showgrid': grid,
+    #     'color': label_color,
+    #     'showline': True,
+    #     'linecolor': label_color,
+    #     'mirror': True,
+    #     'zeroline': False,
+    # }
+    # if target.distance is not None:
+    #     dm = 5. * (np.log10(target.distance) - 1.)  # assumes target.distance is in parsecs
+    #     yaxis2 = {
+    #         'title': 'Absolute Magnitude',
+    #         'range': (ymax_view - dm, ymin_view - dm),
+    #         'showgrid': False,
+    #         'overlaying': 'y',
+    #         'side': 'right',
+    #         'zeroline': False,
+    #     }
+    #     plot_data.append(go.Scatter(x=[], y=[], yaxis='y2'))  # dummy data set for abs mag axis
+    # else:
+    #     yaxis2 = None
+    #
+    # layout = go.Layout(
+    #     xaxis={
+    #         'showgrid': grid,
+    #         'color': label_color,
+    #         'showline': True,
+    #         'linecolor': label_color,
+    #         'mirror': True,
+    #     },
+    #     yaxis=yaxis,
+    #     yaxis2=yaxis2,
+    #     height=height,
+    #     width=width,
+    #     paper_bgcolor=background,
+    #     plot_bgcolor=background,
+    #     legend={
+    #         'font_color': label_color,
+    #         'xanchor': 'center',
+    #         'yanchor': 'bottom',
+    #         'x': 0.5,
+    #         'y': 1.,
+    #         'orientation': 'h',
+    #     },
+    #     clickmode='event+select',
+    # )
+    # fig = go.Figure(data=plot_data, layout=layout)
 
     return {
         'target': target,
         'plot': offline.plot(fig, output_type='div', show_link=False),
     }
-
 
 # @register.inclusion_tag('tom_dataproducts/partials/photometry_for_target.html', takes_context=True)
 # def photometry_for_target(context, target, width=700, height=600, background=None, label_color=None, grid=True):
