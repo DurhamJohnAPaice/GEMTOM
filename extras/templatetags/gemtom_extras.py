@@ -295,6 +295,8 @@ def other_pages(target):
     """
     target_name = target.name
     target_id = target.id
+    target_ra = target.ra
+    target_dec = target.dec
     # print(target.__dict__)
     # bgem_id = target|target_extra_field:"bgem_id"
     bgem_id = target.targetextra_set.get(key='BlackGEM ID').value
@@ -303,6 +305,8 @@ def other_pages(target):
     return {
         'target_name' : target_name,
         'target_id'   : target_id,
+        'target_ra'   : target_ra,
+        'target_dec'  : target_dec,
         'bgem_id'     : bgem_id,
         }
 

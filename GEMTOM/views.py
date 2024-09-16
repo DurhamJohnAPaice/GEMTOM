@@ -215,10 +215,10 @@ def test_print():
 
 def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 
-    print("\n\nBark!")
-    print(df_bgem_lightcurve.columns)
-    print(df_limiting_mag.columns)
-    print(df_limiting_mag[['mjd', 'magnitude', 'limiting_mag', 'filter', 'error']])
+    # print("\n\nBark!")
+    # print(df_bgem_lightcurve.columns)
+    # print(df_limiting_mag.columns)
+    # print(df_limiting_mag[['mjd', 'magnitude', 'limiting_mag', 'filter', 'error']])
 
     time_now = datetime.now(timezone.utc)
     mjd_now = datetime_to_mjd(time_now)
@@ -1417,6 +1417,9 @@ def get_lightcurve_from_BGEM_ID(transient_id):
     # Note that you can specify the columns yourself, but here we use the defaults
     bg_columns, bg_results = tc.get_associations(transient_id)
     df_bgem_lightcurve = pd.DataFrame(bg_results, columns=bg_columns)
+
+    print(df_bgem_lightcurve.iloc[0])
+    print(df_limiting_mag.iloc[0])
 
     ## Remove all points in the limiting_mag lightcurve that have detections.
     # num_removed = 0
