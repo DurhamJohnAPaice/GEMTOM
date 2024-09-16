@@ -215,6 +215,11 @@ def test_print():
 
 def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 
+    print("\n\nBark!")
+    print(df_bgem_lightcurve.columns)
+    print(df_limiting_mag.columns)
+    print(df_limiting_mag[['mjd', 'magnitude', 'limiting_mag', 'filter', 'error']])
+
     time_now = datetime.now(timezone.utc)
     mjd_now = datetime_to_mjd(time_now)
 
@@ -224,18 +229,10 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
     symbols = ['triangle-up', 'diamond-wide', 'circle', 'diamond-tall', 'pentagon', 'star']
 
     fig = go.Figure()
-    # print(df_bgem_lightcurve['x.mag_zogy'])
-    # print(df_bgem_lightcurve['x.magerr_zogy'])
-    # print(df_bgem_lightcurve.columns)
-    # print(df_limiting_mag.columns)
 
     for f in filters:
         df_2 = df_bgem_lightcurve.loc[df_bgem_lightcurve['i.filter'] == f]
         df_limiting_mag_2 = df_limiting_mag.loc[df_limiting_mag['filter'] == f]
-
-        # print(f+":")
-        # print(df_2['x.mag_zogy'])
-        # print(df_2['x.magerr_zogy'])
 
         fig.add_trace(go.Scatter(
                     x               = df_2['i."mjd-obs"'],
@@ -1397,8 +1394,10 @@ def get_limiting_magnitudes_from_BGEM_ID(blackgem_id):
     query = qu % (params)
     l_results = bg.run_query(query)
 
+    # print("\n\nLimitingBark!")
+    # print(l_results)
     df_limiting_mag = pd.DataFrame(l_results, columns=['id','date_obs','mjd','limiting_mag','filter'])
-    print(df_limiting_mag)
+    # print(df_limiting_mag)
 
     return(df_limiting_mag)
 
@@ -1418,6 +1417,16 @@ def get_lightcurve_from_BGEM_ID(transient_id):
     # Note that you can specify the columns yourself, but here we use the defaults
     bg_columns, bg_results = tc.get_associations(transient_id)
     df_bgem_lightcurve = pd.DataFrame(bg_results, columns=bg_columns)
+
+    ## Remove all points in the limiting_mag lightcurve that have detections.
+    # num_removed = 0
+    for i in range(len(df_limiting_mag["date_obs"])):
+        if df_limiting_mag["date_obs"][i] in df_bgem_lightcurve['i."date-obs"'].unique():
+            df_limiting_mag = df_limiting_mag.drop([i])
+            # num_removed += 1
+    # print(num_removed, "points removed.")
+    # print(len(df_bgem_lightcurve), "points in lightcurve.")
+
 
     return df_bgem_lightcurve, df_limiting_mag
 

@@ -118,7 +118,7 @@ class PhotometryProcessor(DataProcessor):
 
             ## If the magnitude shows an upper limit, remove.
             datum_magnitude = str(datum['magnitude'])
-            print(datum_magnitude)
+            # print(datum_magnitude)
             if ('>' in datum_magnitude) or ('<' in datum_magnitude):
                 datum['limit'] = float(datum_magnitude[1:])
                 datum['magnitude'] = 0
