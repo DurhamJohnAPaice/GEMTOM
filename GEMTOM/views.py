@@ -738,6 +738,7 @@ class HistoryView(TemplateView):
                 for image in this_source:
                     images_urls_string += "<a href=\"" + image + "\">" + image + "</a><br>"
 
+
             return HttpResponse("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " transient" + data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec). <br>" +
              "BlackGEM recorded pictures of the following " + extragalactic_sources_length + " possible extragalactic transient" + extragalactic_sources_plural + ": <br> " +
              extragalactic_sources_string + "<br>" +
@@ -973,6 +974,20 @@ def history_daily():
             extragalactic_sources_string = ""
             for source in extragalactic_sources[0]:
                 extragalactic_sources_string += source + ", "
+
+            ## Update the most recent row of the recent history
+            current_history = blackgem_history()
+            if current_history["Date"][0] == extended_yesterday_date:
+                current_history["Date"][0]                          = extended_yesterday_date
+                current_history["MJD"][0]                           = mjd
+                current_history["Observed"][0]                      = "Yes"
+                current_history["Number_Of_Transients"][0]          = data_length
+                current_history["Number_of_Gaia_Crossmatches"][0]   = num_in_gaia
+                current_history["Number_Of_Extragalactic"][0]       = extragalactic_sources_length
+                fileOut = "./data/Recent_BlackGEM_History.csv"
+                current_history.to_csv(fileOut, index=False)
+
+            print("Running!")
 
             extragalactic_sources_id = extragalactic_sources[0]
             history_daily_text_2 = "On " + extended_yesterday_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " transient" + data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec)."
