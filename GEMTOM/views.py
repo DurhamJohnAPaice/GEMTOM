@@ -2564,6 +2564,9 @@ def find_latest_BlackGEM_field():
     context['BlackGEM_fieldid'] = df_images["field"].iloc[0]
     context['BlackGEM_RA']      = df_images["ra_c"].iloc[0]
     context['BlackGEM_Dec']     = df_images["dec_c"].iloc[0]
+    if minutes_since_last_field > 60:
+        context['BlackGEM_message'] = "BlackGEM is not observing"
+        context['BlackGEM_colour']  = "Black"
     if minutes_since_last_field > 30:
         context['BlackGEM_message'] = "BlackGEM is probably not observing."
         context['BlackGEM_colour']  = "Black"
@@ -2585,6 +2588,17 @@ def update_latest_BlackGEM_Field(request):
 
     BlackGEM_minutes, BlackGEM_minplur, BlackGEM_seconds, BlackGEM_secplur, BlackGEM_fieldid, BlackGEM_RA, BlackGEM_Dec = find_latest_BlackGEM_field()
 
+    if int(BlackGEM_minutes) > 60:
+        BlackGEM_status = "BlackGEM is not observing"
+        BlackGEM_colour = "Black"
+    elif int(BlackGEM_minutes) > 30:
+        BlackGEM_status = "BlackGEM is probably not observing"
+        BlackGEM_colour = "Black"
+    else:
+        BlackGEM_status = "BlackGEM is observing!"
+        BlackGEM_colour  = "MediumSeaGreen"
+
+    BlackGEM_message = '<h4 style="color: ' + BlackGEM_colour + ';">' + BlackGEM_status + '</h4>'
     message_1 = "The most recent field was observed " + BlackGEM_minutes + " minute" + BlackGEM_minplur + ", " + BlackGEM_seconds + " second" + BlackGEM_secplur + " ago<br>"
     message_2 = "Latest Field: &nbsp&nbsp ID: " + str(BlackGEM_fieldid) + " &nbsp&nbsp RA: " + str(BlackGEM_RA) + " &nbsp&nbsp Dec: " + str(BlackGEM_Dec)
     message_2 = f"<span style='color: grey; font-style: italic;'>{message_2}</span>"
@@ -2592,7 +2606,8 @@ def update_latest_BlackGEM_Field(request):
     print(message_1)
     print(message_2)
 
-    message = message_1+message_2
+    # message = message_1+message_2
+    message = BlackGEM_message+message_1+message_2
 
     return JsonResponse({'time': message})
 
@@ -2605,6 +2620,13 @@ def get_time_in_la_silla():
     ## Define the location
     location = EarthLocation(lat=-29.25738889*u.deg, lon=-70.73791667*u.deg, height=2200*u.m)
     observer = Observer(location=location, timezone='UTC')
+
+    # print("\n\nBark!\n\n")
+    sun = coord.get_sun(obstime)
+    altaz = coord.AltAz(location=location, obstime=obstime)
+    current_altitude = get_sun(obstime).transform_to(altaz).alt.degree
+    # print(current_altitude)
+    # print("\n\nBark!\n\n")
 
     ## --- Calculate sunrise, sunset, and twilight times ---
     sunrise = observer.sun_rise_time(obstime, which='next')
@@ -2649,31 +2671,46 @@ def get_time_in_la_silla():
         str(mins_until_next_event) + " minute" + mins_plur + ", " +    \
         str(secs_until_next_event) + " second" + secs_plur + "<br> until "
 
-    if   time_of_next_event == astronomical_twilight_morning:  current_event = "night";                           next_event = "astronomical twilight (dawn)"
-    elif time_of_next_event == nautical_twilight_morning:      current_event = "astronomical twilight (dawn)";    next_event = "nautical twilight (dawn)"
-    elif time_of_next_event == civil_twilight_morning:         current_event = "nautical twilight (dawn)";        next_event = "civil twilight (dawn)"
-    elif time_of_next_event == sunrise:                        current_event = "civil twilight (dawn)";           next_event = "sunrise"
-    elif time_of_next_event == sunset:                         current_event = "daytime";                         next_event = "sunset"
-    elif time_of_next_event == civil_twilight_evening:         current_event = "civil twilight (dusk)";           next_event = "civil twilight (dawn)"
-    elif time_of_next_event == nautical_twilight_evening:      current_event = "nautical twilight (dusk)";        next_event = "nautical twilight (dawn)"
-    elif time_of_next_event == astronomical_twilight_evening:  current_event = "astronomical twilight (dusk)";    next_event = "astronomical twilight (dawn)"
-    message_1 = "It is <b>" + current_event + "</b> in La Silla."
-    message_2 = time_until_string + next_event + "."
+    hour_until_next_event_string = str(hour_until_next_event)
+    mins_until_next_event_string = str(mins_until_next_event)
+    secs_until_next_event_string = str(secs_until_next_event)
+    if len(hour_until_next_event_string) == 1: hour_until_next_event_string = '0'+hour_until_next_event_string
+    if len(mins_until_next_event_string) == 1: mins_until_next_event_string = '0'+mins_until_next_event_string
+    if len(secs_until_next_event_string) == 1: secs_until_next_event_string = '0'+secs_until_next_event_string
 
-    return message_1, message_2
+    time_until_string = \
+        hour_until_next_event_string + ":" +    \
+        mins_until_next_event_string + ":" +    \
+        secs_until_next_event_string + "<br>"
+
+    if   time_of_next_event == astronomical_twilight_morning:  current_event = "night";                           next_event = "Astronomical twilight (dawn)"
+    elif time_of_next_event == nautical_twilight_morning:      current_event = "astronomical twilight (dawn)";    next_event = "Nautical twilight (dawn)"
+    elif time_of_next_event == civil_twilight_morning:         current_event = "nautical twilight (dawn)";        next_event = "Civil twilight (dawn)"
+    elif time_of_next_event == sunrise:                        current_event = "civil twilight (dawn)";           next_event = "Sunrise"
+    elif time_of_next_event == sunset:                         current_event = "daytime";                         next_event = "Sunset"
+    elif time_of_next_event == civil_twilight_evening:         current_event = "civil twilight (dusk)";           next_event = "Civil twilight (dawn)"
+    elif time_of_next_event == nautical_twilight_evening:      current_event = "nautical twilight (dusk)";        next_event = "Nautical twilight (dawn)"
+    elif time_of_next_event == astronomical_twilight_evening:  current_event = "astronomical twilight (dusk)";    next_event = "Astronomical twilight (dawn)"
+    message_1 = "It is <b>" + current_event + "</b> in La Silla."
+    message_2 = "Sun Altitude: %.2f" % current_altitude + '°'
+    message_3 = next_event + " in " + time_until_string
+
+    return message_1, message_2, message_3
 
 
 def update_time_in_la_silla(request):
 
-    message_1, message_2 = get_time_in_la_silla()
+    message_1, message_2, message_3 = get_time_in_la_silla()
 
     message_1 = message_1 + "<br>"
-    message_2 = f"<span style='color: grey; font-style: italic;'>{message_2}</span>"
+    message_2 = f"<span style='color: grey; font-style: italic;'>{message_2}</span><br>"
+    message_3 = f"<span style='color: grey; font-style: italic;'>{message_3}</span>"
 
     print(message_1)
     print(message_2)
+    print(message_3)
 
-    message = message_1+message_2
+    message = message_1+message_2+message_3
 
     return JsonResponse({'time': message})
 
@@ -2766,7 +2803,10 @@ class LiveFeed(TemplateView):
         context['BlackGEM_RA']      = df_images["ra_c"].iloc[0]
         context['BlackGEM_Dec']     = df_images["dec_c"].iloc[0]
         if minutes_since_last_field > 30:
-            context['BlackGEM_message'] = "BlackGEM is probably not observing."
+            context['BlackGEM_message'] = "BlackGEM is not observing"
+            context['BlackGEM_colour']  = "Black"
+        elif minutes_since_last_field > 30:
+            context['BlackGEM_message'] = "BlackGEM is probably not observing"
             context['BlackGEM_colour']  = "Black"
         else:
             context['BlackGEM_message'] = "BlackGEM is observing!"
