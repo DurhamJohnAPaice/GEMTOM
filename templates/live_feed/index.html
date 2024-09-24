@@ -10,6 +10,20 @@
 <link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-theme-balham.css">
 </head>
 
+<script>
+    function refreshContent() {
+        fetch("{% url 'update_latest_BlackGEM_Field_small' %}")
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('refreshable-element').innerHTML = data.time;
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // Call the refreshContent function every 5 seconds (5000 milliseconds)
+    setInterval(refreshContent, 5000);
+</script>
+
 <div align="center">
 
 
@@ -37,7 +51,9 @@
             <h4>BlackGEM ID {{ bgem_id }}</h4>
         </div>
         <div class="col-md-6">
-            <h4>Is BlackGEM Observing? <b>Unknown</b><br></h4>
+            <div id="refreshable-element">
+                <h4>Loading...</h4>
+            </div>
         </div>
     </div>
     <br>
@@ -62,7 +78,10 @@
     <h5>{{ iau_name }}<br></h5>
     <h6>RA: {{ ra }}, Dec: {{ dec }}<br></h6>
 
-    <a href="#" onclick='window.open("https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}");return false;'><em>BlackView</em> webpage for this source</a>
+    <!-- <a href="#" onclick='window.open("https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}");return false;'><em>BlackView</em> webpage for this source</a> -->
+    See this source in:
+    <a class="btn btn-outline-primary btn" href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}" target="_blank">BlackView</a>
+    <a class="btn btn-outline-primary btn" href="/transients/{{ bgem_id }}" target="_blank">GEMTOM</a>
     <br>&nbsp;
     <form method="post" action="{% url 'history_to_GEMTOM' %}" class="image-form">
         {% csrf_token %}
@@ -81,10 +100,16 @@
         {{ column }} |
     {% endfor %} -->
 
-    <h5>Location on Sky</h5>
-    <!-- Render the Plotly graph -->
-    {{ location_on_sky|safe }}
-
+    <div class="row">
+        <div class="col-md-6">
+            <h5>Location on Sky</h5>
+            {{ location_on_sky|safe }}
+        </div>
+        <div class="col-md-6">
+            <h5>Sky Image</h5>
+            <img src="{{ MEDIA_URL }}{{ image_name }}">
+        </div>
+    </div>
 
     <hr>
 </div>

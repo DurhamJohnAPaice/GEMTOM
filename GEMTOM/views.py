@@ -2611,6 +2611,24 @@ def update_latest_BlackGEM_Field(request):
 
     return JsonResponse({'time': message})
 
+def update_latest_BlackGEM_Field_small(request):
+    BlackGEM_minutes, BlackGEM_minplur, BlackGEM_seconds, BlackGEM_secplur, BlackGEM_fieldid, BlackGEM_RA, BlackGEM_Dec = find_latest_BlackGEM_field()
+
+    if int(BlackGEM_minutes) > 60:
+        BlackGEM_status = "BlackGEM is not observing"
+        BlackGEM_colour = "Black"
+    elif int(BlackGEM_minutes) > 30:
+        BlackGEM_status = "BlackGEM is probably not observing"
+        BlackGEM_colour = "Black"
+    else:
+        BlackGEM_status = "BlackGEM is observing!"
+        BlackGEM_colour  = "MediumSeaGreen"
+
+    BlackGEM_message = '<h4 style="color: ' + BlackGEM_colour + ';">' + BlackGEM_status + '</h4>'
+
+    return JsonResponse({'time': BlackGEM_message})
+
+
 def get_time_in_la_silla():
 
     ## Define the observation time
@@ -3054,6 +3072,18 @@ def LiveFeed_BGEM_ID_View(request, bgem_id):
     # print(source_data)
     # print(l_results)
 
+
+    ## --- Image ---
+    print("Getting image...")
+    # if tns_flag:
+        # file_name = "../" + get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve,
+            # tns_objects_potential["RA"].iloc[0], tns_objects_potential["Dec"].iloc[0]
+            # )
+    # else:
+    file_name = "../" + get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve)
+    print("Image name:", file_name)
+
+
     ## Detail each observation:
 
     #
@@ -3262,6 +3292,7 @@ def LiveFeed_BGEM_ID_View(request, bgem_id):
         "columns"           : df_bgem_lightcurve.columns,
         "location_on_sky"   : location_on_sky,
         "lightcurve"        : lightcurve,
+        "image_name"        : file_name
     }
 
     return render(request, "live_feed/index.html", context)
