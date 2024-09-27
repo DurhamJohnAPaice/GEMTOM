@@ -10,6 +10,7 @@ db.sqlite3
 /data/Recent_BlackGEM_History.csv
 /data/BlackGEM_Transients_*.csv
 /data/processed_file.csv
+/data/too_data.csv
 /data/*.jpg
 /data/*.png
 /data/.DS_Store

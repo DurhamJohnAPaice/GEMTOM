@@ -433,7 +433,7 @@ class ToOView(TemplateView):
 
         if not os.path.isfile("./data/too_data.csv"):
             ToO_data = pd.DataFrame(columns = ['Name', 'Email', 'date_start', 'date_close', 'Telescope', 'Band', 'Notes'])
-            ToO_data.to_csv("./data/too_data.csv")
+            ToO_data.to_csv("./data/too_data.csv", index=False)
 
         too_lightcurve = plot(plot_ToO_timeline(), output_type='div')
 
