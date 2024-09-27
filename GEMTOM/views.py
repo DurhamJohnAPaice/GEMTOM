@@ -56,6 +56,10 @@ from PIL import Image, ImageDraw
 import shutil # save img locally
 from urllib.request import urlretrieve
 
+## For the ToO Forms
+from .forms import ToOForm
+from django.core.exceptions import ValidationError
+
 ## For the Live Feed
 from dash.exceptions import PreventUpdate
 import math
@@ -291,7 +295,6 @@ def plot_BGEM_location_on_sky(df_bgem_lightcurve):
 
     return fig
 
-
 class ComingSoonView(TemplateView):
     template_name = 'comingsoon.html'
 
@@ -357,6 +360,217 @@ def datetime_to_mjd(date):
     return mjd
 
 
+## =============================================================================
+## -------------------------- Codes for the ToO page ---------------------------
+
+
+# def too_view(request):
+#     if request.method == 'POST':
+#         form = ToOForm(request.POST)
+#         if form.is_valid():
+#             # Get the data from the form
+#             name = form.cleaned_data['name']
+#             email = form.cleaned_data['email']
+#             notes = form.cleaned_data['notes']
+#
+#             print(name)
+#             print(email)
+#             print(notes)
+#
+#             fileOut = "./data/too_data.csv"
+#
+#             new_output = pd.DataFrame({'name' : [name], 'email' : [email], 'notes' : [notes]})
+#
+#             if os.path.exists(fileOut):
+#                 output = pd.read_csv(fileOut)
+#                 full_output = pd.concat([output,new_output]).reset_index(drop=True)
+#                 full_output.to_csv(fileOut, index=False)
+#
+#             else:
+#                 output.to_csv(fileOut, index=False)
+#
+#             # Redirect after POST to avoid resubmitting form on page refresh
+#             return HttpResponseRedirect('/ToOs/')  # Redirect to a success page (to be created)
+#     else:
+#         form = ToOForm()
+#
+#     return render(request, 'too.html', {'form': form})
+
+
+def get_ToO_data():
+    ToO_filename = "./data/too_data.csv"
+    ToO_data = pd.read_csv(ToO_filename)
+    return ToO_data
+
+def plot_ToO_timeline():
+
+    ToO_data = get_ToO_data()
+    print(ToO_data)
+    # ToO_data = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/finance-charts-apple.csv')
+    # ToO_data = ToO_data.rename(columns={
+    #     'Date'          : "date_start",
+    #     'AAPL.Open'          : "Telescope",
+    # })
+
+    print("\nMaking ToO Timeline...")
+
+    time_now = datetime.now()
+    mjd_now = datetime_to_mjd(time_now)
+
+    ## Lightcurve
+    fig = go.Figure()
+
+    for i in range(len(ToO_data)):
+        ToO_data.loc[i, "date_start"]    = datetime.strptime(str(ToO_data["date_start"].iloc[i]), '%Y-%m-%d')
+        # ToO_data.loc[i, "date_close"]    = datetime.strptime(str(ToO_data["date_close"].iloc[i]),   '%Y-%m-%d')
+
+    print(ToO_data["date_start"].iloc[0])
+    print(time_now)
+
+    fig = px.timeline(
+        ToO_data,
+        x_start='date_start',
+        x_end='date_close',
+        y = 'Telescope',
+        hover_data = ['Name', 'Email', 'Notes'],
+        color='Band',
+        # color=['red', 'green', 'blue'],
+        opacity=0.5,
+    )
+    # fig = fig.add_trace(
+    #     px_timeline.data[0]
+    # )
+    # fig.layout = px_timeline.layout
+
+    fig.add_vline(x=time_now, line_width=1, line_dash="dash", line_color="grey",)
+    fig.add_annotation(x=time_now,text="Now", textangle=90, xshift=-7, showarrow=False, font=dict(color="grey"))
+    fig.update_layout(
+        # barmode='group',
+        height=600,
+        # hovermode="x",
+        title="Timeline",
+        xaxis_title="Date",
+        yaxis_title="Telescope",)
+
+    print("ToO Timeline made.")
+
+    return fig
+
+
+
+class ToOView(TemplateView):
+    template_name = 'too.html'
+
+
+    def get_context_data(self, **kwargs):
+
+        too_lightcurve = plot(plot_ToO_timeline(), output_type='div')
+
+        context = super().get_context_data(**kwargs)
+        context['form'] = ToOForm()  # Add the form to the context
+        context['lightcurve'] = too_lightcurve
+        # context['csv_data'] = json.dumps(self.get_csv_data())  # Pass the CSV data as JSON
+        # context['csv_data'] = get_csv_data().to_json()  # Pass the CSV data as JSON
+        self.load_ToO_data()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        form = ToOForm(request.POST)
+        if form.is_valid():
+            # Get the data from the form
+            name =          form.cleaned_data['name']
+            email =         form.cleaned_data['email']
+            date_start =    form.cleaned_data['date_start']
+            date_close =    form.cleaned_data['date_close']
+            telescope =     form.cleaned_data['telescope']
+            band =          form.cleaned_data['band']
+            notes =         form.cleaned_data['notes']
+
+            ## Standardise the band data:
+            band = band.title()
+            if band == "Opt": band = "Optical"
+            elif band == "X": band = "X-Ray"
+            elif band == "Infrared": band = "IR"
+            elif band == "Ultraviolet": band = "UV"
+            elif band == "Milli": band = "Millimetre"
+            elif band == "Micro": band = "Microwave"
+            elif band == "Rad": band = "Radio"
+
+            print(name)
+            print(email)
+            print(date_start)
+            print(date_close)
+            print(telescope)
+            print(band)
+            print(notes)
+
+            fileOut = "./data/too_data.csv"
+
+            new_output = pd.DataFrame({
+                'Name' : [name],
+                'Email' : [email],
+                'date_start' : [date_start],
+                'date_close' : [date_close],
+                'Telescope' : [telescope],
+                'Band' : [band],
+                'Notes' : [notes],
+            })
+
+            if os.path.exists(fileOut):
+                output = pd.read_csv(fileOut)
+                full_output = pd.concat([output,new_output]).reset_index(drop=True)
+                full_output.to_csv(fileOut, index=False)
+
+            else:
+                output.to_csv(fileOut, index=False)
+
+            # Redirect after POST to avoid resubmitting form on page refresh
+            return HttpResponseRedirect('/ToOs/')  # Redirect to a success page (to be created)
+        else:
+            # Re-render the form with errors if invalid
+            # print(form)
+            print("Form not valid!")
+            # raise ValidationError("Form not valid!")
+            return self.render_to_response(self.get_context_data(form=form))
+
+    def load_ToO_data(self):
+
+        ToO_data = get_ToO_data()
+
+        app = DjangoDash('ToO_Database')
+
+        ToO_data = ToO_data.rename(columns={
+            'date_start'          : "Date (Start)",
+            'date_close'          : "Date (End)",
+        })
+
+        # for i in range(len(ToO_data)):
+        #     ToO_data.loc[i, "Date (Start)"]    = datetime.strptime(str(ToO_data["Date (Start)"].iloc[i]), '%Y%m%d')
+        #     ToO_data.loc[i, "Date (End)"]      = datetime.strptime(str(ToO_data["Date (End)"].iloc[i]),   '%Y%m%d')
+
+        app.layout = html.Div([
+            dag.AgGrid(
+                id='ToO_Database',
+                rowData=ToO_data.to_dict('records'),
+                columnDefs=[{'headerName': col, 'field': col} for col in ToO_data.columns],
+                defaultColDef={
+                    'sortable': True,
+                    'filter': True,
+                    'resizable': True,
+                    'editable': True,
+                },
+                columnSize="autoSize",
+                dashGridOptions={
+                    "skipHeaderOnAutoSize": True,
+                    "rowSelection": "single",
+                },
+                style={'height': '300px', 'width': '100%'},  # Set explicit height for the grid
+                className='ag-theme-balham'  # Add a theme for better appearance
+            ),
+            dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
+            html.Div(id='output-div'),  # Div to display the information
+        ], style={'height': '300px', 'width': '100%'}
+        )
 
 ## =============================================================================
 ## ------------------------ Codes for the Target pages -------------------------
@@ -978,12 +1192,12 @@ def history_daily():
             ## Update the most recent row of the recent history
             current_history = blackgem_history()
             if current_history["Date"][0] == extended_yesterday_date:
-                current_history["Date"][0]                          = extended_yesterday_date
-                current_history["MJD"][0]                           = mjd
-                current_history["Observed"][0]                      = "Yes"
-                current_history["Number_Of_Transients"][0]          = data_length
-                current_history["Number_of_Gaia_Crossmatches"][0]   = num_in_gaia
-                current_history["Number_Of_Extragalactic"][0]       = extragalactic_sources_length
+                current_history.loc[0,"Date"]                          = extended_yesterday_date
+                current_history.loc[0,"MJD"]                           = mjd
+                current_history.loc[0,"Observed"]                      = "Yes"
+                current_history.loc[0,"Number_Of_Transients"]          = int(data_length)
+                current_history.loc[0,"Number_of_Gaia_Crossmatches"]   = int(num_in_gaia)
+                current_history.loc[0,"Number_Of_Extragalactic"]       = int(extragalactic_sources_length)
                 fileOut = "./data/Recent_BlackGEM_History.csv"
                 current_history.to_csv(fileOut, index=False)
 
@@ -2564,10 +2778,10 @@ def find_latest_BlackGEM_field():
     context['BlackGEM_fieldid'] = df_images["field"].iloc[0]
     context['BlackGEM_RA']      = df_images["ra_c"].iloc[0]
     context['BlackGEM_Dec']     = df_images["dec_c"].iloc[0]
-    if minutes_since_last_field > 60:
+    if minutes_since_last_field >= 60:
         context['BlackGEM_message'] = "BlackGEM is not observing"
         context['BlackGEM_colour']  = "Black"
-    if minutes_since_last_field > 30:
+    if minutes_since_last_field >= 30:
         context['BlackGEM_message'] = "BlackGEM is probably not observing."
         context['BlackGEM_colour']  = "Black"
     else:
@@ -2588,10 +2802,10 @@ def update_latest_BlackGEM_Field(request):
 
     BlackGEM_minutes, BlackGEM_minplur, BlackGEM_seconds, BlackGEM_secplur, BlackGEM_fieldid, BlackGEM_RA, BlackGEM_Dec = find_latest_BlackGEM_field()
 
-    if int(BlackGEM_minutes) > 60:
+    if int(BlackGEM_minutes) >= 60:
         BlackGEM_status = "BlackGEM is not observing"
         BlackGEM_colour = "Black"
-    elif int(BlackGEM_minutes) > 30:
+    elif int(BlackGEM_minutes) >= 30:
         BlackGEM_status = "BlackGEM is probably not observing"
         BlackGEM_colour = "Black"
     else:
@@ -2614,10 +2828,10 @@ def update_latest_BlackGEM_Field(request):
 def update_latest_BlackGEM_Field_small(request):
     BlackGEM_minutes, BlackGEM_minplur, BlackGEM_seconds, BlackGEM_secplur, BlackGEM_fieldid, BlackGEM_RA, BlackGEM_Dec = find_latest_BlackGEM_field()
 
-    if int(BlackGEM_minutes) > 60:
+    if int(BlackGEM_minutes) >= 60:
         BlackGEM_status = "BlackGEM is not observing"
         BlackGEM_colour = "Black"
-    elif int(BlackGEM_minutes) > 30:
+    elif int(BlackGEM_minutes) >= 30:
         BlackGEM_status = "BlackGEM is probably not observing"
         BlackGEM_colour = "Black"
     else:
@@ -2820,10 +3034,10 @@ class LiveFeed(TemplateView):
         context['BlackGEM_fieldid'] = df_images["field"].iloc[0]
         context['BlackGEM_RA']      = df_images["ra_c"].iloc[0]
         context['BlackGEM_Dec']     = df_images["dec_c"].iloc[0]
-        if minutes_since_last_field > 30:
+        if minutes_since_last_field >= 60:
             context['BlackGEM_message'] = "BlackGEM is not observing"
             context['BlackGEM_colour']  = "Black"
-        elif minutes_since_last_field > 30:
+        elif minutes_since_last_field >= 30:
             context['BlackGEM_message'] = "BlackGEM is probably not observing"
             context['BlackGEM_colour']  = "Black"
         else:

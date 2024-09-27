@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+{% extends 'tom_common/base.html' %}
+{% block content %}
+
+<html>
+<head>
+    <title>User Info</title>
+</head>
+<body>
+    <h1>Enter Your Information</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
+{% endblock %}

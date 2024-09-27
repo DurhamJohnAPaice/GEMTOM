@@ -1,0 +1,54 @@
+{% extends 'tom_common/base.html' %}
+{% block content %}
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+
+<style>
+    .dash-container {
+        width: 100%;
+        height: 350px;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
+
+<h2>List of ToOs</h2>
+
+Here there will be a list of ToOs that people have that they can dedicate to the project!
+
+<br>
+<br>
+
+<!-- <h5>Timeline:</h5> -->
+{{ lightcurve|safe }}
+
+<br>
+
+<h4>ToOs available for BlackGEM transients</h4>
+{% load plotly_dash %}
+<div class="dash-container">
+    {% plotly_app name="ToO_Database" ratio=0.3 %}
+</div>
+
+<div>
+    <h4>Register new ToO Time</h4>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+
+<br>
+
+All information is stored in a .csv file. <b>Please make sure your email is formatted correctly, or the data won't save!</b><br>
+If you need to edit or remove data, please contact me (john@blackgem.org)
+<!-- <ul>
+  {% for target in targets %}
+  <li>{{ target.name }}</li>
+  {% endfor %}
+</ul> -->
+{% endblock %}
