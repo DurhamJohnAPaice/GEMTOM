@@ -364,39 +364,6 @@ def datetime_to_mjd(date):
 ## -------------------------- Codes for the ToO page ---------------------------
 
 
-# def too_view(request):
-#     if request.method == 'POST':
-#         form = ToOForm(request.POST)
-#         if form.is_valid():
-#             # Get the data from the form
-#             name = form.cleaned_data['name']
-#             email = form.cleaned_data['email']
-#             notes = form.cleaned_data['notes']
-#
-#             print(name)
-#             print(email)
-#             print(notes)
-#
-#             fileOut = "./data/too_data.csv"
-#
-#             new_output = pd.DataFrame({'name' : [name], 'email' : [email], 'notes' : [notes]})
-#
-#             if os.path.exists(fileOut):
-#                 output = pd.read_csv(fileOut)
-#                 full_output = pd.concat([output,new_output]).reset_index(drop=True)
-#                 full_output.to_csv(fileOut, index=False)
-#
-#             else:
-#                 output.to_csv(fileOut, index=False)
-#
-#             # Redirect after POST to avoid resubmitting form on page refresh
-#             return HttpResponseRedirect('/ToOs/')  # Redirect to a success page (to be created)
-#     else:
-#         form = ToOForm()
-#
-#     return render(request, 'too.html', {'form': form})
-
-
 def get_ToO_data():
     ToO_filename = "./data/too_data.csv"
     ToO_data = pd.read_csv(ToO_filename)
@@ -424,8 +391,8 @@ def plot_ToO_timeline():
         ToO_data.loc[i, "date_start"]    = datetime.strptime(str(ToO_data["date_start"].iloc[i]), '%Y-%m-%d')
         # ToO_data.loc[i, "date_close"]    = datetime.strptime(str(ToO_data["date_close"].iloc[i]),   '%Y-%m-%d')
 
-    print(ToO_data["date_start"].iloc[0])
-    print(time_now)
+    # print(ToO_data["date_start"].iloc[0])
+    # print(time_now)
 
     fig = px.timeline(
         ToO_data,
@@ -463,6 +430,10 @@ class ToOView(TemplateView):
 
 
     def get_context_data(self, **kwargs):
+
+        if not os.path.isfile("./data/too_data.csv"):
+            ToO_data = pd.DataFrame(columns = ['Name', 'Email', 'date_start', 'date_close', 'Telescope', 'Band', 'Notes'])
+            ToO_data.to_csv("./data/too_data.csv")
 
         too_lightcurve = plot(plot_ToO_timeline(), output_type='div')
 
