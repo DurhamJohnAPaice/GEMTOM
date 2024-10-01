@@ -4,6 +4,7 @@
 
 # I think this is safe to ignore...
 db.sqlite3
+*.sqlite3
 
 # Data
 /data/*/
