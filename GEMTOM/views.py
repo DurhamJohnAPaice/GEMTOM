@@ -1685,6 +1685,10 @@ def BGEM_to_GEMTOM_photometry_2(df_bgem_lightcurve, df_limiting_mag=[]):
 
 from collections import OrderedDict
 
+## Get TNS token
+from dotenv import load_dotenv
+load_dotenv()
+
 TNS                 = "www.wis-tns.org"
 url_tns_api         = "https://" + TNS + "/api/get"
 
