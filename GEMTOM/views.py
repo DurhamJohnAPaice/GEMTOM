@@ -1691,7 +1691,6 @@ from dotenv import load_dotenv, dotenv_values
 load_dotenv()
 print(dotenv_values())
 print("Dotenv loaded.")
-## Test comment. Can delete later.
 
 TNS                 = "www.wis-tns.org"
 url_tns_api         = "https://" + TNS + "/api/get"
