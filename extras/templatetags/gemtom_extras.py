@@ -299,7 +299,10 @@ def other_pages(target):
     target_dec = target.dec
     # print(target.__dict__)
     # bgem_id = target|target_extra_field:"bgem_id"
-    bgem_id = target.targetextra_set.get(key='BlackGEM ID').value
+    try:
+        bgem_id = target.targetextra_set.get(key='BlackGEM ID').value
+    except:
+        bgem_id = None
     print(bgem_id)
 
     return {
