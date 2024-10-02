@@ -2792,7 +2792,7 @@ def update_latest_BlackGEM_Field(request):
 
     BlackGEM_message = '<h4 style="color: ' + BlackGEM_colour + ';">' + BlackGEM_status + '</h4>'
     message_1 = "The most recent field was observed " + BlackGEM_minutes + " minute" + BlackGEM_minplur + ", " + BlackGEM_seconds + " second" + BlackGEM_secplur + " ago<br>"
-    message_2 = "Latest Field: &nbsp&nbsp ID: " + str(BlackGEM_fieldid) + " &nbsp&nbsp RA: " + str(BlackGEM_RA) + " &nbsp&nbsp Dec: " + str(BlackGEM_Dec)
+    message_2 = "&nbsp&nbsp ID: " + str(BlackGEM_fieldid) + " &nbsp&nbsp RA: " + str(BlackGEM_RA) + " &nbsp&nbsp Dec: " + str(BlackGEM_Dec)
     message_2 = f"<span style='color: grey; font-style: italic;'>{message_2}</span>"
 
     print(message_1)
@@ -3072,16 +3072,16 @@ class LiveFeed(TemplateView):
             html.Div([
                 dcc.Input(id='id-input',        type='text', min=0, max=360,  placeholder=' BlackGEM ID',        style=style_dict),
                 html.Button('Search', id='submit-button', n_clicks=0, style=button_style_dict),
-                dcc.Graph(id='live-update-graph_1'),
+                dcc.Graph(id='live-update-graph_1', figure=go.Figure(layout={'margin': dict(l=20, r=20, t=40, b=30), 'height': 300})),
                 dcc.Interval(
                     id='interval-component',
-                    interval=wait_interval*1000,  # 5 minutes in milliseconds
+                    interval=wait_interval*1000,  # 5 seconds in milliseconds
                     n_intervals=0
                 )
                 # html.Button('Search', id='submit-button', n_clicks=0, style={"font-size": "16px","margin-right": "10px",})
-            ], style={'margin-bottom': '20px', "text-align":"center"}),
+            ], style={"text-align":"center"}),
             html.Div(id='results-container', children=[]),
-        ], style={'height': '300px', 'width': '100%'})
+        ], style={'height': '200px'})
 
         # Define the callback to update the table based on input coordinates
         @app_1.callback(
@@ -3134,7 +3134,7 @@ class LiveFeed(TemplateView):
                 print(time_now.mjd)
                 print(time_last_update.mjd)
                 days_since_last_update = time_now.mjd-time_last_update.mjd
-                message_start = "(Latest datum "
+                message_start = "(Latest: "
                 if days_since_last_update > 1:
                     message = message_start + "%.2f" % days_since_last_update + " days ago)"
                 elif days_since_last_update > 1/24:
@@ -3157,11 +3157,11 @@ class LiveFeed(TemplateView):
 
                 # Adjust layout to reduce whitespace
                 fig.update_layout(
-                    title="BlackGEM ID: " + bgem_id +"\n" + message,
-                    margin=dict(l=20, r=20, t=20, b=20),  # Set margins to reduce whitespace
+                    title="BGEM ID " + bgem_id +"\n" + message,
+                    margin=dict(l=20, r=0, t=40, b=30),  # Set margins to reduce whitespace
                     title_x=0.5,  # Center the title
                     title_y=0.95,  # Adjust title position
-                    height=400
+                    height=300
                 )
 
                 return fig
