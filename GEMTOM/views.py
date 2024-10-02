@@ -830,7 +830,7 @@ def get_any_nights_sky_plot(night):
         dec = coord.Angle(dec_list, unit=u.degree)
 
         ## Plot!
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(8,5), dpi=110)
         ax = fig.add_subplot(111, projection="mollweide")
 
         ## Plot each point as an area reoughly the size of the telescope's FOV
@@ -846,6 +846,9 @@ def get_any_nights_sky_plot(night):
             hi_dec  = np.radians(this_dec+fov_radius*u.degree).value
             ax.fill([lo_ra,lo_ra,hi_ra,hi_ra], [lo_dec,hi_dec,hi_dec,lo_dec], color=color, zorder=this_z)  # Adjust color and transparency with 'alpha'
         ax.grid(True)
+        ax.set_xlabel("RA")
+        ax.set_ylabel("Dec")
+        ax.xaxis.set_label_position('top')
 
         # Add a color bar
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
