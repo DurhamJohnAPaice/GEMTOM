@@ -195,7 +195,7 @@ def add_to_GEMTOM(id, name, ra, dec, tns_prefix=False, tns_name=False):
         'dec' : [dec],
         'BlackGEM ID' : [int(id)],
         'type' : ['SIDEREAL'],
-        'public' : ['Public']
+        'groups' : ['Public']
     })
 
 
