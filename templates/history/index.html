@@ -3,6 +3,22 @@
 <!-- --------------------------- -->
 
 <head>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        .imgbox {
+            display: grid;
+            height: 100%;
+        }
+        .center-fit {
+            max-width: 100%;
+            max-height: 100vh;
+            margin: auto;
+        }
+    </style>
+
 <meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
@@ -28,13 +44,17 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
     {{ source }},
 {% endfor %} -->
 
-<img src="data:image/png;base64,{{ plot_image }}" alt="Last Night's Sky Plot" width="800">
+<div class="imgbox">
+    <img class="center-fit" src="data:image/png;base64,{{ plot_image }}" alt="Last Night's Sky Plot">
+</div>
+
 <br>
 BlackGEM observed {{ num_fields }} fields:<br>
-<em>Green flags: <font style="color:green;">{{ green_fields }}</font>&nbsp&nbsp&nbsp
-Yellow flags: <font style="color:#bfac00;">{{ yellow_fields }}</font>&nbsp&nbsp&nbsp
-Orange flags: <font style="color:orange;">{{ orange_fields }}</font>&nbsp&nbsp&nbsp
-Red flags: <font style="color:red;">{{ red_fields }}</font></em>
+<em>
+<font style="color:green;">{{ green_fields }} Green</font>&nbsp&nbsp&nbsp
+<font style="color:#bfac00;">{{ yellow_fields }} Yellow</font>&nbsp&nbsp&nbsp
+<font style="color:orange;">{{ orange_fields }} Orange</font>&nbsp&nbsp&nbsp
+<font style="color:red;">{{ red_fields }} Red</font></em>
 
 <hr>
 <h5>Files:</h5>
