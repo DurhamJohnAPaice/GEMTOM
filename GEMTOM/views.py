@@ -3075,7 +3075,7 @@ class LiveFeed(TemplateView):
             html.Div([
                 dcc.Input(id='id-input',        type='text', min=0, max=360,  placeholder=' BlackGEM ID',        style=style_dict),
                 html.Button('Search', id='submit-button', n_clicks=0, style=button_style_dict),
-                dcc.Graph(id='live-update-graph_1', figure=go.Figure(layout={'margin': dict(l=20, r=20, t=40, b=30), 'height': 300})),
+                dcc.Graph(id='live-update-graph_1', figure=go.Figure(layout={'margin': dict(l=20, r=20, t=40, b=30), 'height': 260})),
                 dcc.Interval(
                     id='interval-component',
                     interval=wait_interval*1000,  # 5 seconds in milliseconds
@@ -3161,10 +3161,10 @@ class LiveFeed(TemplateView):
                 # Adjust layout to reduce whitespace
                 fig.update_layout(
                     title="BGEM ID " + bgem_id +"\n" + message,
-                    margin=dict(l=20, r=0, t=40, b=30),  # Set margins to reduce whitespace
+                    margin=dict(l=20, r=0, t=25, b=30),  # Set margins to reduce whitespace
                     title_x=0.5,  # Center the title
-                    title_y=0.95,  # Adjust title position
-                    height=300
+                    title_y=0.97,  # Adjust title position
+                    height=263
                 )
 
                 return fig
