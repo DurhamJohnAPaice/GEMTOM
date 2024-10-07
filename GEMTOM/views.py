@@ -1200,6 +1200,58 @@ def history_daily():
 
     return history_daily_text_1, history_daily_text_2, history_daily_text_3, history_daily_text_4, images_daily_text_1, extragalactic_sources_id, transients_filename, gaia_filename, extragalactic_filename
 
+def plot_nightly_hr_diagram(obs_date):
+
+    extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
+
+    ## Get Gaia data
+    df_gaia = pd.read_csv("./data/gaia_nearbystars_hr.txt", skipfooter=1, sep=",")
+    df_gaia["BP-RP"] = df_gaia["BPmag"] - df_gaia["RPmag"]
+    df_gaia = df_gaia.iloc[::20, :]  ## Only grab 1/5th of it for ease
+    df_gaia["Gmag"] = df_gaia["Gmag"] - (5 * np.log10((df_gaia["Dist"]*1000)/10))
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            name="GCNS",
+            x=df_gaia["BP-RP"],
+            y=df_gaia["Gmag"],
+            # y=Gaia_GMag,
+            mode="markers",
+            marker=dict(color="mediumslateblue", opacity=0.1),
+            # opacity=0.2,
+        )
+    )
+
+    try:
+        df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_gaia.csv")
+        df_transients["M_G"] = df_transients["Gmag"] - (5 * np.log10(df_transients["Dist"]/10))
+        fig.add_trace(
+            go.Scatter(
+                name="2024-09-28",
+                x = df_transients["BP-RP"],
+                y = df_transients["M_G"],
+                mode = 'markers',
+                hoverinfo='x+y',
+            ),
+        )
+    except:
+        print("No Gaia sources this night.")
+
+    fig.update_layout(
+        yaxis = dict(autorange="reversed"),
+        height=800,
+        hovermode="x", xaxis=dict(tickformat ='d'),
+        # title="HR Diagram",
+        xaxis_title="BP-RP",
+        yaxis_title="GMag",
+    )
+
+    # fig.show()
+    # fig.write_html("../Outputs/OrphanedTransientsGaia-Single.html")
+
+    return fig
 
 def NightView(request, obs_date):
     '''
@@ -1262,7 +1314,13 @@ def NightView(request, obs_date):
     context['yellow_fields']    = field_stats[2]
     context['orange_fields']    = field_stats[3]
     context['red_fields']       = field_stats[4]
-    context['plot_image'] = image_base64
+    context['plot_image']       = image_base64
+
+    ## Get transients overplotted HR diagram
+
+    fig = plot_nightly_hr_diagram(obs_date)
+    lightcurve = plot(fig, output_type='div')
+    context['lightcurve']       = lightcurve
 
     return render(request, "history/index.html", context)
 
