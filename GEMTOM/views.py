@@ -280,6 +280,7 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
     fig.update_layout(height=600)
     fig.update_layout(hovermode="x", xaxis=dict(tickformat ='d'),
     # fig.update_layout(xaxis=dict(tickformat ='d'),
+        margin=dict(l=2, r=2),  # Set margins to reduce whitespace
         title="Lightcurves",
         xaxis_title="MJD",
         yaxis_title="Magnitude",)
@@ -1209,6 +1210,8 @@ def plot_nightly_hr_diagram(obs_date):
     df_gaia["BP-RP"] = df_gaia["BPmag"] - df_gaia["RPmag"]
     df_gaia = df_gaia.iloc[::20, :]  ## Only grab 1/5th of it for ease
     df_gaia["Gmag"] = df_gaia["Gmag"] - (5 * np.log10((df_gaia["Dist"]*1000)/10))
+    df_gaia = df_gaia.drop(df_gaia[df_gaia.Gmag > 16].index)
+
 
     fig = go.Figure()
 
@@ -1221,37 +1224,76 @@ def plot_nightly_hr_diagram(obs_date):
             mode="markers",
             marker=dict(color="mediumslateblue", opacity=0.1),
             # opacity=0.2,
+            hoverinfo='skip',
         )
     )
 
     try:
         df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_gaia.csv")
         df_transients["M_G"] = df_transients["Gmag"] - (5 * np.log10(df_transients["Dist"]/10))
+        df_transients["url"] = 'http://gemtom.blackgem.org/transients/' + df_transients['runcat_id'].astype(str)
         fig.add_trace(
             go.Scatter(
-                name="2024-09-28",
-                x = df_transients["BP-RP"],
-                y = df_transients["M_G"],
-                mode = 'markers',
-                hoverinfo='x+y',
+                name            = "2024-09-28",
+                x               = df_transients["BP-RP"],
+                y               = df_transients["M_G"],
+                mode            = 'markers',
+                hovertemplate   =
+                    'ID: %{customdata}<br>' +
+                    'BP-RP: %{x:.3f}<br>' +
+                    'G Mag: %{y:.3f}<br>',
+                customdata      = df_transients['runcat_id'],
+                text            = df_transients['url'],
             ),
         )
-    except:
-        print("No Gaia sources this night.")
+    except Exception as e:
+        print("No Gaia sources this night:")
+        print(e)
 
     fig.update_layout(
         yaxis = dict(autorange="reversed"),
-        height=800,
-        hovermode="x", xaxis=dict(tickformat ='d'),
+        height=500,
+        margin=dict(t=0, l=0, r=0, b=0),  # Set margins to reduce whitespace
         # title="HR Diagram",
         xaxis_title="BP-RP",
         yaxis_title="GMag",
+        showlegend=False,
     )
 
     # fig.show()
     # fig.write_html("../Outputs/OrphanedTransientsGaia-Single.html")
 
     return fig
+
+def scatter_plot_view(request):
+
+    import plotly.io as pio
+
+    x_data = [1, 2, 3, 4, 5]
+    y_data = [10, 11, 12, 13, 14]
+    urls = [
+        "http://127.0.0.1:8000/transients/1",
+        "http://127.0.0.1:8000/transients/2",
+        "http://127.0.0.1:8000/transients/3",
+        "http://127.0.0.1:8000/transients/4",
+        "http://127.0.0.1:8000/transients/5"
+    ]
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(
+        x=x_data,
+        y=y_data,
+        mode='markers',
+        marker=dict(size=12, color='blue'),
+        text=urls,
+        hoverinfo='text'
+    ))
+
+    plot_html = pio.to_html(fig, full_html=False)
+
+    return render(request, 'scatter_plot.html', {'plot_html': plot_html})
+
 
 def NightView(request, obs_date):
     '''

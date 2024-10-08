@@ -81,7 +81,87 @@ BlackGEM observed {{ num_fields }} fields:<br>
 <hr>
 
 <h5>Gaia-Crossmatched Transients:</h5>
-{{ lightcurve|safe }}
+<p>All of last-night's transients that had cross-matches in Gaia, overplotted on an HR diagram (sourced from the Gaia Catalog of Nearby Stars)<br>
+Click on a point to go to its GEMTOM page!</p>
+<!-- {{ lightcurve|safe }} -->
+
+
+<!-- This will render the plotly chart -->
+
+
+<!-- <div id="scatter-plot" style="
+    display: block;
+    position: absolute;
+    margin: auto;
+    padding:0px;
+    text-align:center;
+    max-width:800px;
+    display: block;
+    left:-0px;
+    right:-0px;
+    bottom:-860px;
+">
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+-->
+<div id="scatter-plot" style="
+    display: block;
+    position: relative;
+    margin: auto;
+    padding:0px;
+    text-align:center;
+    max-width:800px;
+    display: block;
+    left:-0px;
+    right:300px;
+    bottom:-0px;
+
+">
+    {{ lightcurve|safe }}
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Use the ID of the plot
+        var scatterPlot = document.getElementById('scatter-plot').querySelector('.js-plotly-plot');
+
+        // Attach the click event listener to the plotly object itself
+        scatterPlot.on('plotly_click', function(data){
+            // Get the URL stored in the 'text' attribute of the clicked point
+            var url = data.points[0].text;
+
+            // Log the URL to ensure it's being captured correctly
+            console.log("Clicked URL:", url);
+
+            // Redirect to the URL
+            if (url) {
+                window.location.href = url;
+            }
+        });
+    });
+</script>
 
 <hr>
 
