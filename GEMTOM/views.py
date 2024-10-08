@@ -1206,7 +1206,7 @@ def plot_nightly_hr_diagram(obs_date):
     extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
 
     ## Get Gaia data
-    df_gaia = pd.read_csv("./data/gaia_nearbystars_hr.txt", skipfooter=1, sep=",")
+    df_gaia = pd.read_csv("./data/gaia_nearbystars_hr.txt", sep=",")
     df_gaia["BP-RP"] = df_gaia["BPmag"] - df_gaia["RPmag"]
     df_gaia = df_gaia.iloc[::20, :]  ## Only grab 1/5th of it for ease
     df_gaia["Gmag"] = df_gaia["Gmag"] - (5 * np.log10((df_gaia["Dist"]*1000)/10))
