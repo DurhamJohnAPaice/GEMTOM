@@ -1240,10 +1240,13 @@ def plot_nightly_hr_diagram(obs_date):
                 y               = df_transients["M_G"],
                 mode            = 'markers',
                 hovertemplate   =
-                    'ID: %{customdata}<br>' +
+                    'ID: %{customdata[0]}<br>' +
                     'BP-RP: %{x:.3f}<br>' +
-                    'G Mag: %{y:.3f}<br>',
-                customdata      = df_transients['runcat_id'],
+                    'G Mag: %{y:.3f}<br>' +
+                    'Dist: %{customdata[1]:.0f}pc (%{customdata[2]:.0f},%{customdata[3]:.0f})<br>'
+                    ,
+                customdata      = [(df_transients['runcat_id'].iloc[i], df_transients["Dist"].iloc[i], df_transients["b_Dist_cds"].iloc[i], df_transients["B_Dist_cdsa"].iloc[i]) for i in range(len(df_transients['runcat_id']))],
+                # customdata = [(df_2['x.magerr_zogy'].iloc[i], df_2['x.flux_zogy'].iloc[i], df_2['x.fluxerr_zogy'].iloc[i]) for i in range(len(df_2['x.fluxerr_zogy']))]
                 text            = df_transients['url'],
             ),
         )
