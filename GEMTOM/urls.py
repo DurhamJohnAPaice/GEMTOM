@@ -62,9 +62,6 @@ urlpatterns = [
 
     path('ToOs/', ToOView.as_view(), name='ToOs'),
 
-    path('scatter-plot/', scatter_plot_view, name='scatter_plot'),  # URL for scatter plot
-
-
 
     # path('ToOs/', too_view, name='ToOs'),
     # path('upload/', UploadView.as_view(), name='upload'),

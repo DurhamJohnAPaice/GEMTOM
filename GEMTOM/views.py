@@ -20,6 +20,7 @@ from django.conf import settings
 from django.utils.safestring import mark_safe
 from django.core.files.storage import FileSystemStorage
 from guardian.shortcuts import assign_perm, get_objects_for_user
+from django.contrib.auth.decorators import login_required
 
 ## For importing targets
 from .BlackGEM_to_GEMTOM import *
@@ -1868,7 +1869,7 @@ def get_ra_dec_from_tns(tns_object_name):
 ## ----- TNS Functions -----
 ## =========================
 
-
+@login_required
 def BGEM_ID_View(request, bgem_id):
     '''
     Displays data of a certain transient
@@ -2342,7 +2343,7 @@ def check_blackgem_recent_transients(recent_transients):
         return recent_transients
 
 
-class UnifiedTransientsView(TemplateView):
+class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
     template_name = 'unified_transients.html'
 
     def plot_graph_view(request):
@@ -3027,7 +3028,7 @@ def update_time_in_la_silla(request):
 
     return JsonResponse({'time': message})
 
-class LiveFeed(TemplateView):
+class LiveFeed(LoginRequiredMixin, TemplateView):
     template_name = 'live_feed.html'
 
     # Example DataFrame
@@ -3321,6 +3322,7 @@ class LiveFeed(TemplateView):
 
 
 
+@login_required
 def LiveFeed_BGEM_ID_View(request, bgem_id):
     '''
     Finds and displays data from a certain date.
