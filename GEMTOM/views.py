@@ -1231,6 +1231,7 @@ def plot_nightly_hr_diagram(obs_date):
 
     try:
         df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_gaia.csv")
+        df_transients = df_transients[df_transients["q_rb"] > 0.8]
         df_transients["M_G"] = df_transients["Gmag"] - (5 * np.log10(df_transients["Dist"]/10))
         df_transients["url"] = 'http://gemtom.blackgem.org/transients/' + df_transients['runcat_id'].astype(str)
         fig.add_trace(
@@ -1244,12 +1245,14 @@ def plot_nightly_hr_diagram(obs_date):
                     'BP-RP: %{x:.3f}<br>' +
                     'G Mag: %{y:.3f}<br>' +
                     'Dist: %{customdata[1]:.0f}pc (%{customdata[2]:.0f},%{customdata[3]:.0f})<br>'
+                    # 'RB Score: %{customdata[4]:.2f}<br>'
                     ,
-                customdata      = [(df_transients['runcat_id'].iloc[i], df_transients["Dist"].iloc[i], df_transients["b_Dist_cds"].iloc[i], df_transients["B_Dist_cdsa"].iloc[i]) for i in range(len(df_transients['runcat_id']))],
+                customdata      = [(df_transients['runcat_id'].iloc[i], df_transients["Dist"].iloc[i], df_transients["b_Dist_cds"].iloc[i], df_transients["B_Dist_cdsa"].iloc[i], df_transients["q_rb"].iloc[i]) for i in range(len(df_transients['runcat_id']))],
                 # customdata = [(df_2['x.magerr_zogy'].iloc[i], df_2['x.flux_zogy'].iloc[i], df_2['x.fluxerr_zogy'].iloc[i]) for i in range(len(df_2['x.fluxerr_zogy']))]
                 text            = df_transients['url'],
             ),
         )
+        print(len(df_transients))
     except Exception as e:
         print("No Gaia sources this night:")
         print(e)
