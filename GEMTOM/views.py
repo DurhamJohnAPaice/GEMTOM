@@ -1336,8 +1336,7 @@ def download_possible_CVs(request):
 
     # Create the HttpResponse object with appropriate headers for CSV.
     response = HttpResponse(csv_string, content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="generated_file.csv"'
-
+    response['Content-Disposition'] = 'attachment; filename="BlackGEM_Potential_CVs_' + obs_date + '.csv"'
 
     # Return the response which prompts the download
     return response
