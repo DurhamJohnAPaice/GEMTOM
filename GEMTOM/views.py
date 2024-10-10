@@ -1252,7 +1252,30 @@ def plot_nightly_hr_diagram(obs_date):
                 text            = df_transients['url'],
             ),
         )
-        print(len(df_transients))
+        print("Bark!")
+        df_cv = find_possible_CVs(df_transients)
+        print(len(df_cv))
+
+        fig.add_trace(
+            go.Scatter(
+                name="Potential CVs",
+                x = df_cv["BP-RP"],
+                y = df_cv["M_G"],
+                mode = 'markers',
+                marker=dict(color="#ff7f0e"),
+                hovertemplate   =
+                    'ID: %{customdata[0]}<br>' +
+                    'BP-RP: %{x:.3f}<br>' +
+                    'G Mag: %{y:.3f}<br>' +
+                    'Dist: %{customdata[1]:.0f}pc (%{customdata[2]:.0f},%{customdata[3]:.0f})<br>'
+                    # 'RB Score: %{customdata[4]:.2f}<br>'
+                    ,
+                customdata      = [(df_cv['runcat_id'].iloc[i], df_cv["Dist"].iloc[i], df_cv["b_Dist_cds"].iloc[i], df_cv["B_Dist_cdsa"].iloc[i], df_cv["q_rb"].iloc[i]) for i in range(len(df_cv['runcat_id']))],
+                text            = df_cv['url'],
+
+            ),
+        )
+
     except Exception as e:
         print("No Gaia sources this night:")
         print(e)
@@ -1271,6 +1294,54 @@ def plot_nightly_hr_diagram(obs_date):
     # fig.write_html("../Outputs/OrphanedTransientsGaia-Single.html")
 
     return fig
+
+def find_possible_CVs(df):
+
+    cv_lower = 0.1
+    cv_break = 0.4
+    cv_upper = 1.8
+
+    def cv_cutoff(x):
+        return 10.4-(11*np.exp(-x))
+        # return 10-(11*np.exp(-x-0.1))
+
+    df_cv_1 = df.copy()
+    df_cv_1 = df_cv_1[df_cv_1["BP-RP"] > cv_lower]
+    df_cv_1 = df_cv_1[df_cv_1["BP-RP"] < cv_break]
+    df_cv_1 = df_cv_1[df_cv_1["M_G"] > cv_cutoff(cv_break)]
+
+    df_cv_2 = df.copy()
+    df_cv_2 = df_cv_2[df_cv_2["BP-RP"] > cv_break]
+    df_cv_2 = df_cv_2[df_cv_2["BP-RP"] < cv_upper]
+    df_cv_2 = df_cv_2[df_cv_2["M_G"] > cv_cutoff(df_cv_2["BP-RP"])]
+
+    df_cv = pd.concat([df_cv_1, df_cv_2]).reset_index(drop=True)
+
+    return df_cv
+
+def download_possible_CVs(request):
+
+    obs_date = request.POST.get('obs_date')
+
+    extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
+
+    df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_gaia.csv")
+    df_transients = df_transients[df_transients["q_rb"] > 0.8]
+    df_transients["M_G"] = df_transients["Gmag"] - (5 * np.log10(df_transients["Dist"]/10))
+
+    df_cv = find_possible_CVs(df_transients)
+
+    # Convert DataFrame to CSV string
+    csv_string = df_cv.to_csv(index=False)
+
+    # Create the HttpResponse object with appropriate headers for CSV.
+    response = HttpResponse(csv_string, content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="generated_file.csv"'
+
+
+    # Return the response which prompts the download
+    return response
+
 
 def scatter_plot_view(request):
 

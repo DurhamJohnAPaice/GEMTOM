@@ -140,6 +140,13 @@ Click on a point to go to its GEMTOM page!</p>
 ">
     {{ lightcurve|safe }}
 </div>
+<br>
+<!-- Button to trigger the CSV generation -->
+<form method="post" action="{% url 'download_possible_CVs' %}" class="image-form">
+    {% csrf_token %}
+    <input type="hidden" name="obs_date" value="{{ obs_date }}">
+    <button type="submit" class="btn btn-outline-primary">Download Possible CVs</button>
+</form>
 
 
 <script>
