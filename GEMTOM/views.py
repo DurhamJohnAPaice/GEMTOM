@@ -1204,6 +1204,8 @@ def history_daily():
 
 def plot_nightly_hr_diagram(obs_date):
 
+    # cause_an_error
+
     extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
 
     ## Get Gaia data
@@ -1231,9 +1233,40 @@ def plot_nightly_hr_diagram(obs_date):
 
     try:
         df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_gaia.csv")
+    except:
+        try:
+            df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_gw_BlackGEM_transients_gaia.csv")
+        except:
+            df_transients = None
+
+    if df_transients is not None:
+        # df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_gaia.csv")
         df_transients = df_transients[df_transients["q_rb"] > 0.8]
+        df_transients = df_transients[df_transients["RPlx"] > 2]
         df_transients["M_G"] = df_transients["Gmag"] - (5 * np.log10(df_transients["Dist"]/10))
         df_transients["url"] = 'http://gemtom.blackgem.org/transients/' + df_transients['runcat_id'].astype(str)
+
+        ## Find the difference. Warning: q_max/min is only actual detections, not upper limits.
+        qui_max = []
+        for q_max, u_max, i_max, qui_min, q_min, u_min, i_min in zip( \
+            df_transients["q_max"],   \
+            df_transients["u_max"],   \
+            df_transients["i_max"],   \
+            df_transients["qui_min"], \
+            df_transients["q_min"],   \
+            df_transients["u_min"],   \
+            df_transients["i_min"]):
+
+            if   qui_min == q_min: qui_max.append(q_max)
+            elif qui_min == u_min: qui_max.append(u_max)
+            elif qui_min == i_min: qui_max.append(i_max)
+
+        df_transients["qui_max"] = qui_max
+        df_transients["qui_diff"] = df_transients["qui_max"] - df_transients["qui_min"]
+        print(df_transients["qui_max"])
+        print(df_transients["qui_min"])
+        print(df_transients["qui_diff"])
+
         fig.add_trace(
             go.Scatter(
                 name            = "2024-09-28",
@@ -1246,8 +1279,9 @@ def plot_nightly_hr_diagram(obs_date):
                     'G Mag: %{y:.3f}<br>' +
                     'Dist: %{customdata[1]:.0f}pc (%{customdata[2]:.0f},%{customdata[3]:.0f})<br>'
                     # 'RB Score: %{customdata[4]:.2f}<br>'
+                    'Mag Diff: %{customdata[5]:.2f}<br>'
                     ,
-                customdata      = [(df_transients['runcat_id'].iloc[i], df_transients["Dist"].iloc[i], df_transients["b_Dist_cds"].iloc[i], df_transients["B_Dist_cdsa"].iloc[i], df_transients["q_rb"].iloc[i]) for i in range(len(df_transients['runcat_id']))],
+                customdata      = [(df_transients['runcat_id'].iloc[i], df_transients["Dist"].iloc[i], df_transients["b_Dist_cds"].iloc[i], df_transients["B_Dist_cdsa"].iloc[i], df_transients["q_rb"].iloc[i], df_transients["qui_diff"].iloc[i]) for i in range(len(df_transients['runcat_id']))],
                 # customdata = [(df_2['x.magerr_zogy'].iloc[i], df_2['x.flux_zogy'].iloc[i], df_2['x.fluxerr_zogy'].iloc[i]) for i in range(len(df_2['x.fluxerr_zogy']))]
                 text            = df_transients['url'],
             ),
@@ -1269,26 +1303,90 @@ def plot_nightly_hr_diagram(obs_date):
                     'G Mag: %{y:.3f}<br>' +
                     'Dist: %{customdata[1]:.0f}pc (%{customdata[2]:.0f},%{customdata[3]:.0f})<br>'
                     # 'RB Score: %{customdata[4]:.2f}<br>'
+                    'Mag Diff: %{customdata[5]:.2f}<br>'
                     ,
-                customdata      = [(df_cv['runcat_id'].iloc[i], df_cv["Dist"].iloc[i], df_cv["b_Dist_cds"].iloc[i], df_cv["B_Dist_cdsa"].iloc[i], df_cv["q_rb"].iloc[i]) for i in range(len(df_cv['runcat_id']))],
+                customdata      = [(df_cv['runcat_id'].iloc[i], df_cv["Dist"].iloc[i], df_cv["b_Dist_cds"].iloc[i], df_cv["B_Dist_cdsa"].iloc[i], df_cv["q_rb"].iloc[i], df_cv["qui_diff"].iloc[i]) for i in range(len(df_cv['runcat_id']))],
                 text            = df_cv['url'],
 
-            ),
+            )
         )
 
-    except Exception as e:
-        print("No Gaia sources this night:")
-        print(e)
+
+        fig.update_layout(
+            yaxis = dict(autorange="reversed"),
+            height=510,
+            margin=dict(t=0, l=0, r=0, b=100),  # Set margins to reduce whitespace
+            # title="HR Diagram",
+            xaxis_title="BP-RP",
+            yaxis_title="GMag",
+            showlegend=False,
+            sliders=[{
+                'active': 0,
+                'currentvalue': {'prefix': 'Mag Diff > '},
+                'pad': {'t': 50},
+                'steps': [
+                    {
+                        'method': 'update',
+                        'label': str(threshold),
+                        'args': [
+                            {
+                                'x': [
+                                    df_gaia["BP-RP"],
+                                    df_transients["BP-RP"][df_transients["qui_diff"] >= threshold],
+                                    df_cv["BP-RP"][df_cv["qui_diff"] >= threshold]
+                                ],
+                                'y': [
+                                    df_gaia["Gmag"],
+                                    df_transients["M_G"][df_transients["qui_diff"] >= threshold],
+                                    df_cv["M_G"][  df_cv["qui_diff"] >= threshold]
+                                ],
+                                'hovertemplate': [
+                                    None,
+                                    'ID: %{customdata[0]}<br>' +
+                                    'BP-RP: %{x:.3f}<br>' +
+                                    'G Mag: %{y:.3f}<br>' +
+                                    'Dist: %{customdata[1]:.0f}pc (%{customdata[2]:.0f},%{customdata[3]:.0f})<br>' +
+                                    'Mag Diff: %{customdata[5]:.2f}<br>',
+                                    'ID: %{customdata[0]}<br>' +
+                                    'BP-RP: %{x:.3f}<br>' +
+                                    'G Mag: %{y:.3f}<br>' +
+                                    'Dist: %{customdata[1]:.0f}pc (%{customdata[2]:.0f},%{customdata[3]:.0f})<br>'
+                                    # 'RB Score: %{customdata[4]:.2f}<br>'
+                                    'Mag Diff: %{customdata[5]:.2f}<br>'
+                                ],
+                                'customdata': [
+                                    None,
+                                    [(df_transients['runcat_id'][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["Dist"][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["b_Dist_cds"][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["B_Dist_cdsa"][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["q_rb"][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["qui_diff"][df_transients["qui_diff"] >= threshold].iloc[i]) for i in range(len(df_transients['runcat_id'][df_transients["qui_diff"] >= threshold]))],
+                                    [(df_cv['runcat_id'][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["Dist"][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["b_Dist_cds"][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["B_Dist_cdsa"][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["q_rb"][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["qui_diff"][df_cv["qui_diff"] >= threshold].iloc[i]) for i in range(len(df_cv['runcat_id'][df_cv["qui_diff"] >= threshold]))],
+                                ],
+                                'text' : [
+                                    None,
+                                    df_transients['url'][df_transients["qui_diff"] >= threshold],
+                                    df_cv['url'][df_cv["qui_diff"] >= threshold],
+                                ],
+                            },
+                        ]
+                    } for threshold in np.arange(0, 11, 1)/10  # Adjust slider granularity as needed
+                ]
+            }]
+        )
+
+        fig['layout']['sliders'][0]['pad']=dict(t=20,)
+
+    else:
+        print("No Gaia sources this night.")
 
     fig.update_layout(
         yaxis = dict(autorange="reversed"),
-        height=500,
-        margin=dict(t=0, l=0, r=0, b=0),  # Set margins to reduce whitespace
+        height=510,
+        margin=dict(t=0, l=0, r=0, b=100),  # Set margins to reduce whitespace
         # title="HR Diagram",
         xaxis_title="BP-RP",
         yaxis_title="GMag",
         showlegend=False,
     )
+
+
 
     # fig.show()
     # fig.write_html("../Outputs/OrphanedTransientsGaia-Single.html")

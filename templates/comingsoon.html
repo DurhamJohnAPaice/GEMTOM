@@ -49,17 +49,17 @@ A list of the main features that have been requested and I intend to work on.
             <li>Transients: Lookup and add a link to a transient's Portal entry</li>
             <li>Transients: Add a link to download a lightcurve</li>
             <li>Transients: Reduce the TNS arcsecond distance</li>
+            <li>History: Fix the error that occurs if there are no Gaia crossmatches.</li>
+            <li>History: Note when there is no connection to BlackHub (instead of just reporting no fields observed)</li>
             <li>Live Feed: Display the schedule, and also have the it look up which target it’s currently looking at</li>
             <li>Live Feed: Link to the Treasure Map</li>
             <li>Targets: Automatically delete the previous instance of BlackGEM data when updating.</li>
             <li>Targets: Get the flux values for the lightcurves.</li>
             <li>Targets: Link to TNS, if available.</li>
-            <li>Fix Requirements file.</li>
             <li>Link to the Daily Scanning page (34.90.13.7)</li>
             <li>Add a 'Watchlist' functionality that emails users when their targets come up.</li>
             <li>Get Hugo’s code on our servers</li>
             <li>Add Daniella’s Code for the Treasure Map</li>
-            <li>Solve the 'favicon not found' errors on the terminal</li>
             <!-- <li></li>
             <li></li>
             <li></li> -->
@@ -68,7 +68,8 @@ A list of the main features that have been requested and I intend to work on.
 
         <h5>Meta</h5>
         <ul>
-        <li><em>-</em></li>
+        <li>Solve the 'favicon not found' errors on the terminal</li>
+        <li>Fix Requirements file.</li>
         <!-- <li><em>Currently Empty</em></li> -->
         </ul>
 </ul>
@@ -84,9 +85,11 @@ A list of the main features that have been requested and I intend to work on.
 <ul>
     <h5>New Features</h5>
     <ul>
-        <h6>Nightly HR Diagram<h6>
+        <h6>Nightly HR Diagram</h6>
             <ul>
             <li>Added an HR Diagram to each night's History page, with all the sources in the previous night's gaia-crossmatched catalogue.</li>
+            <li>These sources have a cutoff based on their Real/Bogus score and their Parallax/Error ratio.</li>
+            <li>You can also adjust a slider to manually filter by magnitude difference.</li>
             <li>Clicking a point in the HR Diagram redirects to that Transient's GEMTOM page.</li>
             <li>You can now download potential CVs for each night too!</li>
             </ul>
