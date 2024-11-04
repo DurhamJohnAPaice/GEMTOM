@@ -1394,7 +1394,7 @@ def plot_nightly_hr_diagram(obs_date):
     ## Get Gaia data
     df_gaia = pd.read_csv("./data/gaia_nearbystars_hr.txt", sep=",")
     df_gaia["BP-RP"] = df_gaia["BPmag"] - df_gaia["RPmag"]
-    df_gaia = df_gaia.iloc[::20, :]  ## Only grab 1/5th of it for ease
+    # df_gaia = df_gaia.iloc[::20, :]  ## Only grab 1/5th of it for ease
     df_gaia["Gmag"] = df_gaia["Gmag"] - (5 * np.log10((df_gaia["Dist"]*1000)/10))
     df_gaia = df_gaia.drop(df_gaia[df_gaia.Gmag > 16].index)
 
@@ -1416,23 +1416,50 @@ def plot_nightly_hr_diagram(obs_date):
 
     gemtom_gaia_transients_filename = "./data/history_transients/" + obs_date + "_gaia.csv"
     to_process = True
-    try:
+
+    if os.path.exists(gemtom_gaia_transients_filename):
+        print("Attempting to read in any previously-calculated files for this date...")
         df_transients = pd.read_csv(gemtom_gaia_transients_filename)
         to_process = False
         print("Previously-made transients file found for this date. Reading in.")
-        snr = "snr"
-    except:
+        if 'snr' in df_transients:  snr = "snr"
+        else:                       snr = "q_rb"
+    else:
         print("No transients file found for this date. Finding from scratch.")
+        print("Looking for file (" + gaia_transients_filename + ")...", sep="")
         try:
             df_transients = pd.read_csv(gaia_transients_filename)
-            df_transients = hugo_2_GEMTOM(df_transients)
-            snr = "snr"
-        except:
-            try:
-                df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_gw_BlackGEM_transients_gaia.csv")
+
+            if "http://xmm-ssc" in gaia_transients_filename:
                 snr = "q_rb"
-            except:
-                df_transients = None
+                print("File found!")
+            else:
+                print("File found; trying to update...", sep="")
+                df_transients = hugo_2_GEMTOM(df_transients)
+                snr = "snr"
+
+            print("File found!")
+
+        except:
+            print("File not found; assuming no observations.")
+            df_transients = None
+
+
+            # try:
+            #     df_transients = pd.read_csv(gaia_transients_filename)
+            #     print("File found; trying to update...", sep="")
+            #     df_transients = hugo_2_GEMTOM(df_transients)
+            #     snr = "snr"
+            #     print("File found!")
+            # except:
+            #     try:
+            #         print("File not found; looking on the old server...")
+            #         df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_gw_BlackGEM_transients_gaia.csv")
+            #         snr = "q_rb"
+            #         print("File found!")
+            #     except:
+            #         print("File not found; assuming no observations.")
+                    # df_transients = None
 
     if df_transients is not None:
         if to_process:
