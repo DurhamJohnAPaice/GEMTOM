@@ -931,6 +931,8 @@ def get_any_nights_sky_plot(night):
     image_base64 = base64.b64encode(image_png)
     image_base64 = image_base64.decode('utf-8')
 
+    print("Sky view plotted.")
+
     return field_stats, image_base64
 
 
@@ -1489,9 +1491,9 @@ def plot_nightly_hr_diagram(obs_date):
                 text            = df_transients['url'],
             ),
         )
-        print("Bark!")
+        print("Finding possible CVs...")
         df_cv = find_possible_CVs(df_transients)
-        print(len(df_cv))
+        print("Possible CVs found.")
 
         fig.add_trace(
             go.Scatter(
@@ -1575,6 +1577,7 @@ def plot_nightly_hr_diagram(obs_date):
         )
 
         fig['layout']['sliders'][0]['pad']=dict(t=20,)
+        print("HR Diagram plotted.")
 
     else:
         print("No Gaia sources this night.")
