@@ -17,6 +17,8 @@
             max-height: 100vh;
             margin: auto;
         }
+        .left-btn { float: left; }
+        .right-btn { float: right; }
     </style>
 
 <meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
@@ -25,11 +27,21 @@
 
 
 <p>
-On this page, you can find the data for a specific observation date.
 </p>
-<hr>
+
+<!-- On this page, you can find the data for a specific observation date. -->
+
+<div style="text-align:center;">
+    <div class="left-btn">
+        <a href="/history/{{ prev_night }}" class="btn btn-outline-primary" role="button" style="font-size:1.2em">&larr; Prev</a>
+    </div>
+    <div class="right-btn">
+        <a href="/history/{{ next_night }}" class="btn btn-outline-primary" role="button" style="font-size:1.2em">Next &rarr;</a>
+    </div>
+</div>
 
 <div style="text-align:center">
+<!-- <hr> -->
 
 <h4>Did BlackGEM observe on {{ extended_date }}?<br></h4>
 <h3>{{ observed }} </h3>
@@ -212,8 +224,8 @@ They are overplotted on an HR diagram (blue), sourced from the Gaia Catalog of N
 </style>
 
 {% if extragalactic_sources_id %}
-    {% for image_url, source_id, source_name, source_ra, source_dec, check in images_daily_text_1 %}
-        <h6> BlackGEM ID = {{ source_id }} ({{source_name}})</h6>
+    {% for image_url, source_id, source_ra, source_dec, check in images_daily_text_1 %}
+        <h6> BlackGEM ID = {{ source_id }}</h6>
         <div class="image-row">
             {% for url in image_url %}
                 {% if url %}

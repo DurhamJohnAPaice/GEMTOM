@@ -22,17 +22,16 @@ A list of the main features that have been requested and I intend to work on.
             Note: <b>This is where you come in!</b> If you have any codes that can comb the recent
             transients for any signals, pass them my way, and I can feature the results on GEMTOM.</li>
             <li>Note which targets are Gravitational Wave triggers.</li>
-            <li>Next/Prev night buttons on Night view.</li>
+            <li>Have different messages on Night views that are in the future.</li>
             <li>Longer date list. Maybe in a separate page?</li>
             <li>Put the HR diagram on the main History page</li>
             <li>Modify the GCNS file; only contain every Nth target.</li>
             <li>Modify the GCNS to perhaps be smaller, or maybe even just be a static image on the back of the HR diagram.</li>
             <li>Maybe have the HR diagram show a list of historical BlackGEM transients too...?</li>
-            <li>Perhaps have tabs on each page - that night's galactic/extra-galactic sources, for instance.</li>
             <li>Add a way to distinguish old/new targets on the HR diagram</li>
-            <li>Plot, somewhere, a large sample of BlackGEM Gaia targets</li>
-            <li>Have the code plot all possible CVs every single night</li>
+            <li>Perhaps have tabs on each page - that night's galactic/extra-galactic sources, for instance.</li>
             <li>Correct the all-sky plot that's displayed when there's no data</li>
+            <li>Fix the magmin/qui_diff problem (The new files don't include q/u/i_min/max columns, so I can't compute qui_diff).</li>
         </ul>
     <br>
 
@@ -85,14 +84,20 @@ A list of the main features that have been requested and I intend to work on.
 <ul>
     <h5>New Features</h5>
     <ul>
-        <h6>Nightly HR Diagram</h6>
-            <ul>
+        <li><h6>Nightly HR Diagram</h6></li>
+        <ul>
             <li>Added an HR Diagram to each night's History page, with all the sources in the previous night's gaia-crossmatched catalogue.</li>
             <li>These sources have a cutoff based on their Real/Bogus score and their Parallax/Error ratio.</li>
             <li>You can also adjust a slider to manually filter by magnitude difference.</li>
             <li>Clicking a point in the HR Diagram redirects to that Transient's GEMTOM page.</li>
             <li>You can now download potential CVs for each night too!</li>
-            </ul>
+        </ul>
+        <br>
+
+        <li><h6>Other Miscellaneous features</h6></li>
+        <ul>
+            <li>History: Next/Prev night buttons on Night view.</li>
+        </ul>
     </ul>
     <br>
     <h5>Bugfixes</h5>

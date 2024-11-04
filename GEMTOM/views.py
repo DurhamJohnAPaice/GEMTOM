@@ -635,7 +635,7 @@ def get_recent_blackgem_history(days_since_last_update):
     observed        = []
     transients      = []
     gaia            = []
-    extagalactic    = []
+    extragalactic    = []
 
     if days_since_last_update > 10:
         days_since_last_update = 10
@@ -651,69 +651,115 @@ def get_recent_blackgem_history(days_since_last_update):
         dates.append(extended_date)
         mjds.append(this_mjd)
 
-        base_url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/'
+        # base_url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/'
+        #
+        # ## Get the list of files from Hugo's server
+        # files = list_files(base_url + obs_date)
+        #
+        # transients_filename, gaia_filename, extragalactic_filename = get_transients_filenames(obs_date, url_selection="all")
+        #
+        # try:
+        #     data = pd.read_csv(transients_filename)
+        # except Exception as e:
+        #     ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
+        #     print("No transients on ", obs_date, ":", sep="")
+        #     print(e)
+        #     observed.append("No")
+        #     transients.append("0")
+        #     gaia.append("0")
+        #     extragalactic.append("0")
+        #     continue
+        #
+        # try:
+        #     data_gaia = pd.read_csv(gaia_filename)
+        #     num_in_gaia = str(len(data_gaia))
+        # except Exception as e:
+        #     ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
+        #     print("No gaia crossmatches on ", obs_date, ":", sep="")
+        #     print(e)
+        #     gaia_filename = ""
+        #     num_in_gaia = "0"
+        #     continue
+        #
+        # try:
+        #     extragalactic_data = pd.read_csv(gaia_filename)
+        # except Exception as e:
+        #     ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
+        #     print("No extragalactic sources on ", obs_date, ":", sep="")
+        #     print(e)
+        #     extragalactic_filename = ""
+        #     continue
 
-        ## Get the list of files from Hugo's server
-        files = list_files(base_url + obs_date)
+        # ## Check to find the transients file. It could be under one of two names...
+        # if extended_date+"_gw_BlackGEM_transients.csv" in files:
+        #     transients_filename = base_url + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
+        #     data = pd.read_csv(transients_filename)
+        # elif extended_date+"_BlackGEM_transients.csv" in files:
+        #     transients_filename = base_url + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
+        #     data = pd.read_csv(transients_filename)
+        # else:
+        #     ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
+        #     # return "0", "0", "0", ["","","","", ""], "", "", "", ""
+        #     observed.append("No")
+        #     transients.append("0")
+        #     gaia.append("0")
+        #     extragalactic.append("0")
+        #     continue
 
-        ## Check to find the transients file. It could be under one of two names...
-        if extended_date+"_gw_BlackGEM_transients.csv" in files:
-            transients_filename = base_url + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
-            data = pd.read_csv(transients_filename)
-        elif extended_date+"_BlackGEM_transients.csv" in files:
-            transients_filename = base_url + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
-            data = pd.read_csv(transients_filename)
-        else:
-            ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
-            # return "0", "0", "0", ["","","","", ""], "", "", "", ""
-            observed.append("No")
-            transients.append("0")
-            gaia.append("0")
-            extagalactic.append("0")
-            continue
+        # ## Check to find the gaia crossmatched file. It could be under one of two names...
+        # if extended_date+"_gw_BlackGEM_transients_gaia.csv" in files:
+        #     gaia_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv"
+        #     data_gaia = pd.read_csv(gaia_filename)
+        #     num_in_gaia = str(len(data_gaia))
+        # elif extended_date+"_BlackGEM_transients_gaia.csv" in files:
+        #     gaia_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_gaia.csv"
+        #     data_gaia = pd.read_csv(gaia_filename)
+        #     num_in_gaia = str(len(data_gaia))
+        # else:
+        #     ## If it doesn't exist, assume no gaia crossmatches were found.
+        #     gaia_filename = ""
+        #     num_in_gaia = "0"
 
-        ## Check to find the gaia crossmatched file. It could be under one of two names...
-        if extended_date+"_gw_BlackGEM_transients_gaia.csv" in files:
-            gaia_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv"
-            data_gaia = pd.read_csv(gaia_filename)
-            num_in_gaia = str(len(data_gaia))
-        elif extended_date+"_BlackGEM_transients_gaia.csv" in files:
-            gaia_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_gaia.csv"
-            data_gaia = pd.read_csv(gaia_filename)
-            num_in_gaia = str(len(data_gaia))
-        else:
-            ## If it doesn't exist, assume no gaia crossmatches were found.
-            gaia_filename = ""
-            num_in_gaia = "0"
+        # ## Check to find the extragalactic file. It could be under one of two names...
+        # if extended_date+"_gw_BlackGEM_transients_selected.csv" in files:
+        #     extragalactic_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv"
+        #     extragalactic_data = pd.read_csv(extragalactic_filename)
+        # elif extended_date+"_BlackGEM_transients_selected.csv" in files:
+        #     extragalactic_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_selected.csv"
+        #     extragalactic_data = pd.read_csv(extragalactic_filename)
+        # else:
+        #     ## If it doesn't exist, assume no extragalactic sources were found.
+        #     extragalactic_filename = ""
 
-        ## Check to find the extragalactic file. It could be under one of two names...
-        if extended_date+"_gw_BlackGEM_transients_selected.csv" in files:
-            extragalactic_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv"
-            extragalactic_data = pd.read_csv(extragalactic_filename)
-        elif extended_date+"_BlackGEM_transients_selected.csv" in files:
-            extragalactic_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_selected.csv"
-            extragalactic_data = pd.read_csv(extragalactic_filename)
-        else:
-            ## If it doesn't exist, assume no extragalactic sources were found.
-            extragalactic_filename = ""
+        # extragalactic_sources_id = []
+        # ## For each image file...
+        # for file in files:
+        #     if ".png" in file:
+        #         ## If we haven't got the data yet...
+        #         if file[2:10] not in extragalactic_sources_id:
+        #             ## Save the ID...
+        #             extragalactic_sources_id.append(file[2:10])
+        #
+        # print(extended_date + " (MJD " + str(this_mjd) + "): BlackGEM found " + str(len(data)) + " transients (" + str(len(data_gaia)) + " in Gaia, " + str(len(extragalactic_sources_id)) + " extragalactic).")
+        # observed.append("Yes")
+        # transients.append(len(data))
+        # gaia.append(len(data_gaia))
+        # extragalactic.append(len(extragalactic_sources_id))
 
-        extragalactic_sources_id = []
-        ## For each image file...
-        for file in files:
-            if ".png" in file:
-                ## If we haven't got the data yet...
-                if file[2:10] not in extragalactic_sources_id:
-                    ## Save the ID...
-                    extragalactic_sources_id.append(file[2:10])
+        num_new_transients, num_in_gaia, num_extragalactic, extragalactic_sources, extragalactic_urls, \
+            transients_filename, gaia_filename, extragalactic_filename =  get_blackgem_stats(obs_date)
 
-        print(extended_date + " (MJD " + str(this_mjd) + "): BlackGEM found " + str(len(data)) + " transients (" + str(len(data_gaia)) + " in Gaia, " + str(len(extragalactic_sources_id)) + " extragalactic).")
-        observed.append("Yes")
-        transients.append(len(data))
-        gaia.append(len(data_gaia))
-        extagalactic.append(len(extragalactic_sources_id))
+        if float(num_new_transients) > 0: observed.append("Yes")
+        else: observed.append("No")
+
+        transients.append(num_new_transients)
+        gaia.append(num_in_gaia)
+        extragalactic.append(num_extragalactic)
+        # extragalactic_sources.append(extragalactic_sources)
+
 
     fileOut = "./data/Recent_BlackGEM_History.csv"
-    new_history = pd.DataFrame({'Date' : dates, 'MJD' : mjds, 'Observed' : observed, 'Number_Of_Transients' : transients, 'Number_of_Gaia_Crossmatches' : gaia, 'Number_Of_Extragalactic' : extagalactic})
+    new_history = pd.DataFrame({'Date' : dates, 'MJD' : mjds, 'Observed' : observed, 'Number_Of_Transients' : transients, 'Number_of_Gaia_Crossmatches' : gaia, 'Number_Of_Extragalactic' : extragalactic})
 
     output = pd.concat([new_history,previous_history.iloc[:(10-days_since_last_update)]]).reset_index(drop=True)
     output.to_csv(fileOut, index=False)
@@ -1023,52 +1069,81 @@ def get_blackgem_stats(obs_date):
     ## Get the list of files from Hugo's server
     files = list_files(base_url + obs_date)
 
-    ## Check to find the transients file. It could be under one of two names...
-    if extended_date+"_gw_BlackGEM_transients.csv" in files:
-        transients_filename = base_url + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
+    transients_filename, gaia_filename, extragalactic_filename = get_transients_filenames(obs_date, url_selection="all")
+
+    try:
         data = pd.read_csv(transients_filename)
-    elif extended_date+"_BlackGEM_transients.csv" in files:
-        transients_filename = base_url + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
-        data = pd.read_csv(transients_filename)
-    else:
+    except Exception as e:
         ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
+        print("No transients on ", obs_date, ":", sep="")
+        print(e)
         return "0", "0", "0", ["","","","", ""], "", "", "", ""
 
-    ## Check to find the gaia crossmatched file. It could be under one of two names...
-    if extended_date+"_gw_BlackGEM_transients_gaia.csv" in files:
-        gaia_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv"
+    try:
         data_gaia = pd.read_csv(gaia_filename)
         num_in_gaia = str(len(data_gaia))
-    elif extended_date+"_BlackGEM_transients_gaia.csv" in files:
-        gaia_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_gaia.csv"
-        data_gaia = pd.read_csv(gaia_filename)
-        num_in_gaia = str(len(data_gaia))
-    else:
-        ## If it doesn't exist, assume no gaia crossmatches were found.
+    except Exception as e:
+        ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
+        print("No gaia crossmatches on ", obs_date, ":", sep="")
+        print(e)
         gaia_filename = ""
         num_in_gaia = "0"
 
-    ## Check to find the extragalactic file. It could be under one of two names...
-    if extended_date+"_gw_BlackGEM_transients_selected.csv" in files:
-        extragalactic_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv"
-        extragalactic_data = pd.read_csv(extragalactic_filename)
-    elif extended_date+"_BlackGEM_transients_selected.csv" in files:
-        extragalactic_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_selected.csv"
-        extragalactic_data = pd.read_csv(extragalactic_filename)
-    else:
-        ## If it doesn't exist, assume no extragalactic sources were found.
+    try:
+        extragalactic_data = pd.read_csv(gaia_filename)
+    except Exception as e:
+        ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
+        print("No extragalactic sources on ", obs_date, ":", sep="")
+        print(e)
         extragalactic_filename = ""
+
+    # ## Check to find the transients file. It could be under one of two names...
+    # if extended_date+"_gw_BlackGEM_transients.csv" in files:
+    #     transients_filename = base_url + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
+    #     data = pd.read_csv(transients_filename)
+    # elif extended_date+"_BlackGEM_transients.csv" in files:
+    #     transients_filename = base_url + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
+    #     data = pd.read_csv(transients_filename)
+    # else:
+    #     ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
+    #     return "0", "0", "0", ["","","","", ""], "", "", "", ""
+    #
+    # ## Check to find the gaia crossmatched file. It could be under one of two names...
+    # if extended_date+"_gw_BlackGEM_transients_gaia.csv" in files:
+    #     gaia_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv"
+    #     data_gaia = pd.read_csv(gaia_filename)
+    #     num_in_gaia = str(len(data_gaia))
+    # elif extended_date+"_BlackGEM_transients_gaia.csv" in files:
+    #     gaia_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_gaia.csv"
+    #     data_gaia = pd.read_csv(gaia_filename)
+    #     num_in_gaia = str(len(data_gaia))
+    # else:
+    #     ## If it doesn't exist, assume no gaia crossmatches were found.
+    #     gaia_filename = ""
+    #     num_in_gaia = "0"
+    #
+    # ## Check to find the extragalactic file. It could be under one of two names...
+    # if extended_date+"_gw_BlackGEM_transients_selected.csv" in files:
+    #     extragalactic_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv"
+    #     extragalactic_data = pd.read_csv(extragalactic_filename)
+    # elif extended_date+"_BlackGEM_transients_selected.csv" in files:
+    #     extragalactic_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_selected.csv"
+    #     extragalactic_data = pd.read_csv(extragalactic_filename)
+    # else:
+    #     ## If it doesn't exist, assume no extragalactic sources were found.
+    #     extragalactic_filename = ""
 
     ## --- Find the details of each extragalactic source ---
     images_urls                 = []
     extragalactic_sources       = []
     extragalactic_sources_id    = []
-    extragalactic_sources_name  = []
     extragalactic_sources_ra    = []
     extragalactic_sources_dec   = []
     extragalactic_sources_check = []
 
     ## For each image file...
+    # print(files)
+    # print(extragalactic_filename)
     for file in files:
         if ".png" in file:
             ## Save the URL...
@@ -1088,24 +1163,21 @@ def get_blackgem_stats(obs_date):
                     if int(file[2:10]) in runcat_id_list:
                         ## Save the name, RA, dec, and look for a lightcurve.
                         row_number = runcat_id_list.index(int(file[2:10]))
-                        extragalactic_sources_name.append(extragalactic_data['iauname'][row_number])
                         extragalactic_sources_ra.append(  extragalactic_data['ra'][row_number])
                         extragalactic_sources_dec.append( extragalactic_data['dec'][row_number])
                         extragalactic_sources_check.append(True)
                         # extragalactic_sources_jpg.append(get_lightcurve(file[2:10]))
                     else:
                         ## If it's not, state they're all unknown.
-                        extragalactic_sources_name.append("Unknown")
                         extragalactic_sources_ra.append("(Unknown)")
                         extragalactic_sources_dec.append("(Unknown)")
                         extragalactic_sources_check.append(False)
                         # extragalactic_sources_jpg.append("")
 
     ## Combine these together.
-    # extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_name, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_jpg]
-    extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_name, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_check]
+    # extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_jpg]
+    extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_check]
     # print(extragalactic_sources)
-    # print(extragalactic_sources_name)
     # print(extragalactic_sources_ra)
     # print(extragalactic_sources_dec)
 
@@ -1135,16 +1207,16 @@ def history_daily():
     extended_yesterday_date = yesterday.strftime("%Y-%m-%d")
     mjd = int(Time(extended_yesterday_date + "T00:00:00.00", scale='utc').mjd)
 
-    url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/' + yesterday_date + "/"
+    # url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/' + yesterday_date + "/"
+
+    data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
+        transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(yesterday_date)
 
     # print(url)
-    r = requests.get(url)
-    if r.status_code != 404:
+    # r = requests.get(url)
+    if transients_filename != "":
         result = "BlackGEM observed last night!"
         history_daily_text_1 = "Yes!"
-
-        data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
-            transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(yesterday_date)
 
         ## If there was no data, assume BlackGEM didn't observe.
         if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0"):
@@ -1184,7 +1256,7 @@ def history_daily():
             history_daily_text_3 = "BlackGEM recorded pictures of " + extragalactic_sources_length + " possible extragalactic transient" + extragalactic_sources_plural + "."
             history_daily_text_4 = extragalactic_sources_string
             # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0])
-            images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
+            images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
             # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
 
 
@@ -1202,11 +1274,120 @@ def history_daily():
 
     return history_daily_text_1, history_daily_text_2, history_daily_text_3, history_daily_text_4, images_daily_text_1, extragalactic_sources_id, transients_filename, gaia_filename, extragalactic_filename
 
+
+def hugo_2_GEMTOM(df):
+
+    bg = authenticate_blackgem()
+
+    for filt in ['q','u','i']:
+        params_f = {'runcatids': tuple(list(df.runcat_id)),
+                    'filter':filt}
+
+
+        # min and max magnitude, max rb score, last xtrsrc
+        print("computing stats in band %s..."%filt)
+
+        minmag = np.empty(len(df))
+        maxmag = np.empty(len(df))
+        maxsnr = np.empty(len(df))
+        rb_max = np.empty(len(df))
+        fwhm = np.empty(len(df))
+        xtrsrc = np.zeros(len(df)).astype(int)
+        minmag[:] = np.nan
+        maxmag[:] = np.nan
+        maxsnr[:] = 0
+        rb_max[:] = np.nan
+        fwhm[:] = np.nan
+
+
+
+        qu = """\
+        SELECT a.runcat runcat_id
+                      ,MIN(x.mag_zogy) as minmag
+                      ,MAX(x.mag_zogy) as maxmag
+                      ,MAX(x.class_real) as rbmax
+                      ,MAX(x.id) as last_xtrsrc
+                      ,MAX(x.snr_zogy) as maxsnr
+                      ,AVG(x.fwhm_gauss_d) as fwhm
+                  FROM extractedsource x, assoc a
+                 WHERE a.runcat IN %(runcatids)s
+                   AND a.xtrsrc = x.id
+                   AND x.filter = '%(filter)s'
+                   AND x.mag_zogy < 99
+                 GROUP BY a.runcat
+        ORDER BY runcat
+        """
+
+        query = qu % (params_f)
+        l_results = bg.run_query(query)
+        df_filt = pd.DataFrame(l_results, columns=['runcat_id',
+                                                   'minmag',
+                                                   'maxmag',
+                                                   'rb_max',
+                                                   'xtrsrc',
+                                                   'maxsnr',
+                                                   'fwhm'])
+
+        i,i1,i2 = np.intersect1d(df['runcat_id'],
+                                 df_filt['runcat_id'],
+                                 return_indices = True)
+
+        minmag[i1] = df_filt.loc[i2]['minmag']
+        maxmag[i1] = df_filt.loc[i2]['maxmag']
+        maxsnr[i1] = df_filt.loc[i2]['maxsnr']
+        rb_max[i1] = df_filt.loc[i2]['rb_max']
+        xtrsrc[i1] = df_filt.loc[i2]['xtrsrc']
+        fwhm[i1] = df_filt.loc[i2]['fwhm']
+
+        df['%s_min'%filt] = minmag
+        df['%s_max'%filt] = maxmag
+        df['%s_dif'%filt] = maxmag-minmag
+        df['snr_zogy'] = np.maximum(df['snr'],maxsnr)
+        df['%s_xtrsrc'%filt] = xtrsrc
+        df['%s_rb'%filt] = rb_max
+
+    df_new = pd.DataFrame({
+        'runcat_id' : df.runcat_id,
+        'ra' : df.ra,
+        'dec' : df.dec,
+        'n_datapoints' : df.n_datapoints,
+        'snr' : df.snr,
+        'q_min' : df.q_min,
+        'q_max' : df.q_max,
+        'u_min' : df.u_min,
+        'u_max' : df.u_max,
+        'i_min' : df.i_min,
+        'i_max' : df.i_max,
+        'Gmag' : df.Gmag,
+        'BP-RP' : df["BP-RP"],
+        'Dist' : df.Dist,
+        'b_Dist_cds' : df.b_Dist_cds,
+        'B_Dist_cdsa' : df.B_Dist_cdsa,
+        'Dist_Lower' : df.Dist-df.b_Dist_cds,
+        'Dist_Upper' : df.B_Dist_cdsa-df.Dist,
+        # 'RPlx' : df.Dist/np.mean([df.Dist+df.b_Dist_cds, df.Dist-df.B_Dist_cdsa]),
+    })
+
+    # RPlx = df_new.Dist/np.mean([df_new.Dist+df_new.b_Dist_cds, df_new.Dist-df_new.B_Dist_cdsa])
+
+    RPlx = np.mean([df_new.Dist+df_new.b_Dist_cds, df_new.Dist-df_new.B_Dist_cdsa])
+    df_new["Mean_Plx_Error"] = df_new[['Dist_Lower', 'Dist_Upper']].mean(axis=1)
+    df_new["RPlx"] = df_new['Dist']/df_new["Mean_Plx_Error"]
+    print(df_new["Mean_Plx_Error"].iloc[0])
+    print(df_new["RPlx"].iloc[0])
+    df_new = df_new.drop(["Dist_Lower", "Dist_Upper", "Mean_Plx_Error"], axis=1)
+    df_new['qui_min'] = df_new[['q_min','u_min','i_min']].min(axis=1)
+
+    return df_new
+
 def plot_nightly_hr_diagram(obs_date):
 
-    # cause_an_error
-
     extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
+
+    if obs_date_to_datetime(obs_date) < obs_date_to_datetime("20240628"):
+        gaia_transients_filename = "http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_gaia.csv"
+    else:
+        gaia_transients_filename = "http://34.90.13.7/quick_selection/" + extended_date + "_BlackGEM_transients_gaia.csv"
 
     ## Get Gaia data
     df_gaia = pd.read_csv("./data/gaia_nearbystars_hr.txt", sep=",")
@@ -1231,41 +1412,63 @@ def plot_nightly_hr_diagram(obs_date):
         )
     )
 
+    gemtom_gaia_transients_filename = "./data/history_transients/" + obs_date + "_gaia.csv"
+    to_process = True
     try:
-        df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_gaia.csv")
+        df_transients = pd.read_csv(gemtom_gaia_transients_filename)
+        to_process = False
+        print("Previously-made transients file found for this date. Reading in.")
+        snr = "snr"
     except:
+        print("No transients file found for this date. Finding from scratch.")
         try:
-            df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_gw_BlackGEM_transients_gaia.csv")
+            df_transients = pd.read_csv(gaia_transients_filename)
+            df_transients = hugo_2_GEMTOM(df_transients)
+            snr = "snr"
         except:
-            df_transients = None
+            try:
+                df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_gw_BlackGEM_transients_gaia.csv")
+                snr = "q_rb"
+            except:
+                df_transients = None
 
     if df_transients is not None:
-        # df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_gaia.csv")
-        df_transients = df_transients[df_transients["q_rb"] > 0.8]
-        df_transients = df_transients[df_transients["RPlx"] > 2]
-        df_transients["M_G"] = df_transients["Gmag"] - (5 * np.log10(df_transients["Dist"]/10))
-        df_transients["url"] = 'http://gemtom.blackgem.org/transients/' + df_transients['runcat_id'].astype(str)
+        if to_process:
+            df_transients = df_transients[df_transients[snr] > 0.8]
+            df_transients = df_transients[df_transients["RPlx"] > 2]
+            df_transients["M_G"] = df_transients["Gmag"] - (5 * np.log10(df_transients["Dist"]/10))
+            df_transients["url"] = 'http://gemtom.blackgem.org/transients/' + df_transients['runcat_id'].astype(str)
 
-        ## Find the difference. Warning: q_max/min is only actual detections, not upper limits.
-        qui_max = []
-        for q_max, u_max, i_max, qui_min, q_min, u_min, i_min in zip( \
-            df_transients["q_max"],   \
-            df_transients["u_max"],   \
-            df_transients["i_max"],   \
-            df_transients["qui_min"], \
-            df_transients["q_min"],   \
-            df_transients["u_min"],   \
-            df_transients["i_min"]):
+            ## Find the difference. Warning: q_max/min is only actual detections, not upper limits.
+            print("Finding qui_diff...")
+            # qui_max = []
+            qui_diff = []
+            for id, q_max, u_max, i_max, qui_min, q_min, u_min, i_min in zip( \
+                df_transients["runcat_id"],   \
+                df_transients["q_max"],   \
+                df_transients["u_max"],   \
+                df_transients["i_max"],   \
+                df_transients["qui_min"], \
+                df_transients["q_min"],   \
+                df_transients["u_min"],   \
+                df_transients["i_min"]):
 
-            if   qui_min == q_min: qui_max.append(q_max)
-            elif qui_min == u_min: qui_max.append(u_max)
-            elif qui_min == i_min: qui_max.append(i_max)
+                if   qui_min == q_min: qui_diff.append(q_max-q_min)
+                elif qui_min == u_min: qui_diff.append(u_max-u_min)
+                elif qui_min == i_min: qui_diff.append(i_max-i_min)
+                else: qui_diff.append(None) #print("Failed on ", i, id, q_max, u_max, i_max, qui_min, q_min, u_min, i_min)
 
-        df_transients["qui_max"] = qui_max
-        df_transients["qui_diff"] = df_transients["qui_max"] - df_transients["qui_min"]
-        print(df_transients["qui_max"])
-        print(df_transients["qui_min"])
-        print(df_transients["qui_diff"])
+            # df_transients["qui_max"] = qui_max
+            # df_transients["qui_diff"] = df_transients["qui_max"] - df_transients["qui_min"]
+            df_transients["qui_diff"] = qui_diff
+            print("Found qui_diff.")
+            # df_transients["qui_diff"] = df_transients["magmin"]
+
+            ## Drop rows with a maximum mag of 99
+            df_transients = df_transients.drop(df_transients[df_transients.qui_diff > 30].index)
+            df_transients = df_transients.drop(df_transients[np.isfinite(df_transients.qui_diff) == False].index)
+            df_transients.to_csv(gemtom_gaia_transients_filename)
+
 
         fig.add_trace(
             go.Scatter(
@@ -1281,7 +1484,7 @@ def plot_nightly_hr_diagram(obs_date):
                     # 'RB Score: %{customdata[4]:.2f}<br>'
                     'Mag Diff: %{customdata[5]:.2f}<br>'
                     ,
-                customdata      = [(df_transients['runcat_id'].iloc[i], df_transients["Dist"].iloc[i], df_transients["b_Dist_cds"].iloc[i], df_transients["B_Dist_cdsa"].iloc[i], df_transients["q_rb"].iloc[i], df_transients["qui_diff"].iloc[i]) for i in range(len(df_transients['runcat_id']))],
+                customdata      = [(df_transients['runcat_id'].iloc[i], df_transients["Dist"].iloc[i], df_transients["b_Dist_cds"].iloc[i], df_transients["B_Dist_cdsa"].iloc[i], df_transients[snr].iloc[i], df_transients["qui_diff"].iloc[i]) for i in range(len(df_transients['runcat_id']))],
                 # customdata = [(df_2['x.magerr_zogy'].iloc[i], df_2['x.flux_zogy'].iloc[i], df_2['x.fluxerr_zogy'].iloc[i]) for i in range(len(df_2['x.fluxerr_zogy']))]
                 text            = df_transients['url'],
             ),
@@ -1305,7 +1508,7 @@ def plot_nightly_hr_diagram(obs_date):
                     # 'RB Score: %{customdata[4]:.2f}<br>'
                     'Mag Diff: %{customdata[5]:.2f}<br>'
                     ,
-                customdata      = [(df_cv['runcat_id'].iloc[i], df_cv["Dist"].iloc[i], df_cv["b_Dist_cds"].iloc[i], df_cv["B_Dist_cdsa"].iloc[i], df_cv["q_rb"].iloc[i], df_cv["qui_diff"].iloc[i]) for i in range(len(df_cv['runcat_id']))],
+                customdata      = [(df_cv['runcat_id'].iloc[i], df_cv["Dist"].iloc[i], df_cv["b_Dist_cds"].iloc[i], df_cv["B_Dist_cdsa"].iloc[i], df_cv[snr].iloc[i], df_cv["qui_diff"].iloc[i]) for i in range(len(df_cv['runcat_id']))],
                 text            = df_cv['url'],
 
             )
@@ -1356,8 +1559,8 @@ def plot_nightly_hr_diagram(obs_date):
                                 ],
                                 'customdata': [
                                     None,
-                                    [(df_transients['runcat_id'][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["Dist"][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["b_Dist_cds"][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["B_Dist_cdsa"][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["q_rb"][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["qui_diff"][df_transients["qui_diff"] >= threshold].iloc[i]) for i in range(len(df_transients['runcat_id'][df_transients["qui_diff"] >= threshold]))],
-                                    [(df_cv['runcat_id'][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["Dist"][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["b_Dist_cds"][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["B_Dist_cdsa"][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["q_rb"][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["qui_diff"][df_cv["qui_diff"] >= threshold].iloc[i]) for i in range(len(df_cv['runcat_id'][df_cv["qui_diff"] >= threshold]))],
+                                    [(df_transients['runcat_id'][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["Dist"][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["b_Dist_cds"][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["B_Dist_cdsa"][df_transients["qui_diff"] >= threshold].iloc[i], df_transients[snr][df_transients["qui_diff"] >= threshold].iloc[i], df_transients["qui_diff"][df_transients["qui_diff"] >= threshold].iloc[i]) for i in range(len(df_transients['runcat_id'][df_transients["qui_diff"] >= threshold]))],
+                                    [(df_cv['runcat_id'][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["Dist"][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["b_Dist_cds"][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["B_Dist_cdsa"][df_cv["qui_diff"] >= threshold].iloc[i], df_cv[snr][df_cv["qui_diff"] >= threshold].iloc[i], df_cv["qui_diff"][df_cv["qui_diff"] >= threshold].iloc[i]) for i in range(len(df_cv['runcat_id'][df_cv["qui_diff"] >= threshold]))],
                                 ],
                                 'text' : [
                                     None,
@@ -1366,7 +1569,7 @@ def plot_nightly_hr_diagram(obs_date):
                                 ],
                             },
                         ]
-                    } for threshold in np.arange(0, 11, 1)/10  # Adjust slider granularity as needed
+                    } for threshold in np.arange(0, 21, 1)/10  # Adjust slider granularity as needed
                 ]
             }]
         )
@@ -1417,14 +1620,20 @@ def find_possible_CVs(df):
 
     return df_cv
 
+
 def download_possible_CVs(request):
 
     obs_date = request.POST.get('obs_date')
 
     extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
 
-    df_transients = pd.read_csv("http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_gaia.csv")
-    df_transients = df_transients[df_transients["q_rb"] > 0.8]
+    gaia_transients_filename = get_gaia_filename(obs_date)
+
+    df_transients = pd.read_csv(gaia_transients_filename)
+    try:
+        df_transients = df_transients[df_transients["q_rb"] > 0.8]
+    except:
+        df_transients = df_transients[df_transients["snr"] > 0.8]
     df_transients["M_G"] = df_transients["Gmag"] - (5 * np.log10(df_transients["Dist"]/10))
 
     df_cv = find_possible_CVs(df_transients)
@@ -1499,11 +1708,9 @@ def NightView(request, obs_date):
         "num_in_gaia"                   : num_in_gaia,
         "extragalactic_sources_length"  : extragalactic_sources_length,
         "extragalactic_sources_id"      : extragalactic_sources[0],
-        "extragalactic_sources_name"    : extragalactic_sources[1],
-        "extragalactic_sources_ra"      : extragalactic_sources[2],
-        "extragalactic_sources_dec"     : extragalactic_sources[3],
-        "extragalactic_sources_check"   : extragalactic_sources[4],
-        # "extragalactic_sources_jpg"     : extragalactic_sources[4],
+        "extragalactic_sources_ra"      : extragalactic_sources[1],
+        "extragalactic_sources_dec"     : extragalactic_sources[2],
+        "extragalactic_sources_check"   : extragalactic_sources[3],
         "data_length_plural"            : data_length_plural,
         "data_length_plural_2"          : data_length_plural_2,
         "gaia_plural"                   : gaia_plural,
@@ -1516,7 +1723,7 @@ def NightView(request, obs_date):
         images_daily_text_1 = zip([], ["No transients were recorded by BlackGEM that night."])
     else:
         observed_string = "Yes!"
-        images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
+        images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
         # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
 
     context['observed']                 = observed_string
@@ -1532,6 +1739,10 @@ def NightView(request, obs_date):
     context['orange_fields']    = field_stats[3]
     context['red_fields']       = field_stats[4]
     context['plot_image']       = image_base64
+    context['prev_night']       = datetime.strftime(obs_date_to_datetime(obs_date) - timedelta(1), '%Y%m%d')
+    context['next_night']       = datetime.strftime(obs_date_to_datetime(obs_date) + timedelta(1), '%Y%m%d')
+    # print(context['prev_night'])
+    # print(context['next_night'])
 
     ## Get transients overplotted HR diagram
 
@@ -1645,6 +1856,59 @@ def blackgem_recent_transients():
     return recent_transients
 
 
+def obs_date_to_datetime(obs_date):
+    return datetime.strptime(obs_date, '%Y%m%d')
+
+def does_url_exist(url):
+    response = requests.get(url)
+    if response.status_code == 200: return True
+    else: return False
+
+def get_transients_filenames(obs_date, url_selection="all"):
+    '''
+    Gets the URLs for Hugo's server.
+    Use url_selection = 'transient', 'gaia', or 'extragal' in order to save on time.
+    '''
+
+    extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
+
+    if obs_date_to_datetime(obs_date) < obs_date_to_datetime("20240628"):
+        transient_url  = "http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
+        gaia_url       = "http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_gaia.csv"
+        extragal_url   = "http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_selected.csv"
+        if (url_selection == 'all' or url_selection == 'transient'):
+            if does_url_exist(transient_url)   != True: transient_url = "http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
+        if (url_selection == 'all' or url_selection == 'gaia'):
+            if does_url_exist(gaia_url)        != True: gaia_url      = "http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_gw_BlackGEM_transients_gaia.csv"
+        if (url_selection == 'all' or url_selection == 'extragal'):
+            if does_url_exist(extragal_url)    != True: extragal_url  = "http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_gw_BlackGEM_transients_selected.csv"
+
+    else:
+        transient_url  = "http://34.90.13.7/quick_selection/" + extended_date + "_BlackGEM_transients.csv"
+        gaia_url       = "http://34.90.13.7/quick_selection/" + extended_date + "_BlackGEM_transients_gaia.csv"
+        extragal_url   = "http://34.90.13.7/quick_selection/" + extended_date + "_BlackGEM_transients_selected.csv"
+
+    if   url_selection == "all":         return [transient_url, gaia_url, extragal_url]
+    elif url_selection == "transient":   return transient_url
+    elif url_selection == "gaia":        return gaia_url
+    elif url_selection == "extragal":    return extragal_url
+
+
+
+# def get_gaia_filename(obs_date):
+#
+#     extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
+#
+#     if obs_date_to_datetime(obs_date) < obs_date_to_datetime("20240628"):
+#         base_gaia_url = "http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_gaia.csv"
+#         if does_url_exist(base_gaia_url) == True:
+#             return base_gaia_url
+#         else
+#             return "http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_gw_BlackGEM_transients_gaia.csv"
+#     else:
+#         return "http://34.90.13.7/quick_selection/" + extended_date + "_BlackGEM_transients_alerts_gaia.csv"
+
+
 def get_recent_blackgem_transients(days_since_last_update):
 
     obs_date = date.today() - timedelta(1)
@@ -1657,8 +1921,6 @@ def get_recent_blackgem_transients(days_since_last_update):
 
     if days_since_last_update > 30:
         days_since_last_update = 30
-
-    base_url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/'
 
     datestamp = datetime.strptime(obs_date, "%Y%m%d")
 
@@ -1676,21 +1938,30 @@ def get_recent_blackgem_transients(days_since_last_update):
     num_sources = 0
     for obs_date in dates:
         extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
-
-        ## Get the list of files from Hugo's server
-        files = list_files(base_url + obs_date)
-
-        ## Check to find the transients file. It could be under one of two names...
-        if extended_date+"_gw_BlackGEM_transients.csv" in files:
-            transients_filename = base_url + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
+        # print("Bark!")
+        transients_filename = get_transients_filenames(obs_date, url_selection="transient")
+        try:
             data = pd.read_csv(transients_filename)
-        elif extended_date+"_BlackGEM_transients.csv" in files:
-            transients_filename = base_url + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
-            data = pd.read_csv(transients_filename)
-        else:
+        except Exception as e:
             ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
-            print("No transients on", obs_date)
+            print("No transients on ", obs_date, ":", sep="")
+            print(e)
             continue
+
+        # ## Get the list of files from Hugo's server
+        # files = list_files(base_url + obs_date)
+        #
+        # ## Check to find the transients file. It could be under one of two names...
+        # if extended_date+"_gw_BlackGEM_transients.csv" in files:
+        #     transients_filename = base_url + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
+        #     data = pd.read_csv(transients_filename)
+        # elif extended_date+"_BlackGEM_transients.csv" in files:
+        #     transients_filename = base_url + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
+        #     data = pd.read_csv(transients_filename)
+        # else:
+        #     ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
+        #     print("No transients on", obs_date)
+        #     continue
 
 
         d           = pd.Series([extended_date])

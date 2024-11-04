@@ -228,8 +228,8 @@ BlackGEM observed {{ num_fields }} fields:<br>
 
 <!-- <p>{{ images_daily_text_1 }}</p> -->
 {% if extragalactic_sources_id %}
-    {% for image_url, source_id, source_name, source_ra, source_dec, check in images_daily_text_1 %}
-        <h6> BlackGEM ID = {{ source_id }} ({{source_name}})</h6>
+    {% for image_url, source_id, source_ra, source_dec, check in images_daily_text_1 %}
+        <h6> BlackGEM ID = {{ source_id }}</h6>
         <div class="image-row">
             {% for url in image_url %}
                 {% if url %}
