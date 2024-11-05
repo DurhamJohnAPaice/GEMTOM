@@ -1360,6 +1360,7 @@ def hugo_2_GEMTOM(df):
         'u_max' : df.u_max,
         'i_min' : df.i_min,
         'i_max' : df.i_max,
+        'q_rb' : df.q_rb,
         'Gmag' : df.Gmag,
         'BP-RP' : df["BP-RP"],
         'Dist' : df.Dist,
@@ -1382,14 +1383,11 @@ def hugo_2_GEMTOM(df):
 
     return df_new
 
-def plot_nightly_hr_diagram(obs_date):
+def plot_nightly_hr_diagram(obs_date, gaia_filename):
 
-    extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
+    # extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
 
-    if obs_date_to_datetime(obs_date) < obs_date_to_datetime("20240628"):
-        gaia_transients_filename = "http://xmm-ssc.irap.omp.eu/claxson/BG_images/" + obs_date + "/" + extended_date + "_BlackGEM_transients_gaia.csv"
-    else:
-        gaia_transients_filename = "http://34.90.13.7/quick_selection/" + extended_date + "_BlackGEM_transients_gaia.csv"
+    gaia_transients_filename = gaia_filename
 
     ## Get Gaia data
     df_gaia = pd.read_csv("./data/gaia_nearbystars_hr.txt", sep=",")
@@ -1422,8 +1420,8 @@ def plot_nightly_hr_diagram(obs_date):
         df_transients = pd.read_csv(gemtom_gaia_transients_filename)
         to_process = False
         print("Previously-made transients file found for this date. Reading in.")
-        if 'snr' in df_transients:  snr = "snr"
-        else:                       snr = "q_rb"
+        if 'q_rb' in df_transients:  snr = "q_rb"
+        else:                        snr = "snr"
     else:
         print("No transients file found for this date. Finding from scratch.")
         print("Looking for file (" + gaia_transients_filename + ")...", sep="")
@@ -1432,11 +1430,10 @@ def plot_nightly_hr_diagram(obs_date):
 
             if "http://xmm-ssc" in gaia_transients_filename:
                 snr = "q_rb"
-                print("File found!")
             else:
                 print("File found; trying to update...", sep="")
                 df_transients = hugo_2_GEMTOM(df_transients)
-                snr = "snr"
+                snr = "q_rb"
 
             print("File found!")
 
@@ -1776,7 +1773,7 @@ def NightView(request, obs_date):
 
     ## Get transients overplotted HR diagram
 
-    fig = plot_nightly_hr_diagram(obs_date)
+    fig = plot_nightly_hr_diagram(obs_date, gaia_filename)
     lightcurve = plot(fig, output_type='div')
     context['lightcurve']       = lightcurve
 
@@ -1890,15 +1887,23 @@ def obs_date_to_datetime(obs_date):
     return datetime.strptime(obs_date, '%Y%m%d')
 
 def does_url_exist(url):
+    print("Checking url:", url, end="")
     response = requests.get(url)
-    if response.status_code == 200: return True
-    else: return False
+    if response.status_code == 200:
+        print(" - Found!")
+        return True
+    else:
+        print(" - Not found :(")
+        return False
 
 def get_transients_filenames(obs_date, url_selection="all"):
     '''
     Gets the URLs for Hugo's server.
     Use url_selection = 'transient', 'gaia', or 'extragal' in order to save on time.
     '''
+    if url_selection == "all": url_plural = "s"
+    else: url_plural = ""
+    print("Looking for ", url_selection, " URL", url_plural, "...", sep="")
 
     extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
 
@@ -1918,10 +1923,14 @@ def get_transients_filenames(obs_date, url_selection="all"):
         gaia_url       = "http://34.90.13.7/quick_selection/" + extended_date + "_BlackGEM_transients_gaia.csv"
         extragal_url   = "http://34.90.13.7/quick_selection/" + extended_date + "_BlackGEM_transients_selected.csv"
 
-    if   url_selection == "all":         return [transient_url, gaia_url, extragal_url]
-    elif url_selection == "transient":   return transient_url
-    elif url_selection == "gaia":        return gaia_url
-    elif url_selection == "extragal":    return extragal_url
+    if   url_selection == "all":
+        print("Transient URL:    ", transient_url)
+        print("Gaia URL:         ", gaia_url)
+        print("Extragalactic URL:", extragal_url)
+        return [transient_url, gaia_url, extragal_url]
+    elif url_selection == "transient":   print("Transient URL:", transient_url); return transient_url
+    elif url_selection == "gaia":        print("Gaia URL:", gaia_url); return gaia_url
+    elif url_selection == "extragal":    print("Extragalactic URL:", extragal_url); return extragal_url
 
 
 
