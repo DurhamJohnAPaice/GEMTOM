@@ -22,11 +22,24 @@ On this page, you can find the data for a specific BlackGEM transient.
 <h6>{{ iau_name }}<br></h6>
 <h6>RA: {{ ra }}, Dec: {{ dec }}<br></h6>
 
-<a href="#" onclick='window.open("https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}");return false;'><em>BlackView</em> webpage for this source</a>
-<br>
+<!-- <a href="#" onclick='window.open("https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}");return false;'><em>BlackView</em> webpage for this source</a> -->
+<!-- <br> -->
 
 <!-- &nbsp; -->
 <div style="padding:5px">
+
+</div>
+
+<div class="row">
+  <div class="col-md-4" style="
+    border-right:thin solid #dddddd;
+    text-align:center;
+    vertical-align: middle;">
+        <h6><a class="btn btn-outline-primary" href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}" target="_blank">BlackView</a></h6>
+  </div>
+  <div class="col-md-4" style=
+    "border-right:thin solid #dddddd;
+    text-align:center">
     <form method="post" action="{% url 'history_to_GEMTOM' %}" class="image-form">
         {% csrf_token %}
         <input type="hidden" name="id" value="{{ bgem_id }}">
@@ -35,6 +48,13 @@ On this page, you can find the data for a specific BlackGEM transient.
         <input type="hidden" name="dec" value="{{ dec }}">
         <button type="submit" class="btn btn-primary">Add to GEMTOM</button>
     </form>
+  </div>
+  <div class="col-md-4" style=
+    "text-align:center;
+    vertical-align: middle;">
+        <h6><a class="btn btn-outline-primary" href="https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ ra }}d{{ dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=2&Radius.unit=arcmin&submit=submit+query&CoordList=" target="_blank">SIMBAD</a></h6>
+        <!-- <a href="#" onclick='window.open("https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ target_ra }}d{{ target_dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=2&Radius.unit=arcmin&submit=submit+query&CoordList=");return false;'>SIMBAD page</a> -->
+  </div>
 </div>
 
 {% if tns_flag %}

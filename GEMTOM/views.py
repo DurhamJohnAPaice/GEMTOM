@@ -1886,6 +1886,9 @@ def blackgem_recent_transients():
 def obs_date_to_datetime(obs_date):
     return datetime.strptime(obs_date, '%Y%m%d')
 
+def datetime_to_obsdate(datetime):
+    return datetime.strftime('%Y%m%d')
+
 def does_url_exist(url):
     print("Checking url:", url, end="")
     response = requests.get(url)
