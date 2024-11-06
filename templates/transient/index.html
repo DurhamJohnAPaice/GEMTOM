@@ -32,13 +32,15 @@ On this page, you can find the data for a specific BlackGEM transient.
 
 <div class="row">
   <div class="col-md-4" style="
+    padding:5px;
     border-right:thin solid #dddddd;
     text-align:center;
     vertical-align: middle;">
         <h6><a class="btn btn-outline-primary" href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}" target="_blank">BlackView</a></h6>
   </div>
-  <div class="col-md-4" style=
-    "border-right:thin solid #dddddd;
+  <div class="col-md-4" style="
+    padding:5px;
+    border-right:thin solid #dddddd;
     text-align:center;
     vertical-align: middle;">
     <form method="post" action="{% url 'history_to_GEMTOM' %}" class="image-form">
@@ -50,8 +52,9 @@ On this page, you can find the data for a specific BlackGEM transient.
         <button type="submit" class="btn btn-primary">Add to GEMTOM</button>
     </form>
   </div>
-  <div class="col-md-4" style=
-    "text-align:center;
+  <div class="col-md-4" style="
+    padding:5px;
+    text-align:center;
     vertical-align: middle;">
         <h6><a class="btn btn-outline-primary" href="https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ ra }}d{{ dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=2&Radius.unit=arcmin&submit=submit+query&CoordList=" target="_blank">SIMBAD</a></h6>
         <!-- <a href="#" onclick='window.open("https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ target_ra }}d{{ target_dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=2&Radius.unit=arcmin&submit=submit+query&CoordList=");return false;'>SIMBAD page</a> -->
