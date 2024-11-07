@@ -800,6 +800,8 @@ def get_any_nights_sky_plot(night):
         ra = ra.wrap_at(180*u.degree)
         dec = coord.Angle(dec_list, unit=u.degree)
 
+        plt.close("all")
+
         ## Plot!
         fig = plt.figure(figsize=(8,5), dpi=110)
         ax = fig.add_subplot(111, projection="mollweide")
@@ -990,9 +992,11 @@ def get_blackgem_stats(obs_date):
     mjd = int(Time(extended_date + "T00:00:00.00", scale='utc').mjd)
 
     base_url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/'
+    new_base_url = "http://34.90.13.7/quick_selection/"
 
     ## Get the list of files from Hugo's server
     files = list_files(base_url + obs_date)
+    new_files = list_files(new_base_url)
 
     transients_filename, gaia_filename, extragalactic_filename = get_transients_filenames(obs_date, url_selection="all")
 
@@ -1015,7 +1019,7 @@ def get_blackgem_stats(obs_date):
         num_in_gaia = "0"
 
     try:
-        extragalactic_data = pd.read_csv(gaia_filename)
+        extragalactic_data = pd.read_csv(extragalactic_filename)
     except Exception as e:
         ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
         print("No extragalactic sources on ", obs_date, ":", sep="")
@@ -1030,43 +1034,100 @@ def get_blackgem_stats(obs_date):
     extragalactic_sources_dec   = []
     extragalactic_sources_check = []
 
-    ## For each image file...
-    # print(files)
-    # print(extragalactic_filename)
-    for file in files:
-        if ".png" in file:
-            ## Save the URL...
-            images_urls.append(base_url + obs_date + "/" + file[2:])
+    image_type = False
+    if extragalactic_filename:
+        if 'xmm' in extragalactic_filename:
+            # For each image file...
+            image_type = True
+            for file in files:
+                if ".png" in file:
+                    ## Save the URL...
+                    images_urls.append(base_url + obs_date + "/" + file[2:])
 
-            ## If we haven't got the data yet...
-            if file[2:10] not in extragalactic_sources_id:
+                    ## If we haven't got the data yet...
+                    if file[2:10] not in extragalactic_sources_id:
 
-                ## Save the ID...
-                extragalactic_sources_id.append(file[2:10])
+                        ## Save the ID...
+                        extragalactic_sources_id.append(file[2:10])
+                        runcat_id_list = list(extragalactic_data['runcat_id'])
+                        print(int(file[2:10]) in runcat_id_list)
 
-                ## And if there's extragalactic data...
-                if extragalactic_filename:
-                    runcat_id_list = list(extragalactic_data['runcat_id'])
-                    print(int(file[2:10]) in runcat_id_list)
+                        ## And this source is in that data...
+                        if int(file[2:10]) in runcat_id_list:
+                            ## Save the name, RA, dec, and look for a lightcurve.
+                            row_number = runcat_id_list.index(int(file[2:10]))
+                            extragalactic_sources_ra.append(  extragalactic_data['ra'][row_number])
+                            extragalactic_sources_dec.append( extragalactic_data['dec'][row_number])
+                            extragalactic_sources_check.append(True)
+                            # extragalactic_sources_jpg.append(get_lightcurve(file[2:10]))
+                        else:
+                            ## If it's not, state they're all unknown.
+                            extragalactic_sources_ra.append("(Unknown)")
+                            extragalactic_sources_dec.append("(Unknown)")
+                            extragalactic_sources_check.append(False)
+                            # extragalactic_sources_jpg.append("")
 
-                    ## And this source is in that data...
-                    if int(file[2:10]) in runcat_id_list:
-                        ## Save the name, RA, dec, and look for a lightcurve.
-                        row_number = runcat_id_list.index(int(file[2:10]))
-                        extragalactic_sources_ra.append(  extragalactic_data['ra'][row_number])
-                        extragalactic_sources_dec.append( extragalactic_data['dec'][row_number])
-                        extragalactic_sources_check.append(True)
-                        # extragalactic_sources_jpg.append(get_lightcurve(file[2:10]))
-                    else:
-                        ## If it's not, state they're all unknown.
-                        extragalactic_sources_ra.append("(Unknown)")
-                        extragalactic_sources_dec.append("(Unknown)")
-                        extragalactic_sources_check.append(False)
-                        # extragalactic_sources_jpg.append("")
+        ## Files from the new server
+        else:
+            extragalactic_sources_id = list(extragalactic_data['runcat_id'])
+            extragalactic_sources_ra = list(extragalactic_data['ra'])
+            extragalactic_sources_dec = list(extragalactic_data['dec'])
+            extragalactic_sources_check = [True] * len(extragalactic_sources_ra)
+
+            for runcat_id in list(extragalactic_data['runcat_id']):
+                if str(runcat_id) + "_cutouts_lc.png" in new_files:
+                    images_urls.append(new_base_url + str(runcat_id) + "_cutouts_lc.png")
+
+
+
+
+    # if extragalactic_filename:
+    #     runcat_id_list = list(extragalactic_data['runcat_id'])
+    #     print(runcat_id_list)
+    #     for file in new_files:
+    #         if "_cutouts_lc.png" in file:
+    #             file_parts = file.split("_")
+    #
+    #             # print(file_parts[0])
+    #             if int(float(file_parts[0])) in runcat_id_list:
+    #                 row_number = runcat_id_list.index(int(file_parts[0]))
+    #                 extragalactic_sources_ra.append(  extragalactic_data['ra'][row_number])
+    #                 extragalactic_sources_dec.append( extragalactic_data['dec'][row_number])
+    #                 extragalactic_sources_check.append(True)
+    #                 images_urls.append(new_base_url + file)
+
+    # print(type(file_parts[0]))
+    # print(type(runcat_id_list[0]))
+    # print(images_urls)
+            # ## If we haven't got the data yet...
+            # if file[2:10] not in extragalactic_sources_id:
+            #
+            #     ## Save the ID...
+            #     extragalactic_sources_id.append(file[2:10])
+            #
+            #     ## And if there's extragalactic data...
+            #     if extragalactic_filename:
+            #         runcat_id_list = list(extragalactic_data['runcat_id'])
+            #         print(int(file[2:10]) in runcat_id_list)
+            #
+            #         ## And this source is in that data...
+            #         if int(file[2:10]) in runcat_id_list:
+            #             ## Save the name, RA, dec, and look for a lightcurve.
+            #             row_number = runcat_id_list.index(int(file[2:10]))
+            #             extragalactic_sources_ra.append(  extragalactic_data['ra'][row_number])
+            #             extragalactic_sources_dec.append( extragalactic_data['dec'][row_number])
+            #             extragalactic_sources_check.append(True)
+            #             # extragalactic_sources_jpg.append(get_lightcurve(file[2:10]))
+            #         else:
+            #             ## If it's not, state they're all unknown.
+            #             extragalactic_sources_ra.append("(Unknown)")
+            #             extragalactic_sources_dec.append("(Unknown)")
+            #             extragalactic_sources_check.append(False)
+            #             # extragalactic_sources_jpg.append("")
 
     ## Combine these together.
     # extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_jpg]
-    extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_check]
+    extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_check, image_type]
     # print(extragalactic_sources)
     # print(extragalactic_sources_ra)
     # print(extragalactic_sources_dec)
@@ -1075,8 +1136,10 @@ def get_blackgem_stats(obs_date):
     ## Sort the images into a list, separated into each source
     images_urls_sorted = []
     for this_source in extragalactic_sources[0]:
-        matching = [url for url in images_urls if this_source in url]
+        matching = [url for url in images_urls if str(this_source) in url]
         images_urls_sorted.append(matching)
+
+    print(extragalactic_sources_id)
 
     num_new_transients  = str(len(data))
     num_extragalactic   = str(len(extragalactic_sources[0]))
@@ -1147,7 +1210,7 @@ def history_daily():
             history_daily_text_4 = extragalactic_sources_string
             # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0])
             images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
-            # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
+            # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
 
 
     else:
@@ -1626,6 +1689,7 @@ def NightView(request, obs_date):
         "extragalactic_sources_ra"      : extragalactic_sources[1],
         "extragalactic_sources_dec"     : extragalactic_sources[2],
         "extragalactic_sources_check"   : extragalactic_sources[3],
+        "image_type"                    : extragalactic_sources[4],
         "data_length_plural"            : data_length_plural,
         "data_length_plural_2"          : data_length_plural_2,
         "gaia_plural"                   : gaia_plural,
@@ -1638,8 +1702,8 @@ def NightView(request, obs_date):
         images_daily_text_1 = zip([], ["No transients were recorded by BlackGEM that night."])
     else:
         observed_string = "Yes!"
-        images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
         # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
+        images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
 
     context['observed']                 = observed_string
     context['images_daily_text_1']      = images_daily_text_1
