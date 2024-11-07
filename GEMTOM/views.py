@@ -218,6 +218,24 @@ def add_to_GEMTOM(id, name, ra, dec, tns_prefix=False, tns_name=False):
 def test_print():
     print("Hello World!")
 
+def download_lightcurve(request):
+
+    bgem_id = request.POST.get('bgem_id')
+
+    df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
+
+    # Convert DataFrame to CSV string
+    csv_string = df_bgem_lightcurve.to_csv(index=False)
+
+    # Create the HttpResponse object with appropriate headers for CSV.
+    response = HttpResponse(csv_string, content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="BGEM_' + bgem_id + '_lightcurve.csv"'
+    # response['Content-Disposition'] = 'attachment; filename="BlackGEM_Potential_CVs_' + bgem_id + '.csv"'
+
+    # Return the response which prompts the download
+    return response
+
+
 def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 
     # print("\n\nBark!")
@@ -651,101 +669,6 @@ def get_recent_blackgem_history(days_since_last_update):
         dates.append(extended_date)
         mjds.append(this_mjd)
 
-        # base_url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/'
-        #
-        # ## Get the list of files from Hugo's server
-        # files = list_files(base_url + obs_date)
-        #
-        # transients_filename, gaia_filename, extragalactic_filename = get_transients_filenames(obs_date, url_selection="all")
-        #
-        # try:
-        #     data = pd.read_csv(transients_filename)
-        # except Exception as e:
-        #     ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
-        #     print("No transients on ", obs_date, ":", sep="")
-        #     print(e)
-        #     observed.append("No")
-        #     transients.append("0")
-        #     gaia.append("0")
-        #     extragalactic.append("0")
-        #     continue
-        #
-        # try:
-        #     data_gaia = pd.read_csv(gaia_filename)
-        #     num_in_gaia = str(len(data_gaia))
-        # except Exception as e:
-        #     ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
-        #     print("No gaia crossmatches on ", obs_date, ":", sep="")
-        #     print(e)
-        #     gaia_filename = ""
-        #     num_in_gaia = "0"
-        #     continue
-        #
-        # try:
-        #     extragalactic_data = pd.read_csv(gaia_filename)
-        # except Exception as e:
-        #     ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
-        #     print("No extragalactic sources on ", obs_date, ":", sep="")
-        #     print(e)
-        #     extragalactic_filename = ""
-        #     continue
-
-        # ## Check to find the transients file. It could be under one of two names...
-        # if extended_date+"_gw_BlackGEM_transients.csv" in files:
-        #     transients_filename = base_url + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
-        #     data = pd.read_csv(transients_filename)
-        # elif extended_date+"_BlackGEM_transients.csv" in files:
-        #     transients_filename = base_url + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
-        #     data = pd.read_csv(transients_filename)
-        # else:
-        #     ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
-        #     # return "0", "0", "0", ["","","","", ""], "", "", "", ""
-        #     observed.append("No")
-        #     transients.append("0")
-        #     gaia.append("0")
-        #     extragalactic.append("0")
-        #     continue
-
-        # ## Check to find the gaia crossmatched file. It could be under one of two names...
-        # if extended_date+"_gw_BlackGEM_transients_gaia.csv" in files:
-        #     gaia_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv"
-        #     data_gaia = pd.read_csv(gaia_filename)
-        #     num_in_gaia = str(len(data_gaia))
-        # elif extended_date+"_BlackGEM_transients_gaia.csv" in files:
-        #     gaia_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_gaia.csv"
-        #     data_gaia = pd.read_csv(gaia_filename)
-        #     num_in_gaia = str(len(data_gaia))
-        # else:
-        #     ## If it doesn't exist, assume no gaia crossmatches were found.
-        #     gaia_filename = ""
-        #     num_in_gaia = "0"
-
-        # ## Check to find the extragalactic file. It could be under one of two names...
-        # if extended_date+"_gw_BlackGEM_transients_selected.csv" in files:
-        #     extragalactic_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv"
-        #     extragalactic_data = pd.read_csv(extragalactic_filename)
-        # elif extended_date+"_BlackGEM_transients_selected.csv" in files:
-        #     extragalactic_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_selected.csv"
-        #     extragalactic_data = pd.read_csv(extragalactic_filename)
-        # else:
-        #     ## If it doesn't exist, assume no extragalactic sources were found.
-        #     extragalactic_filename = ""
-
-        # extragalactic_sources_id = []
-        # ## For each image file...
-        # for file in files:
-        #     if ".png" in file:
-        #         ## If we haven't got the data yet...
-        #         if file[2:10] not in extragalactic_sources_id:
-        #             ## Save the ID...
-        #             extragalactic_sources_id.append(file[2:10])
-        #
-        # print(extended_date + " (MJD " + str(this_mjd) + "): BlackGEM found " + str(len(data)) + " transients (" + str(len(data_gaia)) + " in Gaia, " + str(len(extragalactic_sources_id)) + " extragalactic).")
-        # observed.append("Yes")
-        # transients.append(len(data))
-        # gaia.append(len(data_gaia))
-        # extragalactic.append(len(extragalactic_sources_id))
-
         num_new_transients, num_in_gaia, num_extragalactic, extragalactic_sources, extragalactic_urls, \
             transients_filename, gaia_filename, extragalactic_filename =  get_blackgem_stats(obs_date)
 
@@ -1099,42 +1022,6 @@ def get_blackgem_stats(obs_date):
         print(e)
         extragalactic_filename = ""
 
-    # ## Check to find the transients file. It could be under one of two names...
-    # if extended_date+"_gw_BlackGEM_transients.csv" in files:
-    #     transients_filename = base_url + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
-    #     data = pd.read_csv(transients_filename)
-    # elif extended_date+"_BlackGEM_transients.csv" in files:
-    #     transients_filename = base_url + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
-    #     data = pd.read_csv(transients_filename)
-    # else:
-    #     ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
-    #     return "0", "0", "0", ["","","","", ""], "", "", "", ""
-    #
-    # ## Check to find the gaia crossmatched file. It could be under one of two names...
-    # if extended_date+"_gw_BlackGEM_transients_gaia.csv" in files:
-    #     gaia_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_gaia.csv"
-    #     data_gaia = pd.read_csv(gaia_filename)
-    #     num_in_gaia = str(len(data_gaia))
-    # elif extended_date+"_BlackGEM_transients_gaia.csv" in files:
-    #     gaia_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_gaia.csv"
-    #     data_gaia = pd.read_csv(gaia_filename)
-    #     num_in_gaia = str(len(data_gaia))
-    # else:
-    #     ## If it doesn't exist, assume no gaia crossmatches were found.
-    #     gaia_filename = ""
-    #     num_in_gaia = "0"
-    #
-    # ## Check to find the extragalactic file. It could be under one of two names...
-    # if extended_date+"_gw_BlackGEM_transients_selected.csv" in files:
-    #     extragalactic_filename = base_url + obs_date + "/"+extended_date+"_gw_BlackGEM_transients_selected.csv"
-    #     extragalactic_data = pd.read_csv(extragalactic_filename)
-    # elif extended_date+"_BlackGEM_transients_selected.csv" in files:
-    #     extragalactic_filename = base_url + obs_date + "/"+extended_date+"_BlackGEM_transients_selected.csv"
-    #     extragalactic_data = pd.read_csv(extragalactic_filename)
-    # else:
-    #     ## If it doesn't exist, assume no extragalactic sources were found.
-    #     extragalactic_filename = ""
-
     ## --- Find the details of each extragalactic source ---
     images_urls                 = []
     extragalactic_sources       = []
@@ -1160,6 +1047,7 @@ def get_blackgem_stats(obs_date):
                 ## And if there's extragalactic data...
                 if extragalactic_filename:
                     runcat_id_list = list(extragalactic_data['runcat_id'])
+                    print(int(file[2:10]) in runcat_id_list)
 
                     ## And this source is in that data...
                     if int(file[2:10]) in runcat_id_list:
@@ -1654,7 +1542,7 @@ def download_possible_CVs(request):
 
     extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
 
-    gaia_transients_filename = get_gaia_filename(obs_date)
+    gaia_transients_filename = get_transients_filenames(obs_date, 'gaia')
 
     df_transients = pd.read_csv(gaia_transients_filename)
     try:
@@ -2378,9 +2266,6 @@ def BGEM_ID_View(request, bgem_id):
     ## --- Lightcurve ---
     fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
     lightcurve = plot(fig, output_type='div')
-
-    # Pass the plot_div to the template
-    # return render(request, 'transient/index.html')
 
     ## Get the name, ra, and dec:
     bg = authenticate_blackgem()

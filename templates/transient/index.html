@@ -9,6 +9,28 @@
 <link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-grid.css">
 <link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-theme-balham.css">
 </head>
+{% load plotly_dash %}
+
+<style>
+    .lightcurve-container {
+        width: 100%;
+        height: 600px;
+        justify-content: center;
+        align-items: center;
+    }
+    .dash-container {
+        width: 100%;
+        height: 400px;
+        justify-content: center;
+        align-items: center;
+    }
+    .dash-container-small {
+        width: 100%;
+        height: 200px;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
 
 <div align="center">
 
@@ -95,6 +117,13 @@ On this page, you can find the data for a specific BlackGEM transient.
 <!-- <h5>Lightcurves</h5> -->
 {{ lightcurve|safe }}
 
+<!-- Button to trigger the CSV generation -->
+<form method="post" action="{% url 'download_lightcurve' %}" class="image-form">
+    {% csrf_token %}
+    <input type="hidden" name="bgem_id" value="{{ bgem_id }}">
+    <button type="submit" class="btn btn-outline-primary">Download Lightcurve</button>
+</form>
+
 <!-- Possible Columns:
 <br>
 |
@@ -121,23 +150,7 @@ On this page, you can find the data for a specific BlackGEM transient.
 
         <h5>Full Observation Data</h5>
 
-        <style>
-            .dash-container {
-                width: 100%;
-                height: 400px;
-                justify-content: center;
-                align-items: center;
-            }
-            .dash-container-small {
-                width: 100%;
-                height: 200px;
-                justify-content: center;
-                align-items: center;
-            }
-        </style>
 
-
-        {% load plotly_dash %}
         <div class="dash-container">
             {% plotly_app name="EachObservation" ratio=0.85 %}
         </div>

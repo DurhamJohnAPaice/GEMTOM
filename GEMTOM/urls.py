@@ -62,6 +62,7 @@ urlpatterns = [
 
     path('ToOs/', ToOView.as_view(), name='ToOs'),
 
+    path('download_lightcurve/', download_lightcurve, name='download_lightcurve'),
     path('download_possible_CVs/', download_possible_CVs, name='download_possible_CVs'),
 
     # path('ToOs/', too_view, name='ToOs'),
