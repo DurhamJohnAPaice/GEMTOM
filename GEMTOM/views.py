@@ -172,11 +172,11 @@ def list_files(url):
         return []
 
 
-def get_lightcurve(source_id):
+def get_lightcurve(bgem_id):
     '''
     Fetches the lightcurve from Hugo's server. Returns blank if no lightcurve exists.
     '''
-    url = "http://xmm-ssc.irap.omp.eu/claxson/BG_images/lcrequests/" + source_id + "_lc.jpg"
+    url = "http://xmm-ssc.irap.omp.eu/claxson/BG_images/lcrequests/" + bgem_id + "_lc.jpg"
     r = requests.get(url)
     if r.status_code != 404:
         return url
@@ -864,57 +864,59 @@ def get_any_nights_sky_plot(night):
 class HistoryView(TemplateView):
     template_name = 'history.html'
 
-    def post(self, request, **kwargs):
-        # date = '20240424'
-        obs_date  = request.POST['obs_date']
+    print("Navigating to history...")
 
-        extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
-
-        try:
-            mjd = int(Time(extended_date + "T00:00:00.00", scale='utc').mjd)
-        except:
-            raise RuntimeError("Inputted date is not valid!")
-
-        print("")
-        print("Hello! Welcome to the BlackGEM Transient fetcher.")
-        print("Looking for data from ", extended_date, "...", sep="")
-        print("")
-
-        try:
-            data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
-                transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(obs_date)
-
-
-            if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
-            else: data_length_plural = "s"; data_length_plural_2 = "ve"
-            if extragalactic_sources_length == "1": extragalactic_sources_plural = ""
-            else: extragalactic_sources_plural = "s"
-
-            extragalactic_sources_string = ""
-            lightcurve_urls = []
-            for source in extragalactic_sources[0]:
-                extragalactic_sources_string += source + ", "
-
-
-            images_urls_string = ""
-            for this_source in images_urls_sorted:
-                for image in this_source:
-                    images_urls_string += "<a href=\"" + image + "\">" + image + "</a><br>"
-
-
-            return HttpResponse("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " transient" + data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec). <br>" +
-             "BlackGEM recorded pictures of the following " + extragalactic_sources_length + " possible extragalactic transient" + extragalactic_sources_plural + ": <br> " +
-             extragalactic_sources_string + "<br>" +
-             images_urls_string)
-
-
-        except Exception as e:
-            if '404' in str(e):
-                print("No transients were recorded by BlackGEM on " + extended_date + " (MJD " + str(mjd) + ").")
-                return HttpResponse("No transients were recorded by BlackGEM on " + extended_date + " (MJD " + str(mjd) + ").")
-
-            else:
-                return HttpResponse(e)
+    # def post(self, request, **kwargs):
+    #     # date = '20240424'
+    #     obs_date  = request.POST['obs_date']
+    #
+    #     extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
+    #
+    #     try:
+    #         mjd = int(Time(extended_date + "T00:00:00.00", scale='utc').mjd)
+    #     except:
+    #         raise RuntimeError("Inputted date is not valid!")
+    #
+    #     print("")
+    #     print("Hello! Welcome to the BlackGEM Transient fetcher.")
+    #     print("Looking for data from ", extended_date, "...", sep="")
+    #     print("")
+    #
+    #     try:
+    #         data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
+    #             transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(obs_date)
+    #
+    #
+    #         if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
+    #         else: data_length_plural = "s"; data_length_plural_2 = "ve"
+    #         if extragalactic_sources_length == "1": extragalactic_sources_plural = ""
+    #         else: extragalactic_sources_plural = "s"
+    #
+    #         # extragalactic_sources_string = ""
+    #         # lightcurve_urls = []
+    #         # for source in extragalactic_sources[0]:
+    #             # extragalactic_sources_string += source + ", "
+    #
+    #
+    #         images_urls_string = ""
+    #         for this_source in images_urls_sorted:
+    #             for image in this_source:
+    #                 images_urls_string += "<a href=\"" + image + "\">" + image + "</a><br>"
+    #
+    #
+    #         # return HttpResponse("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " transient" + data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec). <br>" +
+    #         #  "BlackGEM recorded pictures of the following " + extragalactic_sources_length + " possible extragalactic transient" + extragalactic_sources_plural + ": <br> " +
+    #         #  extragalactic_sources_string + "<br>" +
+    #         #  images_urls_string)
+    #
+    #
+    #     except Exception as e:
+    #         if '404' in str(e):
+    #             print("No transients were recorded by BlackGEM on " + extended_date + " (MJD " + str(mjd) + ").")
+    #             return HttpResponse("No transients were recorded by BlackGEM on " + extended_date + " (MJD " + str(mjd) + ").")
+    #
+    #         else:
+    #             return HttpResponse(e)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -922,7 +924,6 @@ class HistoryView(TemplateView):
         context['history_daily_text_1'], \
             context['history_daily_text_2'], \
             context['history_daily_text_3'], \
-            context['history_daily_text_4'], \
             context['images_daily_text_1'], \
             context['extragalactic_sources_id'], \
             context['transients_filename'], \
@@ -1177,7 +1178,7 @@ def history_daily():
             history_daily_text_1         = "No transients were recorded by BlackGEM last night (" + extended_yesterday_date + ")"
             history_daily_text_2         = ""
             history_daily_text_3         = ""
-            history_daily_text_4         = ""
+            # history_daily_text_4         = ""
             images_daily_text_1         = zip([], ["No transients were recorded by BlackGEM last night."])
 
         else:
@@ -1188,7 +1189,8 @@ def history_daily():
 
             extragalactic_sources_string = ""
             for source in extragalactic_sources[0]:
-                extragalactic_sources_string += source + ", "
+                extragalactic_sources_string += str(source) + ", "
+            print(extragalactic_sources_string)
 
             ## Update the most recent row of the recent history
             current_history = blackgem_history()
@@ -1207,7 +1209,7 @@ def history_daily():
             extragalactic_sources_id = extragalactic_sources[0]
             history_daily_text_2 = "On " + extended_yesterday_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " transient" + data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec)."
             history_daily_text_3 = "BlackGEM recorded pictures of " + extragalactic_sources_length + " possible extragalactic transient" + extragalactic_sources_plural + "."
-            history_daily_text_4 = extragalactic_sources_string
+            # history_daily_text_4 = extragalactic_sources_string
             # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0])
             images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
             # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
@@ -1221,11 +1223,11 @@ def history_daily():
         history_daily_text_1         = "No transients were recorded by BlackGEM last night (" + extended_yesterday_date + ")"
         history_daily_text_2         = ""
         history_daily_text_3         = ""
-        history_daily_text_4         = ""
+        # history_daily_text_4         = ""
         images_daily_text_1         = zip([], ["No transients were recorded by BlackGEM last night."])
 
 
-    return history_daily_text_1, history_daily_text_2, history_daily_text_3, history_daily_text_4, images_daily_text_1, extragalactic_sources_id, transients_filename, gaia_filename, extragalactic_filename
+    return history_daily_text_1, history_daily_text_2, history_daily_text_3, images_daily_text_1, extragalactic_sources_id, transients_filename, gaia_filename, extragalactic_filename
 
 
 def hugo_2_GEMTOM(df):
