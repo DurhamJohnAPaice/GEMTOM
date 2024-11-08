@@ -1744,6 +1744,8 @@ def history_to_GEMTOM(request):
     ra = request.POST.get('ra')
     dec = request.POST.get('dec')
 
+    name = iau_name_from_bgem_id(id)
+
     add_to_GEMTOM(id, name, ra, dec)
 
     return redirect(reverse('tom_targets:list'))
@@ -2309,6 +2311,24 @@ def get_ra_dec_from_tns(tns_object_name):
 
 ## ----- TNS Functions -----
 ## =========================
+
+def iau_name_from_bgem_id(bgem_id):
+
+    ## Get the name, ra, and dec:
+    bg = authenticate_blackgem()
+
+    qu = """\
+    SELECT id
+          ,iau_name
+      FROM runcat
+     WHERE id = '%(bgem_id)s'
+    """
+    params = {'bgem_id': bgem_id}
+    query = qu % (params)
+
+    l_results = bg.run_query(query)
+
+    return l_results[0][1]
 
 @login_required
 def BGEM_ID_View(request, bgem_id):
