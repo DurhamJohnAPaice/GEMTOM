@@ -10,6 +10,7 @@ import plotly.express as px
 from dash import Dash, dcc, html, Input, Output, State, callback, dash_table
 from io import StringIO
 import dash_bootstrap_components as dbc
+import time
 
 from django.views.generic import TemplateView, FormView
 from django.http import HttpResponse, HttpResponseRedirect, FileResponse, JsonResponse
@@ -919,6 +920,8 @@ class HistoryView(TemplateView):
     #             return HttpResponse(e)
 
     def get_context_data(self, **kwargs):
+        t0 = time.time()
+        print("History view: Getting context data...")
         context = super().get_context_data(**kwargs)
 
         context['history_daily_text_1'], \
@@ -929,10 +932,15 @@ class HistoryView(TemplateView):
             context['transients_filename'], \
             context['gaia_filename'], \
             context['extragalactic_filename'] = history_daily()
+
+        t1 = time.time()
+
         history = blackgem_history()
         dates = list(history.Date)
         dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
         # print(dates[0])
+
+        t2 = time.time()
 
         ## --- Check to see if the recent history is up to date. If not, update.
         ## Get yesterday's date...
@@ -949,11 +957,15 @@ class HistoryView(TemplateView):
 
         yesterday_date_string = yesterday_date.strftime("%Y%m%d")
 
+        t3 = time.time()
+
         if days_since_last_update > 0:
             update_history(days_since_last_update)
             history = blackgem_history()
             dates = list(history.Date)
             dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
+
+        t4 = time.time()
 
         context['history'] = zip(dates, list(history.Date), list(history.MJD), list(history.Observed), list(history.Number_Of_Transients), list(history.Number_of_Gaia_Crossmatches), list(history.Number_Of_Extragalactic))
         # print(context['history'])
@@ -967,6 +979,15 @@ class HistoryView(TemplateView):
         context['orange_fields']    = field_stats[3]
         context['red_fields']       = field_stats[4]
         context['plot_image']       = image_base64
+
+        t5 = time.time()
+
+        print("Times:")
+        print("t0->t1:", t1-t0)
+        print("t1->t2:", t2-t1)
+        print("t2->t3:", t3-t2)
+        print("t3->t4:", t4-t3)
+        print("t4->t5:", t5-t4)
 
         return context
 
@@ -988,6 +1009,8 @@ def get_blackgem_stats(obs_date):
     Querys Hugo's server.
     '''
 
+    t0 = time.time()
+
     ## Get date in different formats
     extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
     mjd = int(Time(extended_date + "T00:00:00.00", scale='utc').mjd)
@@ -996,10 +1019,18 @@ def get_blackgem_stats(obs_date):
     new_base_url = "http://34.90.13.7/quick_selection/"
 
     ## Get the list of files from Hugo's server
+    print("Finding original file list... ", end="\r")
     files = list_files(base_url + obs_date)
-    new_files = list_files(new_base_url)
+    print("Finding original file list... Found.")
+    t1 = time.time()
+
+    # print("Finding new file list... ", end="\r")
+    # new_files = list_files(new_base_url)
+    # print("Finding new file list... Found.")
+    t2 = time.time()
 
     transients_filename, gaia_filename, extragalactic_filename = get_transients_filenames(obs_date, url_selection="all")
+    t3 = time.time()
 
     try:
         data = pd.read_csv(transients_filename)
@@ -1026,6 +1057,7 @@ def get_blackgem_stats(obs_date):
         print("No extragalactic sources on ", obs_date, ":", sep="")
         print(e)
         extragalactic_filename = ""
+    t4 = time.time()
 
     ## --- Find the details of each extragalactic source ---
     images_urls                 = []
@@ -1035,11 +1067,11 @@ def get_blackgem_stats(obs_date):
     extragalactic_sources_dec   = []
     extragalactic_sources_check = []
 
-    image_type = False
+    old_images = False
     if extragalactic_filename:
         if 'xmm' in extragalactic_filename:
             # For each image file...
-            image_type = True
+            old_images = True
             for file in files:
                 if ".png" in file:
                     ## Save the URL...
@@ -1076,63 +1108,13 @@ def get_blackgem_stats(obs_date):
             extragalactic_sources_check = [True] * len(extragalactic_sources_ra)
 
             for runcat_id in list(extragalactic_data['runcat_id']):
-                if str(runcat_id) + "_cutouts_lc.png" in new_files:
-                    images_urls.append(new_base_url + str(runcat_id) + "_cutouts_lc.png")
+                # if str(runcat_id) + "_cutouts_lc.png" in new_files:
+                images_urls.append(new_base_url + str(runcat_id) + "_cutouts_lc.png")
 
-
-
-
-    # if extragalactic_filename:
-    #     runcat_id_list = list(extragalactic_data['runcat_id'])
-    #     print(runcat_id_list)
-    #     for file in new_files:
-    #         if "_cutouts_lc.png" in file:
-    #             file_parts = file.split("_")
-    #
-    #             # print(file_parts[0])
-    #             if int(float(file_parts[0])) in runcat_id_list:
-    #                 row_number = runcat_id_list.index(int(file_parts[0]))
-    #                 extragalactic_sources_ra.append(  extragalactic_data['ra'][row_number])
-    #                 extragalactic_sources_dec.append( extragalactic_data['dec'][row_number])
-    #                 extragalactic_sources_check.append(True)
-    #                 images_urls.append(new_base_url + file)
-
-    # print(type(file_parts[0]))
-    # print(type(runcat_id_list[0]))
-    # print(images_urls)
-            # ## If we haven't got the data yet...
-            # if file[2:10] not in extragalactic_sources_id:
-            #
-            #     ## Save the ID...
-            #     extragalactic_sources_id.append(file[2:10])
-            #
-            #     ## And if there's extragalactic data...
-            #     if extragalactic_filename:
-            #         runcat_id_list = list(extragalactic_data['runcat_id'])
-            #         print(int(file[2:10]) in runcat_id_list)
-            #
-            #         ## And this source is in that data...
-            #         if int(file[2:10]) in runcat_id_list:
-            #             ## Save the name, RA, dec, and look for a lightcurve.
-            #             row_number = runcat_id_list.index(int(file[2:10]))
-            #             extragalactic_sources_ra.append(  extragalactic_data['ra'][row_number])
-            #             extragalactic_sources_dec.append( extragalactic_data['dec'][row_number])
-            #             extragalactic_sources_check.append(True)
-            #             # extragalactic_sources_jpg.append(get_lightcurve(file[2:10]))
-            #         else:
-            #             ## If it's not, state they're all unknown.
-            #             extragalactic_sources_ra.append("(Unknown)")
-            #             extragalactic_sources_dec.append("(Unknown)")
-            #             extragalactic_sources_check.append(False)
-            #             # extragalactic_sources_jpg.append("")
+    t5 = time.time()
 
     ## Combine these together.
-    # extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_jpg]
-    extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_check, image_type]
-    # print(extragalactic_sources)
-    # print(extragalactic_sources_ra)
-    # print(extragalactic_sources_dec)
-
+    extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_check, old_images]
 
     ## Sort the images into a list, separated into each source
     images_urls_sorted = []
@@ -1146,6 +1128,17 @@ def get_blackgem_stats(obs_date):
     num_extragalactic   = str(len(extragalactic_sources[0]))
     extragalactic_urls  = images_urls_sorted
 
+    t6 = time.time()
+
+    if t0 and t1 and t2 and t3 and t4 and t5 and t6:
+        print("get_blackgem_stats times:")
+        print("t0->t1:", t1-t0)
+        print("t1->t2:", t2-t1)
+        print("t2->t3:", t3-t2)
+        print("t3->t4:", t4-t3)
+        print("t4->t5:", t5-t4)
+        print("t5->t6:", t6-t5)
+
     return num_new_transients, num_in_gaia, num_extragalactic, extragalactic_sources, extragalactic_urls, \
         transients_filename, gaia_filename, extragalactic_filename
 
@@ -1155,16 +1148,21 @@ def history_daily():
     '''
     Specifically checks last night's observation.
     '''
+    t0 = time.time()
 
     yesterday = date.today() - timedelta(1)
     yesterday_date = yesterday.strftime("%Y%m%d")
     extended_yesterday_date = yesterday.strftime("%Y-%m-%d")
     mjd = int(Time(extended_yesterday_date + "T00:00:00.00", scale='utc').mjd)
 
+    t1 = time.time()
+
     # url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/' + yesterday_date + "/"
 
     data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
         transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(yesterday_date)
+
+    t2 = time.time()
 
     # print(url)
     # r = requests.get(url)
@@ -1193,7 +1191,11 @@ def history_daily():
             print(extragalactic_sources_string)
 
             ## Update the most recent row of the recent history
+            t3 = time.time()
+
             current_history = blackgem_history()
+            t4 = time.time()
+
             if current_history["Date"][0] == extended_yesterday_date:
                 current_history.loc[0,"Date"]                          = extended_yesterday_date
                 current_history.loc[0,"MJD"]                           = mjd
@@ -1204,7 +1206,7 @@ def history_daily():
                 fileOut = "./data/Recent_BlackGEM_History.csv"
                 current_history.to_csv(fileOut, index=False)
 
-            print("Running!")
+            t5 = time.time()
 
             extragalactic_sources_id = extragalactic_sources[0]
             history_daily_text_2 = "On " + extended_yesterday_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " transient" + data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec)."
@@ -1226,6 +1228,15 @@ def history_daily():
         # history_daily_text_4         = ""
         images_daily_text_1         = zip([], ["No transients were recorded by BlackGEM last night."])
 
+    t6 = time.time()
+    if t0 and t1 and t2 and t3 and t4 and t5 and t6:
+        print("history_daily times:")
+        print("t0->t1:", t1-t0)
+        print("t1->t2:", t2-t1)
+        print("t2->t3:", t3-t2)
+        print("t3->t4:", t4-t3)
+        print("t4->t5:", t5-t4)
+        print("t5->t6:", t6-t5)
 
     return history_daily_text_1, history_daily_text_2, history_daily_text_3, images_daily_text_1, extragalactic_sources_id, transients_filename, gaia_filename, extragalactic_filename
 
@@ -1663,6 +1674,7 @@ def NightView(request, obs_date):
     '''
     Finds and displays data from a certain date.
     '''
+    print("Starting NightView...")
 
     response = "You're looking at BlackGEM date %s."
 
@@ -1691,7 +1703,7 @@ def NightView(request, obs_date):
         "extragalactic_sources_ra"      : extragalactic_sources[1],
         "extragalactic_sources_dec"     : extragalactic_sources[2],
         "extragalactic_sources_check"   : extragalactic_sources[3],
-        "image_type"                    : extragalactic_sources[4],
+        "old_images"                    : extragalactic_sources[4],
         "data_length_plural"            : data_length_plural,
         "data_length_plural_2"          : data_length_plural_2,
         "gaia_plural"                   : gaia_plural,

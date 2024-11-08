@@ -223,7 +223,7 @@ They are overplotted on an HR diagram (blue), sourced from the Gaia Catalog of N
         <div class="image-row">
             {% for url in image_url %}
                 {% if url %}
-                    {% if image_type %}
+                    {% if old_images %}
                         <div class="image-container">
                             <img src="{{ url }}" alt="url">
                         </div>

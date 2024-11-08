@@ -227,7 +227,7 @@ BlackGEM observed {{ num_fields }} fields:<br>
         <div class="image-row">
             {% for url in image_url %}
                 {% if url %}
-                    {% if image_type %}
+                    {% if old_images %}
                         <div class="image-container">
                             <img src="{{ url }}" alt="url">
                         </div>
