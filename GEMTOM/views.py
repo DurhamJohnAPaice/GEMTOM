@@ -1019,9 +1019,6 @@ def get_blackgem_stats(obs_date):
     new_base_url = "http://34.90.13.7/quick_selection/"
 
     ## Get the list of files from Hugo's server
-    print("Finding original file list... ", end="\r")
-    files = list_files(base_url + obs_date)
-    print("Finding original file list... Found.")
     t1 = time.time()
 
     # print("Finding new file list... ", end="\r")
@@ -1070,6 +1067,9 @@ def get_blackgem_stats(obs_date):
     old_images = False
     if extragalactic_filename:
         if 'xmm' in extragalactic_filename:
+            print("Finding original file list... ", end="\r")
+            files = list_files(base_url + obs_date)
+            print("Finding original file list... Found.")
             # For each image file...
             old_images = True
             for file in files:
@@ -1122,7 +1122,7 @@ def get_blackgem_stats(obs_date):
         matching = [url for url in images_urls if str(this_source) in url]
         images_urls_sorted.append(matching)
 
-    print(extragalactic_sources_id)
+    # print(extragalactic_sources_id)
 
     num_new_transients  = str(len(data))
     num_extragalactic   = str(len(extragalactic_sources[0]))
