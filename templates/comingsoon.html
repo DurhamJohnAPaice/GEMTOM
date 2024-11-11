@@ -96,7 +96,9 @@ A list of the main features that have been requested and I intend to work on.
             <li>Transients: Added a button linking to a SIMBAD search for the coordinates of the detection.</li>
             <li>Transients: Added a 'Download Lightcurve' button.</li>
             <li>History: Updated the History page to source from the new BlackPearl server, and shows updated cutout images and lightcurves for each Extragalactic source.</li>
+            <li>History: Updated extragalactic sources to link to their BlackView and SIMBAD webpages directly from the history/nightly views.</li>
             <li>History: Massively sped up loading all History pages.</li>
+            <li>History: Restricted History pages to logged-in members, as they now show lightcurves.</li>
         </ul>
     </ul>
     <br>
@@ -104,6 +106,7 @@ A list of the main features that have been requested and I intend to work on.
     <ul>
         <li>Fixed the 'Download Possible CVs' button.</li>
         <li>Fixed a bug with legacy code causing bad interactions with current data types, leading to the history page crashing.</li>
+        <li>Fixed a permissions issue where sign-ins weren't allowed (had to add the site as a CSRF trusted host).</li>
     </ul>
 </ul>
 <br>

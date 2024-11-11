@@ -862,7 +862,7 @@ def get_any_nights_sky_plot(night):
     return field_stats, image_base64
 
 
-class HistoryView(TemplateView):
+class HistoryView(LoginRequiredMixin, TemplateView):
     template_name = 'history.html'
 
     print("Navigating to history...")
@@ -1670,6 +1670,7 @@ def scatter_plot_view(request):
     return render(request, 'scatter_plot.html', {'plot_html': plot_html})
 
 
+@login_required
 def NightView(request, obs_date):
     '''
     Finds and displays data from a certain date.
