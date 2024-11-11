@@ -31,7 +31,7 @@ DEBUG = True
 
 # ALLOWED_HOSTS = ['*']
 ALLOWED_HOSTS = ['127.0.0.1','34.147.125.56','http://gemtom.blackgem.org','https://gemtom.blackgem.org','gemtom.blackgem.org']
-
+CSRF_TRUSTED_ORIGINS = ['https://gemtom.blackgem.org']
 
 # Application definition
 
