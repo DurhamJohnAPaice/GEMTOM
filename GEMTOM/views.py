@@ -1016,7 +1016,8 @@ def get_blackgem_stats(obs_date):
     mjd = int(Time(extended_date + "T00:00:00.00", scale='utc').mjd)
 
     base_url = 'http://xmm-ssc.irap.omp.eu/claxson/BG_images/'
-    new_base_url = "http://34.90.13.7/quick_selection/"
+    # new_base_url = "http://34.90.13.7/quick_selection/"
+    new_base_url = "https://blackpearl.blackgem.org/quick_selection/"
 
     ## Get the list of files from Hugo's server
     t1 = time.time()
