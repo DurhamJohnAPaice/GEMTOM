@@ -1173,6 +1173,9 @@ def history_daily():
 
         ## If there was no data, assume BlackGEM didn't observe.
         if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0"):
+            t3 = time.time()
+            t4 = time.time()
+            t5 = time.time()
             extragalactic_sources_id    = ""
             history_daily_text_1         = "No transients were recorded by BlackGEM last night (" + extended_yesterday_date + ")"
             history_daily_text_2         = ""
@@ -1219,6 +1222,9 @@ def history_daily():
 
 
     else:
+        t3 = time.time()
+        t4 = time.time()
+        t5 = time.time()
         extragalactic_sources_id    = ""
         transients_filename         = ""
         gaia_filename               = ""
