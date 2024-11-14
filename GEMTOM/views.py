@@ -312,7 +312,9 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 def plot_BGEM_location_on_sky(df_bgem_lightcurve):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df_bgem_lightcurve['x.ra_psf_d'], y=df_bgem_lightcurve['x.dec_psf_d'], mode='markers', name='Line and Marker', marker_color="red"))
-    fig.update_layout(width=350, height=350)
+    fig.update_layout(width=350, height=250,
+        margin=dict(t=10, b=10, l=10, r=30),  # Set margins to reduce whitespace
+    )
 
     return fig
 
@@ -2173,17 +2175,25 @@ def get_lightcurve_from_BGEM_ID(transient_id):
 
     print("Getting lightcurve for transient ID " + str(transient_id) + "...")
 
+    t0 = time.time()
+
     bg = authenticate_blackgem()
+
+    t1 = time.time()
 
 
     # Create an instance of the Transients Catalog
     tc = TransientsCatalog(bg)
     df_limiting_mag = get_limiting_magnitudes_from_BGEM_ID(transient_id)
 
+    t2 = time.time()
+
     # Get all the associated extracted sources for this transient
     # Note that you can specify the columns yourself, but here we use the defaults
     bg_columns, bg_results = tc.get_associations(transient_id)
     df_bgem_lightcurve = pd.DataFrame(bg_results, columns=bg_columns)
+
+    t3 = time.time()
 
     print(df_bgem_lightcurve.iloc[0])
     print(df_limiting_mag.iloc[0])
@@ -2197,6 +2207,14 @@ def get_lightcurve_from_BGEM_ID(transient_id):
     # print(num_removed, "points removed.")
     # print(len(df_bgem_lightcurve), "points in lightcurve.")
 
+
+    t4 = time.time()
+
+    print("get_lightcurve_from_BGEM_ID Times:")
+    print("t0->t1:", t1-t0)
+    print("t1->t2:", t2-t1)
+    print("t2->t3:", t3-t2)
+    print("t3->t4:", t4-t3)
 
     return df_bgem_lightcurve, df_limiting_mag
 
@@ -2356,9 +2374,13 @@ def BGEM_ID_View(request, bgem_id):
     Displays data of a certain transient
     '''
 
+    t0 = time.time()
+
     df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
     # print(df_bgem_lightcurve)
     # print(df_bgem_lightcurve.columns)
+
+    t1 = time.time()
 
     response = "You're looking at BlackGEM transient %s."
 
@@ -2369,9 +2391,13 @@ def BGEM_ID_View(request, bgem_id):
     # print(df_bgem_lightcurve['x.ra_psf_d'])
     # print(df_bgem_lightcurve['x.dec_psf_d'])
 
+    t2 = time.time()
+
     ## --- Lightcurve ---
     fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
     lightcurve = plot(fig, output_type='div')
+
+    t3 = time.time()
 
     ## Get the name, ra, and dec:
     bg = authenticate_blackgem()
@@ -2404,6 +2430,9 @@ def BGEM_ID_View(request, bgem_id):
     dec         = source_data['dec_deg'][0]
     # print(source_data)
     # print(l_results)
+
+    t4 = time.time()
+
 
     ## Detail each observation:
 
@@ -2464,7 +2493,7 @@ def BGEM_ID_View(request, bgem_id):
                 "skipHeaderOnAutoSize": True,
                 "rowSelection": "single",
             },
-            style={'height': '550px', 'width': '100%'},  # Set explicit height for the grid
+            style={'height': '650px', 'width': '100%'},  # Set explicit height for the grid
             className='ag-theme-balham'  # Add a theme for better appearance
         ),
         dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
@@ -2472,8 +2501,11 @@ def BGEM_ID_View(request, bgem_id):
     ], style={'height': '550px', 'width': '100%'}
     )
 
+    t5 = time.time()
+
+
     ## TNS:
-    search_radius = 1000
+    search_radius = 10
     tns_data = get_tns_from_ra_dec(ra, dec, search_radius)
     if tns_data == "Too many requests!":
         tns_text = "Too many TNS requests. Please check later."
@@ -2570,17 +2602,21 @@ def BGEM_ID_View(request, bgem_id):
         tns_flag_name = ""
         tns_flag_sep = ""
 
-    ## --- Find the image ---
-    print("Getting image...")
-    print(os.getcwd())
-    if tns_flag:
-        file_name = "../" + get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve,
-            tns_objects_potential["RA"].iloc[0], tns_objects_potential["Dec"].iloc[0]
-            )
-    else:
-        file_name = "../" + get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve)
+    t6 = time.time()
 
-    print("Image name:", file_name)
+    # ## --- Find the image ---
+    # print("Getting image...")
+    # print(os.getcwd())
+    # if tns_flag:
+    #     file_name = "../" + get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve,
+    #         tns_objects_potential["RA"].iloc[0], tns_objects_potential["Dec"].iloc[0]
+    #         )
+    # else:
+    #     file_name = "../" + get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve)
+    #
+    # print("Image name:", file_name)
+
+    t7 = time.time()
 
 
 
@@ -2648,12 +2684,24 @@ def BGEM_ID_View(request, bgem_id):
         "tns_data"          : tns_data,
         "tns_text"          : tns_text,
         "tns_list"          : tns_list,
-        "image_name"        : file_name
+        # "image_name"        : file_name
         # "tns_nearby"        : tns_nearby,
         # "tns_objects_data"  : tns_objects_data,
     }
 
-    print(context["image_name"])
+    # print(context["image_name"])
+
+    t8 = time.time()
+
+    print("Times:")
+    print("t0->t1:", t1-t0)
+    print("t1->t2:", t2-t1)
+    print("t2->t3:", t3-t2)
+    print("t3->t4:", t4-t3)
+    print("t4->t5:", t5-t4)
+    print("t5->t6:", t6-t5)
+    print("t6->t7:", t7-t6)
+    print("t7->t8:", t8-t7)
 
     return render(request, "transient/index.html", context)
 
@@ -2664,12 +2712,18 @@ def BGEM_ID_View(request, bgem_id):
 
 def get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve = False, tns_ra=False, tns_dec=False):
 
+    t0 = time.time()
+
     # Instantialte the BlackGEM object, with a connection to the database
     bg = authenticate_blackgem()
+
+    t1 = time.time()
 
     desimoc = MOC.from_fits('./data/MOC_DESI-Legacy-Surveys_DR10.fits')
     coords = SkyCoord(ra,dec,unit='deg',frame='icrs')
     indesi = desimoc.contains_lonlat(coords.ra,coords.dec)
+
+    t2 = time.time()
 
     ra  = coords.ra.value
     dec = coords.dec.value
@@ -2693,6 +2747,8 @@ def get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve = False, tns_ra=Fal
 
     # if os.path.isfile(file_name):
     #     return file_name
+
+    t3 = time.time()
 
     if indesi:
         pixel_scale = 0.262/2
@@ -2721,6 +2777,8 @@ def get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve = False, tns_ra=Fal
         url = 'https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red&r=%s&d=%s&e=J2000&h=4&w=4&f=gif'%(ra,dec)
 
 
+    t4 = time.time()
+
     ra_pixel_sep = -ra_arcsecond_sep/pixel_scale
     dec_pixel_sep = dec_arcsecond_sep/pixel_scale
 
@@ -2737,13 +2795,17 @@ def get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve = False, tns_ra=Fal
         tns_ra_pixel_sep = -tns_ra_arcsecond_sep/pixel_scale
         tns_dec_pixel_sep = tns_dec_arcsecond_sep/pixel_scale
 
+    t5 = time.time()
 
+    print("URL =", url)
     cutout = requests.get(url, stream = True)
+
+    t6 = time.time()
 
     if cutout.status_code == 200:
         with open(file_name,'wb') as f:
             shutil.copyfileobj(cutout.raw, f)
-        print('Image successfully Downloaded: ',file_name)
+        print('Image successfully downloaded: ',file_name)
 
         ## Draw crosshairs
         with Image.open(file_name) as im:
@@ -2792,6 +2854,18 @@ def get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve = False, tns_ra=Fal
     else:
         print('Image Couldn\'t be retrieved')
         print(file_name)
+
+
+    t7 = time.time()
+
+    print("Get Transient Image Times:")
+    print("t0->t1:", t1-t0)
+    print("t1->t2:", t2-t1)
+    print("t2->t3:", t3-t2)
+    print("t3->t4:", t4-t3)
+    print("t4->t5:", t5-t4)
+    print("t5->t6:", t6-t5)
+    print("t6->t7:", t7-t6)
 
     return file_name
 

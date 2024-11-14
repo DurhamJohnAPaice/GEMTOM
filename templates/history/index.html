@@ -26,6 +26,61 @@
 </head>
 
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Use the ID of the plot
+        var scatterPlot = document.getElementById('scatter-plot').querySelector('.js-plotly-plot');
+
+        // Attach the click event listener to the plotly object itself
+        scatterPlot.on('plotly_click', function(data){
+            // Get the URL stored in the 'text' attribute of the clicked point
+            var url = data.points[0].text;
+
+            // Log the URL to ensure it's being captured correctly
+            console.log("Clicked URL:", url);
+
+            // Redirect to the URL
+            if (url) {
+                window.open(url, '_blank');
+            }
+        });
+    });
+</script>
+
+<hr>
+
+
+ <!-- /* Create containers for the small images, then the lightcurves. */ -->
+<style>
+    .image-container {
+        width: 200px; /* Desired width */
+        height: 200px; /* Desired height */
+        overflow: hidden;
+    }
+    .image-container img {
+        width: 105%;
+        height: 107%;
+        object-fit: cover; /* Ensures the image covers the container */
+        object-position: center; /* Centers the image */
+    }
+    .image-row {
+        display: flex;
+        flex-wrap: wrap; /* Allows wrapping to the next line if there are too many images for one row */
+        justify-content: center; /* Center the flex items horizontally */
+    }
+   .imgbox2 {
+       <!-- position: relative; -->
+        position: absolute;
+        display: grid;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        object-position: 100%;
+   }
+</style>
+
+
+
 <p>
 </p>
 
@@ -89,207 +144,135 @@ BlackGEM observed {{ num_fields }} fields:<br>
     <em>No Extragalactic file to download</em>
 {% endif %}
 
-<!-- <hr>
-
-<nav>
-  <div class="nav nav-tabs" id="nav-tab" role="tablist">
-    <button class="nav-link active" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button" role="tab" aria-controls="nav-home" aria-selected="true">Home</button>
-    <button class="nav-link" id="nav-profile-tab" data-bs-toggle="tab" data-bs-target="#nav-profile" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">Profile</button>
-    <button class="nav-link" id="nav-contact-tab" data-bs-toggle="tab" data-bs-target="#nav-contact" type="button" role="tab" aria-controls="nav-contact" aria-selected="false">Contact</button>
-  </div>
-</nav>
-<div class="tab-content" id="nav-tabContent">
-  <div class="tab-pane fade show active" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab">...1</div>
-  <div class="tab-pane fade" id="nav-profile" role="tabpanel" aria-labelledby="nav-profile-tab">...2</div>
-  <div class="tab-pane fade" id="nav-contact" role="tabpanel" aria-labelledby="nav-contact-tab">...3</div>
-</div> -->
-
 <hr>
 
-<h5>Gaia-Crossmatched Transients:</h5>
-<p>Below, you can find all gaia cross-matches of last night's transients (red), with potential Cataclysmic Variables highlighted (orange).<br>
-They are overplotted on an HR diagram (blue), sourced from the Gaia Catalog of Nearby Stars.<br>
-<em><font style="color:grey;">Only sources with a Real/Bogus score above 0.8 and a Parallax:Error ratio of greater than 2 are included.</font></em><br>
-<b>Click on a point to go to its GEMTOM page!</b></p>
-<!-- {{ lightcurve|safe }} -->
+<div class="container">
 
 
-<!-- This will render the plotly chart -->
+  <!-- Nav tabs -->
+  <ul class="nav nav-tabs nav-fill">
+    <li class="nav-item">
+      <a class="nav-link" data-toggle="tab" href="#orphans">Orphaned Transients</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-toggle="tab" href="#gaia">Gaia Transients</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link active" data-toggle="tab" href="#extragalactic">Extragalactic Transients</a>
+    </li>
+  </ul>
 
+  <br>
 
-<!-- <div id="scatter-plot" style="
-    display: block;
-    position: absolute;
-    margin: auto;
-    padding:0px;
-    text-align:center;
-    max-width:800px;
-    display: block;
-    left:-0px;
-    right:-0px;
-    bottom:-860px;
-">
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
--->
-<div id="scatter-plot" style="
-    display: block;
-    position: relative;
-    margin: auto;
-    padding:0px;
-    text-align:center;
-    max-width:800px;
-    display: block;
-    left:-0px;
-    right:300px;
-    bottom:-0px;
+  <!-- Tab panes -->
+  <div class="tab-content">
 
-">
-    {{ lightcurve|safe }}
-</div>
-<br>
-<!-- Button to trigger the CSV generation -->
-<form method="post" action="{% url 'download_possible_CVs' %}" class="image-form">
-    {% csrf_token %}
-    <input type="hidden" name="obs_date" value="{{ obs_date }}">
-    <button type="submit" class="btn btn-outline-primary">Download Possible CVs</button>
-</form>
+    <div class="tab-pane container fade" id="orphans">
+        Not currently included; watch this space!
+    </div>
 
+    <div class="tab-pane container fade" id="gaia">
+        <h5>Gaia-Crossmatched Transients:</h5>
+        <p>Below, you can find all gaia cross-matches of last night's transients (red), with potential Cataclysmic Variables highlighted (orange).<br>
+        They are overplotted on an HR diagram (blue), sourced from the Gaia Catalog of Nearby Stars.<br>
+        <em><font style="color:grey;">Only sources with a Real/Bogus score above 0.8 and a Parallax:Error ratio of greater than 2 are included.</font></em><br>
+        <b>Click on a point to go to its GEMTOM page!</b></p>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Use the ID of the plot
-        var scatterPlot = document.getElementById('scatter-plot').querySelector('.js-plotly-plot');
+        <div id="scatter-plot" style="
+            display: block;
+            position: relative;
+            margin: auto;
+            padding:0px;
+            text-align:center;
+            max-width:800px;
+            display: block;
+            left:-0px;
+            right:300px;
+            bottom:-0px;
 
-        // Attach the click event listener to the plotly object itself
-        scatterPlot.on('plotly_click', function(data){
-            // Get the URL stored in the 'text' attribute of the clicked point
-            var url = data.points[0].text;
-
-            // Log the URL to ensure it's being captured correctly
-            console.log("Clicked URL:", url);
-
-            // Redirect to the URL
-            if (url) {
-                window.open(url, '_blank');
-            }
-        });
-    });
-</script>
-
-<hr>
-
-<h5>Images:</h5>
-
- <!-- /* Create containers for the small images, then the lightcurves. */ -->
-<style>
-    .image-container {
-        width: 200px; /* Desired width */
-        height: 200px; /* Desired height */
-        overflow: hidden;
-    }
-    .image-container img {
-        width: 105%;
-        height: 107%;
-        object-fit: cover; /* Ensures the image covers the container */
-        object-position: center; /* Centers the image */
-    }
-    .image-row {
-        display: flex;
-        flex-wrap: wrap; /* Allows wrapping to the next line if there are too many images for one row */
-        justify-content: center; /* Center the flex items horizontally */
-    }
-   .imgbox2 {
-       <!-- position: relative; -->
-        position: absolute;
-        display: grid;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        object-position: 100%;
-   }
-</style>
-
-{% if extragalactic_sources_id %}
-    {% for image_url, bgem_id, source_ra, source_dec, check in images_daily_text_1 %}
-        <h6> BlackGEM ID = {{ bgem_id }}</h6>
-        <div class="image-row">
-            {% for url in image_url %}
-                {% if url %}
-                    {% if old_images %}
-                        <div class="image-container">
-                            <img src="{{ url }}" alt="url"></img>
-                        </div>
-                    {% else %}
-                        <img class="imgbox2" src="{{ url }}" alt="url">
-                    {% endif %}
-
-                {% endif %}
-            {% endfor %}
+        ">
+            {{ lightcurve|safe }}
         </div>
-        RA = {{source_ra}}  ;  Dec = {{source_dec}}<br>
-        <em><a href='/transients/{{ bgem_id }}'>GEMTOM page for this transient</a></em><br>
-        <div style="height:3px;font-size:1px;">&nbsp;</div>
-        {% if check %}
-            <div class="row">
-              <div class="col-md-4" style="
-                padding:5px;
-                border-right:thin solid #dddddd;
-                text-align:center;
-                vertical-align: middle;">
-                    <a class="btn btn-outline-primary" href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}" target="_blank">BlackView</a>
-              </div>
-              <div class="col-md-4" style="
-                padding:5px;
-                border-right:thin solid #dddddd;
-                text-align:center;
-                vertical-align: middle;">
-                <form method="post" action="{% url 'history_to_GEMTOM' %}" class="image-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="id" value="{{ bgem_id }}">
-                    <input type="hidden" name="name" value="{{ bgem_id }}">
-                    <input type="hidden" name="ra" value="{{ source_ra }}">
-                    <input type="hidden" name="dec" value="{{ source_dec }}">
-                    <button type="submit" class="btn btn-primary">Add to GEMTOM</button>
-                </form>
-              </div>
-              <div class="col-md-4" style="
-                padding:5px;
-                text-align:center;
-                vertical-align: middle;">
-                    <a class="btn btn-outline-primary" href="https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ source_ra }}d{{ source_dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=1&Radius.unit=arcmin&submit=submit+query&CoordList=" target="_blank">SIMBAD</a>
-                    <!-- <a href="#" onclick='window.open("https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ target_ra }}d{{ target_dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=2&Radius.unit=arcmin&submit=submit+query&CoordList=");return false;'>SIMBAD page</a> -->
-              </div>
-            </div>
+        <br>
+        <!-- Button to trigger the CSV generation -->
+        <form method="post" action="{% url 'download_possible_CVs' %}" class="image-form">
+            {% csrf_token %}
+            <input type="hidden" name="obs_date" value="{{ obs_date }}">
+            <button type="submit" class="btn btn-outline-primary">Download Possible CVs</button>
+        </form>
+    </div>
+
+    <div class="tab-pane container active" id="extragalactic">
+
+        <h5>Images:</h5>
+
+        {% if extragalactic_sources_id %}
+            {% for image_url, bgem_id, source_ra, source_dec, check in images_daily_text_1 %}
+                <h6> BlackGEM ID = {{ bgem_id }}</h6>
+                <div class="image-row">
+                    {% for url in image_url %}
+                        {% if url %}
+                            {% if old_images %}
+                                <div class="image-container">
+                                    <img src="{{ url }}" alt="url"></img>
+                                </div>
+                            {% else %}
+                                <img class="imgbox2" src="{{ url }}" alt="url">
+                            {% endif %}
+
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                RA = {{source_ra}}  ;  Dec = {{source_dec}}<br>
+                <em><a href='/transients/{{ bgem_id }}'>GEMTOM page for this transient</a></em><br>
+                <div style="height:3px;font-size:1px;">&nbsp;</div>
+                {% if check %}
+                    <div class="row">
+                      <div class="col-md-4" style="
+                        padding:5px;
+                        border-right:thin solid #dddddd;
+                        text-align:center;
+                        vertical-align: middle;">
+                            <a class="btn btn-outline-primary" href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}" target="_blank">BlackView</a>
+                      </div>
+                      <div class="col-md-4" style="
+                        padding:5px;
+                        border-right:thin solid #dddddd;
+                        text-align:center;
+                        vertical-align: middle;">
+                        <form method="post" action="{% url 'history_to_GEMTOM' %}" class="image-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="id" value="{{ bgem_id }}">
+                            <input type="hidden" name="name" value="{{ bgem_id }}">
+                            <input type="hidden" name="ra" value="{{ source_ra }}">
+                            <input type="hidden" name="dec" value="{{ source_dec }}">
+                            <button type="submit" class="btn btn-primary">Add to GEMTOM</button>
+                        </form>
+                      </div>
+                      <div class="col-md-4" style="
+                        padding:5px;
+                        text-align:center;
+                        vertical-align: middle;">
+                            <a class="btn btn-outline-primary" href="https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ source_ra }}d{{ source_dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=1&Radius.unit=arcmin&submit=submit+query&CoordList=" target="_blank">SIMBAD</a>
+                            <!-- <a href="#" onclick='window.open("https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ target_ra }}d{{ target_dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=2&Radius.unit=arcmin&submit=submit+query&CoordList=");return false;'>SIMBAD page</a> -->
+                      </div>
+                    </div>
+                {% endif %}
+                <hr>
+            {% endfor %}
+        {% else %}
+            <p> No images to display.</p>
+            <br>
+            <hr>
         {% endif %}
-        <hr>
-    {% endfor %}
-{% else %}
-    <p> No images to display.</p>
-    <br>
-    <hr>
-{% endif %}
+    </div>
+
+  </div>
+
+
+</div>
+
+<hr>
 
 
 <br>
