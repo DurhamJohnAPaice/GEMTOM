@@ -139,6 +139,7 @@ On this page, you can find the data for a specific BlackGEM transient.
     <div class="col-md-4" style="border-right:thin solid #dddddd;">
 
         <h5>Location on Sky</h5>
+        <em style="color:red;">Circle of diameter 10 arcseconds</em>
         <!-- Render the Plotly graph -->
         {{ location_on_sky|safe }}
         <br>
@@ -266,7 +267,8 @@ On this page, you can find the data for a specific BlackGEM transient.
               aladin.addOverlay(layer);
               layer.add(A.polyline([compassNorthArm, compassCenter, compassEastArm]));
               layer.add(A.polyline([scaleBarStart, scaleBarEnd]));
-              layer.add(A.circle(targetRa, targetDec, fovDegrees / 30));
+              layer.add(A.circle(targetRa, targetDec, scaleBarLength / (60*60*10)));
+              layer.add(A.circle(targetRa, targetDec, fovDegrees / 300));
               layer.add(new Text(scaleBarStartPix[0] + scaleBarLength / 2, scaleBarStartPix[1] - scaleBarTextSpacing, scaleBar.label, {color: color}));
               layer.add(new Text(compassNorthArmPix[0], compassNorthArmPix[1] - compassTextSpacing, 'N', {color: color}));
               layer.add(new Text(compassEastArmPix[0] - compassTextSpacing, compassEastArmPix[1], 'E', {color: color, align: 'end', baseline: 'middle'}));

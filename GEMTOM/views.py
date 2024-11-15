@@ -309,10 +309,23 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
     return fig
 
 
-def plot_BGEM_location_on_sky(df_bgem_lightcurve):
+def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df_bgem_lightcurve['x.ra_psf_d'], y=df_bgem_lightcurve['x.dec_psf_d'], mode='markers', name='Line and Marker', marker_color="red"))
-    fig.update_layout(width=350, height=250,
+    fig.add_trace(go.Scatter(x=df_bgem_lightcurve['x.ra_psf_d'], y=df_bgem_lightcurve['x.dec_psf_d'], mode='markers', name='Line and Marker', marker_color="LightSeaGreen"))
+    mid_x = ra
+    mid_y = dec
+    c = SkyCoord(mid_x, mid_y, frame='icrs', unit='deg')
+    min_circle = c.directional_offset_by(45  * u.deg, 1.414 * 5 * u.arcsecond)
+    max_circle = c.directional_offset_by(225 * u.deg, 1.414 * 5 * u.arcsecond)
+
+    # print(min_circle.separation(max_circle))
+
+    fig.add_shape(type="circle",
+        xref="x", yref="y",
+        x0=min_circle.ra.value, y0=min_circle.dec.value, x1=max_circle.ra.value, y1=max_circle.dec.value,
+        line_color="red",
+    )
+    fig.update_layout(width=320, height=250,
         margin=dict(t=10, b=10, l=10, r=30),  # Set margins to reduce whitespace
     )
 
@@ -2382,23 +2395,6 @@ def BGEM_ID_View(request, bgem_id):
 
     t1 = time.time()
 
-    response = "You're looking at BlackGEM transient %s."
-
-    ## --- Location on Sky ---
-    fig = plot_BGEM_location_on_sky(df_bgem_lightcurve)
-    location_on_sky = plot(fig, output_type='div')
-
-    # print(df_bgem_lightcurve['x.ra_psf_d'])
-    # print(df_bgem_lightcurve['x.dec_psf_d'])
-
-    t2 = time.time()
-
-    ## --- Lightcurve ---
-    fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
-    lightcurve = plot(fig, output_type='div')
-
-    t3 = time.time()
-
     ## Get the name, ra, and dec:
     bg = authenticate_blackgem()
 
@@ -2428,6 +2424,25 @@ def BGEM_ID_View(request, bgem_id):
     iau_name    = source_data['iau_name'][0]
     ra          = source_data['ra_deg'][0]
     dec         = source_data['dec_deg'][0]
+
+    t2 = time.time()
+
+    response = "You're looking at BlackGEM transient %s."
+
+    ## --- Location on Sky ---
+    fig = plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec)
+    location_on_sky = plot(fig, output_type='div')
+
+    # print(df_bgem_lightcurve['x.ra_psf_d'])
+    # print(df_bgem_lightcurve['x.dec_psf_d'])
+
+    t3 = time.time()
+
+    ## --- Lightcurve ---
+    fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
+    lightcurve = plot(fig, output_type='div')
+
+
     # print(source_data)
     # print(l_results)
 
@@ -3886,19 +3901,8 @@ def LiveFeed_BGEM_ID_View(request, bgem_id):
 
     response = "You're looking at BlackGEM transient %s."
 
-    ## --- Location on Sky ---
-    fig = plot_BGEM_location_on_sky(df_bgem_lightcurve)
-    location_on_sky = plot(fig, output_type='div')
-
-    ## --- Lightcurve ---
-    fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
-    lightcurve = plot(fig, output_type='div')
-
-    # Pass the plot_div to the template
-    # return render(request, 'transient/index.html')
 
     ## Get the name, ra, and dec:
-
     bg = authenticate_blackgem()
 
     qu = """\
@@ -3918,8 +3922,16 @@ def LiveFeed_BGEM_ID_View(request, bgem_id):
     iau_name    = source_data['iau_name'][0]
     ra          = source_data['ra_deg'][0]
     dec         = source_data['dec_deg'][0]
-    # print(source_data)
-    # print(l_results)
+        # print(source_data)
+
+    ## --- Location on Sky ---
+    fig = plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec)
+    location_on_sky = plot(fig, output_type='div')
+
+    ## --- Lightcurve ---
+    fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
+    lightcurve = plot(fig, output_type='div')
+
 
 
     ## --- Image ---
