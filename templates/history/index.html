@@ -207,7 +207,7 @@ BlackGEM observed {{ num_fields }} fields:<br>
         <h5>Images:</h5>
 
         {% if extragalactic_sources_id %}
-            {% for image_url, bgem_id, source_ra, source_dec, check in images_daily_text_1 %}
+            {% for image_url, bgem_id, source_ra, source_dec, pipeline, check in images_daily_text_1 %}
                 <h6> BlackGEM ID = {{ bgem_id }}</h6>
                 <div class="image-row">
                     {% for url in image_url %}
@@ -223,7 +223,7 @@ BlackGEM observed {{ num_fields }} fields:<br>
                         {% endif %}
                     {% endfor %}
                 </div>
-                RA = {{source_ra}}  ;  Dec = {{source_dec}}<br>
+                RA = {{source_ra}}  ;  Dec = {{source_dec}}  ;  Pipeline = {{pipeline}}<br>
                 <em><a href='/transients/{{ bgem_id }}'>GEMTOM page for this transient</a></em><br>
                 <div style="height:3px;font-size:1px;">&nbsp;</div>
                 {% if check %}

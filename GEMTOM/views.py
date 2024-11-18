@@ -1118,19 +1118,20 @@ def get_blackgem_stats(obs_date):
 
         ## Files from the new server
         else:
-            extragalactic_sources_id = list(extragalactic_data['runcat_id'])
-            extragalactic_sources_ra = list(extragalactic_data['ra'])
-            extragalactic_sources_dec = list(extragalactic_data['dec'])
+            extragalactic_sources_id = list(extragalactic_data['runcat_id'][extragalactic_data.pipeline != "star"])
+            extragalactic_sources_ra = list(extragalactic_data['ra'][extragalactic_data.pipeline != "star"])
+            extragalactic_sources_dec = list(extragalactic_data['dec'][extragalactic_data.pipeline != "star"])
+            extragalactic_sources_pipe = list(extragalactic_data['pipeline'][extragalactic_data.pipeline != "star"])
             extragalactic_sources_check = [True] * len(extragalactic_sources_ra)
 
-            for runcat_id in list(extragalactic_data['runcat_id']):
+            for runcat_id in list(extragalactic_data['runcat_id'][extragalactic_data.pipeline != "star"]):
                 # if str(runcat_id) + "_cutouts_lc.png" in new_files:
                 images_urls.append(new_base_url + str(runcat_id) + "_cutouts_lc.png")
 
     t5 = time.time()
 
     ## Combine these together.
-    extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_check, old_images]
+    extragalactic_sources = [extragalactic_sources_id, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_pipe, extragalactic_sources_check, old_images]
 
     ## Sort the images into a list, separated into each source
     images_urls_sorted = []
@@ -1232,8 +1233,8 @@ def history_daily():
             history_daily_text_3 = "BlackGEM recorded pictures of " + extragalactic_sources_length + " possible extragalactic transient" + extragalactic_sources_plural + "."
             # history_daily_text_4 = extragalactic_sources_string
             # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0])
-            images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
-            # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
+            # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
+            images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
 
 
     else:
@@ -1725,8 +1726,9 @@ def NightView(request, obs_date):
         "extragalactic_sources_id"      : extragalactic_sources[0],
         "extragalactic_sources_ra"      : extragalactic_sources[1],
         "extragalactic_sources_dec"     : extragalactic_sources[2],
-        "extragalactic_sources_check"   : extragalactic_sources[3],
-        "old_images"                    : extragalactic_sources[4],
+        "extragalactic_sources_pipe"    : extragalactic_sources[3],
+        "extragalactic_sources_check"   : extragalactic_sources[4],
+        "old_images"                    : extragalactic_sources[5],
         "data_length_plural"            : data_length_plural,
         "data_length_plural_2"          : data_length_plural_2,
         "gaia_plural"                   : gaia_plural,
@@ -1740,7 +1742,7 @@ def NightView(request, obs_date):
     else:
         observed_string = "Yes!"
         # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
-        images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
+        images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
 
     context['observed']                 = observed_string
     context['images_daily_text_1']      = images_daily_text_1
