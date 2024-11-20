@@ -909,9 +909,9 @@ def photometry_for_target(context, target, width=700, height=600, background=Non
 
         ## If any values are in standard form, replace them with 0.0 (rgba doesn't interpret it)
         filter_before_string = cmap(filter_name)
-        if 'e' in str(filter_before_string[0]): filter_before_string = tuple([0.0, filter_before_string[1], filter_before_string[2], filter_before_string[3]])
-        if 'e' in str(filter_before_string[1]): filter_before_string = tuple([filter_before_string[0], 0.0, filter_before_string[2], filter_before_string[3]])
-        if 'e' in str(filter_before_string[2]): filter_before_string = tuple([filter_before_string[0], filter_before_string[1], 0.0, filter_before_string[3]])
+        if 'e' in str(filter_before_string[0]): filter_before_string = tuple([float(str(filter_before_string[0])[0:4]), filter_before_string[1], filter_before_string[2], filter_before_string[3]])
+        if 'e' in str(filter_before_string[1]): filter_before_string = tuple([filter_before_string[0], float(str(filter_before_string[1])[0:4]), filter_before_string[2], filter_before_string[3]])
+        if 'e' in str(filter_before_string[2]): filter_before_string = tuple([filter_before_string[0], filter_before_string[1], float(str(filter_before_string[2])[0:4]), filter_before_string[3]])
         print(filter_before_string)
 
         ## Get either a set or custom colour
