@@ -833,6 +833,8 @@ def get_cmap_string(palette, domain):
     def cmap_out(X, **kwargs):
         return mpl_cmap(hash_table[X], **kwargs)
 
+    print(cmap_out)
+
     return cmap_out
 
 
@@ -904,8 +906,17 @@ def photometry_for_target(context, target, width=700, height=600, background=Non
     # print(cmap('c'))
     # print(cmap('o'))
     for filter_name, filter_values in photometry_data.items():
+
+        ## If any values are in standard form, replace them with 0.0 (rgba doesn't interpret it)
+        filter_before_string = cmap(filter_name)
+        if 'e' in str(filter_before_string[0]): filter_before_string = tuple([0.0, filter_before_string[1], filter_before_string[2], filter_before_string[3]])
+        if 'e' in str(filter_before_string[1]): filter_before_string = tuple([filter_before_string[0], 0.0, filter_before_string[2], filter_before_string[3]])
+        if 'e' in str(filter_before_string[2]): filter_before_string = tuple([filter_before_string[0], filter_before_string[1], 0.0, filter_before_string[3]])
+        print(filter_before_string)
+
+        ## Get either a set or custom colour
         if filter_name in color_map: filter_color = color_map.get(filter_name)
-        else:                        filter_color = 'rgba'+str(cmap(filter_name))
+        else:                        filter_color = 'rgba'+str(filter_before_string)
         print(filter_color)
         if filter_values['magnitude']:
 
