@@ -299,10 +299,10 @@ def other_pages(target):
     target_dec = target.dec
     # print(target.__dict__)
     # bgem_id = target|target_extra_field:"bgem_id"
-    try:
-        bgem_id = target.targetextra_set.get(key='BlackGEM ID').value
-    except:
-        bgem_id = None
+    try:    bgem_id = target.targetextra_set.get(key='BlackGEM ID').value
+    except: bgem_id = None
+    try:    tns_name = target.targetextra_set.get(key='TNS Name').value[3:]
+    except: tns_name = None
     print(bgem_id)
 
     return {
@@ -311,6 +311,7 @@ def other_pages(target):
         'target_ra'   : target_ra,
         'target_dec'  : target_dec,
         'bgem_id'     : bgem_id,
+        'tns_name'    : tns_name,
         }
 
 @register.inclusion_tag('tom_dataproducts/partials/query_forced_photometry.html')

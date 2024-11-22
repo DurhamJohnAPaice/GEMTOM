@@ -2210,6 +2210,10 @@ def get_lightcurve_from_BGEM_ID(transient_id):
 
     t3 = time.time()
 
+    if len(df_bgem_lightcurve) == 0:
+        print("No lightcurve found.")
+        return df_bgem_lightcurve, df_limiting_mag
+
     print(df_bgem_lightcurve.iloc[0])
     print(df_limiting_mag.iloc[0])
 
