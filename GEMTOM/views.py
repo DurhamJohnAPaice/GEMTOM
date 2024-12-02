@@ -23,6 +23,9 @@ from django.core.files.storage import FileSystemStorage
 from guardian.shortcuts import assign_perm, get_objects_for_user
 from django.contrib.auth.decorators import login_required
 
+## For Register and Login
+from django.contrib.auth import authenticate, login
+
 ## For importing targets
 from .BlackGEM_to_GEMTOM import *
 from tom_targets.utils import import_targets
@@ -59,7 +62,7 @@ import shutil # save img locally
 from urllib.request import urlretrieve
 
 ## For the ToO Forms
-from .forms import ToOForm
+from .forms import *
 from django.core.exceptions import ValidationError
 
 ## For the Live Feed
@@ -395,6 +398,40 @@ def datetime_to_mjd(date):
 
     return mjd
 
+
+## =============================================================================
+## --------------------------- Code for Registering ----------------------------
+
+def sign_up(request):
+
+    if request.method == 'POST':
+        form = RegistrationForm(request.POST)
+
+        if form.is_valid():
+            user = form.save()
+            user.is_active = False
+            user.save()
+            messages.info(request, "Thanks for registering. Please send an email to johnapaice@gmail.com for authentication.")
+            # new_user = authenticate(username=form.cleaned_data['username'],
+                                    # password=form.cleaned_data['password1'],
+                                    # )
+            # login(request, new_user)
+            return redirect('/authentication/')
+            # return redirect('/accounts/login/')
+        else:
+            print("Not valid!")
+            print(form.errors)
+            # return redirect('/accounts/signup/')
+            return render(request, 'register.html', {'form':form})
+
+        # return redirect('/')
+
+    else:
+        form = RegistrationForm()
+        return render(request, 'register.html', {'form':form})
+
+def authentication(request):
+    return render(request, 'authentication.html')
 
 ## =============================================================================
 ## -------------------------- Codes for the ToO page ---------------------------
@@ -2093,11 +2130,13 @@ def get_recent_blackgem_transients(days_since_last_update):
         df['u_max'] = df['u_max'].replace(99,np.nan)
         df['i_max'] = df['i_max'].replace(99,np.nan)
 
+        print(df.iloc[0])
+
         ## Round values for displaying
         df['ra_sml']        = round(df['ra'],4)
         df['dec_sml']       = round(df['dec'],4)
         df['snr_zogy_sml']  = round(df['snr_zogy'],1)
-        df['iauname_short'] = df['iauname'].str[5:]
+        # df['iauname_short'] = df['iauname'].str[5:]
         df['q_min_sml']     = round(df['q_min'],1)
         df['u_min_sml']     = round(df['u_min'],1)
         df['i_min_sml']     = round(df['i_min'],1)

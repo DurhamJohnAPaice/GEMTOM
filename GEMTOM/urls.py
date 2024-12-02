@@ -26,6 +26,12 @@ urlpatterns = [
     # path('GEMTOM/', include('tom_common.urls')),
     # path('about/', AboutView.as_view(), name='about'),
 
+    ## Accounts
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('accounts/signup/', sign_up, name='signup'),
+    path('authentication/', authentication, name='authentication'),
+
+
     path('live_feed/', LiveFeed.as_view(), name='live_feed'),
     path('search_BGEM_ID_for_live_feed/', search_BGEM_ID_for_live_feed, name='search_BGEM_ID_for_live_feed'),
     path('live_feed/<int:bgem_id>/', LiveFeed_BGEM_ID_View, name='live_feed_bgem_id'),

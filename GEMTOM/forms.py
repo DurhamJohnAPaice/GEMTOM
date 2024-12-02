@@ -1,6 +1,8 @@
 from django import forms
 # from uploads.core.models import Document
 from django.core.validators import RegexValidator
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 
 # class DocumentForm(forms.ModelForm):
 #     class Meta:
@@ -20,3 +22,10 @@ class ToOForm(forms.Form):
     band        = forms.CharField(max_length=100, label='Band',         widget=forms.TextInput(attrs={'placeholder': 'Band',        'style': 'width: 300px;', 'class': 'form-control'}))
     notes       = forms.CharField(widget=forms.Textarea(attrs={'cols':'70', 'rows':'1', 'style': 'width: 300px;', 'class': 'form-control'}), label='Notes', required=False)
     # notes       = forms.CharField(widget=forms.Textarea, label='Notes')
+
+class RegistrationForm(UserCreationForm):
+    email = forms.EmailField()
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name', 'password1', 'password2']
