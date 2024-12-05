@@ -4558,7 +4558,7 @@ class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):
                     'File format invalid for file {0} -- Error: {1}'.format(str(dp), iffe)
                 )
             if iffe2:
-                messages.error(self.request, 'There was a problem processing your file: {0} -- Error: {1}'.format(str(dp), iffe2))
+                messages.error(self.request, 'There was a problem processing your file: {0} -- Error: {1}. Is the transient server online?'.format(str(dp), iffe2))
             if iffe3:
                 messages.error(
                     self.request,
