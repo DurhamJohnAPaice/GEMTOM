@@ -4488,17 +4488,18 @@ def add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid):
                     assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
             successful_uploads.append(str(dp))
 
-        except InvalidFileFormatException as e:
-            print("Invalid File Format Exception!")
-            iffe = "File Format Invalid"
-            print(e)
-            ReducedDatum.objects.filter(data_product=dp).delete()
-            dp.delete()
+        # except InvalidFileFormatException as e:
+        #     print("Invalid File Format Exception!")
+        #     iffe = "File Format Invalid"
+        #     print(e)
+        #     ReducedDatum.objects.filter(data_product=dp).delete()
+        #     dp.delete()
 
         except Exception as e:
             print("Exception!")
-            iffe2 = "Unknown Error"
             print(e)
+            if e: iffe2 = e
+            else: iffe2 = "Unknown Error"
             ReducedDatum.objects.filter(data_product=dp).delete()
             dp.delete()
 
