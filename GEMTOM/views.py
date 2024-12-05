@@ -1808,6 +1808,40 @@ def NightView(request, obs_date):
     return render(request, "history/index.html", context)
 
 
+def all_stats_from_bgem_id(bgem_id):
+
+    ## Get the name, ra, and dec:
+    bg = authenticate_blackgem()
+
+    qu = """\
+    SELECT id
+          ,iau_name
+          ,ra_deg
+          ,dec_deg
+      FROM runcat
+     WHERE id = '%(bgem_id)s'
+    """
+    params = {'bgem_id': bgem_id}
+    query = qu % (params)
+
+    l_results = bg.run_query(query)
+
+    return [l_results[0][1], l_results[0][2], l_results[0][3]]
+
+@login_required
+def url_to_GEMTOM(request, bgem_id):
+    '''
+    Imports a target from the bgem_id
+    '''
+
+    print("\n\n\n", bgem_id)
+
+    name, ra, dec = all_stats_from_bgem_id(bgem_id)
+
+    add_to_GEMTOM(bgem_id, name, ra, dec)
+
+    return redirect(reverse('tom_targets:list'))
+
 def history_to_GEMTOM(request):
     '''
     Imports a target from the History tab

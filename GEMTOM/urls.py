@@ -54,6 +54,7 @@ urlpatterns = [
     path('history_to_GEMTOM/', history_to_GEMTOM, name='history_to_GEMTOM'),
     path('TNS_to_GEMTOM/', TNS_to_GEMTOM, name='TNS_to_GEMTOM'),
     path('update_history/', manually_update_history, name='update_history'),
+    path('url_to_GEMTOM/<int:bgem_id>/', url_to_GEMTOM, name='url_to_GEMTOM'),
 
     # path('ID_to_GEMTOM/', ID_to_GEMTOM, name='ID_to_GEMTOM'),
     path('handle_input/', handle_input, name='handle_input'),
