@@ -1813,6 +1813,8 @@ def all_stats_from_bgem_id(bgem_id):
     ## Get the name, ra, and dec:
     bg = authenticate_blackgem()
 
+    print("Starting query...")
+
     qu = """\
     SELECT id
           ,iau_name
@@ -1824,9 +1826,17 @@ def all_stats_from_bgem_id(bgem_id):
     params = {'bgem_id': bgem_id}
     query = qu % (params)
 
-    l_results = bg.run_query(query)
+    try:
+        l_results = bg.run_query(query)
+    except Exception as e:
+        l_results = None
+        print("Error!")
+        print(e)
 
-    return [l_results[0][1], l_results[0][2], l_results[0][3]]
+    if l_results:
+        return [l_results[0][1], l_results[0][2], l_results[0][3]]
+    else:
+        return [None, None, None]
 
 @login_required
 def url_to_GEMTOM(request, bgem_id):
@@ -1834,9 +1844,15 @@ def url_to_GEMTOM(request, bgem_id):
     Imports a target from the bgem_id
     '''
 
-    print("\n\n\n", bgem_id)
-
     name, ra, dec = all_stats_from_bgem_id(bgem_id)
+
+    if name == None:
+        messages.error(
+            request,
+            'Upload failed; are you sure that ' + str(bgem_id) + ' is a valid BlackGEM ID? \
+            If so, check that the connection to the transient server is online.'
+        )
+        return redirect(reverse('tom_targets:list'))
 
     add_to_GEMTOM(bgem_id, name, ra, dec)
 
@@ -4440,7 +4456,7 @@ def add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid):
         # else:
         #     datum['magnitude'] = float(datum_magnitude)
 
-        ## Save ZTF Data
+        ## Save Data
         df = photometry
         # print(df)
         if not os.path.exists("./data/" + target_name + "/none/"):
@@ -4472,15 +4488,15 @@ def add_bgem_lightcurve_to_GEMTOM(target_name, target_id, target_blackgemid):
                     assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
             successful_uploads.append(str(dp))
 
-        except InvalidFileFormatException as iffe:
+        except InvalidFileFormatException as e:
             print("Invalid File Format Exception!")
-            print(iffe)
+            print(e)
             ReducedDatum.objects.filter(data_product=dp).delete()
             dp.delete()
 
-        except Exception as iffe2:
+        except Exception as e:
             print("Exception!")
-            print(iffe2)
+            print(e)
             ReducedDatum.objects.filter(data_product=dp).delete()
             dp.delete()
 
