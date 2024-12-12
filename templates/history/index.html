@@ -111,17 +111,23 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
     {{ source }},
 {% endfor %} -->
 
-<div class="imgbox">
-    <img class="center-fit" src="data:image/png;base64,{{ plot_image }}" alt="Last Night's Sky Plot">
-</div>
+{% if blackhub %}
+    <div class="imgbox">
+        <img class="center-fit" src="data:image/png;base64,{{ plot_image }}" alt="Last Night's Sky Plot">
+    </div>
 
-<br>
-BlackGEM observed {{ num_fields }} fields:<br>
-<em>
-<font style="color:green;">{{ green_fields }} Green</font>&nbsp&nbsp&nbsp
-<font style="color:#bfac00;">{{ yellow_fields }} Yellow</font>&nbsp&nbsp&nbsp
-<font style="color:orange;">{{ orange_fields }} Orange</font>&nbsp&nbsp&nbsp
-<font style="color:red;">{{ red_fields }} Red</font></em>
+    <br>
+    BlackGEM observed {{ num_fields }} fields:<br>
+    <em>
+    <font style="color:green;">{{ green_fields }} Green</font>&nbsp&nbsp&nbsp
+    <font style="color:#bfac00;">{{ yellow_fields }} Yellow</font>&nbsp&nbsp&nbsp
+    <font style="color:orange;">{{ orange_fields }} Orange</font>&nbsp&nbsp&nbsp
+    <font style="color:red;">{{ red_fields }} Red</font></em>
+
+{% else %}
+   <font style="color:lightcoral;"><em> Connection to BlackHub is down.<br>
+    Please check the tunnel and the status of BlackHub!</em></font>
+{% endif %}
 
 <hr>
 <h5>Files:</h5>

@@ -77,17 +77,25 @@ On this page, you can find the history of blackgem's observations.
 <p>{{ history_daily_text_2 }}<br>
 {{ history_daily_text_3 }}</p>
 
-<div class="imgbox">
-    <img class="center-fit" src="data:image/png;base64,{{ plot_image }}" alt="Last Night's Sky Plot">
-</div>
 
-<br>
-BlackGEM observed {{ num_fields }} fields:<br>
-<em>
-<font style="color:green;">{{ green_fields }} Green</font>&nbsp&nbsp&nbsp
-<font style="color:#bfac00;">{{ yellow_fields }} Yellow</font>&nbsp&nbsp&nbsp
-<font style="color:orange;">{{ orange_fields }} Orange</font>&nbsp&nbsp&nbsp
-<font style="color:red;">{{ red_fields }} Red</font></em>
+{% if blackhub %}
+    <div class="imgbox">
+        <img class="center-fit" src="data:image/png;base64,{{ plot_image }}" alt="Last Night's Sky Plot">
+    </div>
+
+    <br>
+    BlackGEM observed {{ num_fields }} fields:<br>
+    <em>
+    <font style="color:green;">{{ green_fields }} Green</font>&nbsp&nbsp&nbsp
+    <font style="color:#bfac00;">{{ yellow_fields }} Yellow</font>&nbsp&nbsp&nbsp
+    <font style="color:orange;">{{ orange_fields }} Orange</font>&nbsp&nbsp&nbsp
+    <font style="color:red;">{{ red_fields }} Red</font></em>
+
+{% else %}
+   <font style="color:lightcoral;"><em> Connection to BlackHub is down.<br>
+    Please check the tunnel and the status of BlackHub!</em></font>
+{% endif %}
+
 
 <hr>
 

@@ -259,6 +259,9 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 
     for f in filters:
         df_2 = df_bgem_lightcurve.loc[df_bgem_lightcurve['i.filter'] == f]
+        # print(len(df_2))
+        df_2 = df_2[df_2['x.mag_zogy'] != 99]
+        # print(len(df_2))
         df_limiting_mag_2 = df_limiting_mag.loc[df_limiting_mag['filter'] == f]
 
         fig.add_trace(go.Scatter(
@@ -315,6 +318,7 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df_bgem_lightcurve['x.ra_psf_d'], y=df_bgem_lightcurve['x.dec_psf_d'], mode='markers', name='Line and Marker', marker_color="LightSeaGreen"))
+    fig.update_xaxes(autorange="reversed")
     mid_x = ra
     mid_y = dec
     c = SkyCoord(mid_x, mid_y, frame='icrs', unit='deg')
@@ -1032,6 +1036,11 @@ class HistoryView(LoginRequiredMixin, TemplateView):
         context['red_fields']       = field_stats[4]
         context['plot_image']       = image_base64
 
+        if field_stats[0] == 0 and "No" not in context['history_daily_text_1']:
+            context['blackhub'] = False
+        else:
+            context['blackhub'] = True
+
         t5 = time.time()
 
         print("Times:")
@@ -1088,7 +1097,7 @@ def get_blackgem_stats(obs_date):
         ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
         print("No transients on ", obs_date, ":", sep="")
         print(e)
-        return "0", "0", "0", ["","","","", ""], "", "", "", ""
+        return "0", "0", "0", ["","","","","",""], "", "", "", ""
 
     try:
         data_gaia = pd.read_csv(gaia_filename)
@@ -1805,6 +1814,12 @@ def NightView(request, obs_date):
     lightcurve = plot(fig, output_type='div')
     context['lightcurve']       = lightcurve
 
+
+    if field_stats[0] == 0 and "No" not in context['history_daily_text_1']:
+        context['blackhub'] = False
+    else:
+        context['blackhub'] = True
+
     return render(request, "history/index.html", context)
 
 
@@ -2327,17 +2342,6 @@ def get_lightcurve_from_BGEM_ID(transient_id):
     return df_bgem_lightcurve, df_limiting_mag
 
 
-def BGEM_to_GEMTOM_photometry(df_bg_assocs):
-
-    gemtom_photometry = pd.DataFrame({
-        'mjd' : df_bg_assocs["i.\"mjd-obs\""],
-        'mag' : df_bg_assocs["x.mag_zogy"],
-        'magerr' : df_bg_assocs["x.magerr_zogy"],
-        'filter' : df_bg_assocs["i.filter"],
-    })
-
-    return gemtom_photometry
-
 def BGEM_to_GEMTOM_photometry_2(df_bgem_lightcurve, df_limiting_mag=[]):
 
     print("df_bgem_lightcurve:")
@@ -2548,7 +2552,8 @@ def BGEM_ID_View(request, bgem_id):
 
     app = DjangoDash('EachObservation')
 
-    df_new = df_bgem_lightcurve.rename(columns={
+
+    df_bgem_lightcurve = df_bgem_lightcurve.rename(columns={
         'a.xtrsrc'          : "xtrsrc",
         'x.ra_psf_d'        : "ra_psf_d",
         'x.dec_psf_d'       : "dec_psf_d",
@@ -2556,18 +2561,42 @@ def BGEM_ID_View(request, bgem_id):
         'x.fluxerr_zogy'    : "fluxerr_zogy",
         'x.mag_zogy'        : "mag_zogy",
         'x.magerr_zogy'     : "magerr_zogy",
-        'i."mjd-obs"'       : "mjd_obs",
+        'i."mjd-obs"'       : "mjd",
         'i."date-obs"'      : "date_obs",
         'i.filter'          : "filter",
     })
+
+    # df_new = pd.concat([df_bgem_lightcurve,df_limiting_mag]).reset_index(drop=True)
+    # print("\n")
+    # print(df_bgem_lightcurve.iloc[0])
+    # print(df_limiting_mag.iloc[0])
+    # df_bgem_lightcurve = df_bgem_lightcurve.astype({'xtrsrc': 'int32'}).dtypes
+    df_ful = pd.concat([df_bgem_lightcurve,df_limiting_mag]).reset_index(drop=True)
+    df_ful = df_ful.sort_values(by=['mjd'])
+    # print(df_new)
+    # print("\n")
+
     # df_new.style.format({
     #     # 'runcat_id' : make_runcat_clickable,
     #     'xtrsrc' : make_xtrsrc_clickable
     # })
 
-    df_new['xtrsrc'] = df_new['xtrsrc'].apply(lambda x: f'[{x}](https://staging.apps.blackgem.org/transients/blackview/show_xtrsrc/{x})')
+    df_new = df_bgem_lightcurve
+
+    df_new['xtrsrc'] = df_new['xtrsrc'].apply(lambda x: f'[{int(x)}](https://staging.apps.blackgem.org/transients/blackview/show_xtrsrc/{int(x)})' if x > 0 else 'None')
+    df_ful['xtrsrc'] = df_ful['xtrsrc'].apply(lambda x: f'[{int(x)}](https://staging.apps.blackgem.org/transients/blackview/show_xtrsrc/{int(x)})' if x > 0 else 'None')
 
     # print(df_new)
+
+    getRowStyle = {
+        "styleConditions": [
+            {
+                "condition": "params.data.limiting_mag > 0",
+                "style": {"color": "lightgrey"},
+            },
+        ],
+        "defaultStyle": {"color": "black"},
+    }
 
     ## Define the layout of the Dash app
     app.layout = html.Div([
@@ -2582,33 +2611,86 @@ def BGEM_ID_View(request, bgem_id):
             # ],
             columnDefs=[
                         {'headerName': 'a.xtrsrc', 'field':  'xtrsrc', 'cellRenderer': 'markdown'},
-                        {'headerName': 'i.mjd_obs', 'field':  'mjd_obs'},
-                        {'headerName': 'i.date_obs', 'field':  'date_obs'},
-                        {'headerName': 'x.ra_psf_d', 'field':  'ra_psf_d'},
-                        {'headerName': 'x.dec_psf_d', 'field':  'dec_psf_d'},
-                        {'headerName': 'x.flux_zogy', 'field':  'flux_zogy'},
-                        {'headerName': 'x.fluxerr_zogy', 'field':  'fluxerr_zogy'},
-                        {'headerName': 'x.mag_zogy', 'field':  'mag_zogy'},
-                        {'headerName': 'x.magerr_zogy', 'field':  'magerr_zogy'},
                         {'headerName': 'i.filter', 'field': 'filter'},
+                        {'headerName': 'i.date_obs', 'field':  'date_obs'},
+                        {'headerName': 'x.ra_psf_d', 'field':  'ra_psf_d',
+                            "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
+                        {'headerName': 'x.dec_psf_d', 'field':  'dec_psf_d',
+                            "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
+                        {'headerName': 'x.mag_zogy', 'field':  'mag_zogy',
+                            "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
+                        {'headerName': 'x.magerr_zogy', 'field':  'magerr_zogy',
+                            "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
+                        {'headerName': 'i.mjd_obs', 'field':  'mjd',
+                            "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
             ],
+            getRowStyle=getRowStyle,
             defaultColDef={
                 'sortable': True,
                 'filter': True,
                 'resizable': True,
-                'editable': True,
+                'editable': False,
             },
             columnSize="autoSize",
             dashGridOptions={
                 "skipHeaderOnAutoSize": True,
                 "rowSelection": "single",
             },
-            style={'height': '650px', 'width': '100%'},  # Set explicit height for the grid
+            style={'height': '350px', 'width': '100%'},  # Set explicit height for the grid
             className='ag-theme-balham'  # Add a theme for better appearance
         ),
         dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
         html.Div(id='output-div'),  # Div to display the information
-    ], style={'height': '550px', 'width': '100%'}
+    ], style={'height': '350px', 'width': '100%'}
+    )
+
+    app2 = DjangoDash('FullObservation')
+    ## Define the layout of the Dash app
+    app2.layout = html.Div([
+        dag.AgGrid(
+            id='full-observation-grid',
+            rowData=df_ful.to_dict('records'),
+            # rowData=rowData_new,
+            # columnDefs=[{'headerName': col, 'field': col} for col in df_new.columns],
+            # columnDefs=[
+            #             {'headerName': '1', 'field': 'x.ra_psf_d'},
+            #             {'headerName': '2', 'field': 'x.dec_psf_d'},
+            # ],
+            columnDefs=[
+                        {'headerName': 'a.xtrsrc', 'field':  'xtrsrc', 'cellRenderer': 'markdown'},
+                        {'headerName': 'i.filter', 'field': 'filter'},
+                        {'headerName': 'i.date_obs', 'field':  'date_obs'},
+                        {'headerName': 'x.ra_psf_d', 'field':  'ra_psf_d',
+                            "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
+                        {'headerName': 'x.dec_psf_d', 'field':  'dec_psf_d',
+                            "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
+                        {'headerName': 'x.mag_zogy', 'field':  'mag_zogy',
+                            "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
+                        {'headerName': 'x.magerr_zogy', 'field':  'magerr_zogy',
+                            "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
+                        {'headerName': 'Limiting Mag', 'field':  'limiting_mag',
+                            "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
+                        {'headerName': 'i.mjd_obs', 'field':  'mjd',
+                            "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
+            ],
+            getRowStyle=getRowStyle,
+            defaultColDef={
+                'sortable': True,
+                'filter': True,
+                'resizable': True,
+                'editable': False,
+            },
+            columnSize="autoSize",
+            dashGridOptions={
+                "skipHeaderOnAutoSize": True,
+                "rowSelection": "single",
+            },
+            style={'height': '300px', 'width': '100%'},  # Set explicit height for the grid
+            className='ag-theme-balham'  # Add a theme for better appearance
+        ),
+        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
+        html.Div(id='output-div'),  # Div to display the information
+    ], style={'height': '300px', 'width': '100%'}
     )
 
     t5 = time.time()

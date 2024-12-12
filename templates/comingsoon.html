@@ -50,7 +50,6 @@ A list of the main features that have been requested and I intend to work on.
             <li>Transients: Search by IAU name.</li>
             <li>History: Reduce the time to load a page; e.g. load the HR diagram later.</li>
             <li>History: Fix the error that occurs if there are no Gaia crossmatches.</li>
-            <li>History: Note when there is no connection to BlackHub (instead of just reporting no fields observed)</li>
             <li>History: Create a full history archive.</li>
             <li>History: Add fields observed to the history table.</li>
             <li>Live Feed: Display the schedule, and also have the it look up which target it’s currently looking at</li>
@@ -65,10 +64,12 @@ A list of the main features that have been requested and I intend to work on.
             <li>Get Hugo’s code on our servers</li>
             <li>Add Daniella’s Code for the Treasure Map</li>
             <li>Post a message onto the Google Chat whenever certain sources change or are added.</li>
-            <li>History: Change SIMBAD searhc to only be 5 arcsec.</li>
+            <li>History: Change SIMBAD search to only be 5 arcsec.</li>
             <li>When a source is uploaded, look for a DES source in a certain radius.</li>
             <li>Comments: Allow comments longer than 30 words.</li>
             <li>Allow adding to GEMTOM with a single button click (If the user is signed in...)</li>
+            <li>Have it return a message if you're adding a target that's already been added</li>
+            <li>Transient: Some way to look up non-detections of a source</li>
             <!-- <li></li>
             <li></li>
             <li></li> -->
@@ -98,12 +99,21 @@ A list of the main features that have been requested and I intend to work on.
         <ul>
             <li>Targets can now be added to GEMTOM via a URL (/url_to_GEMTOM/[BlackGEM ID]), useful to adding from external tools.</li>
             <li>Word display limit has been removed on comments. Character count remains at 3000 (roughly 500 words, or an A4 page of text)</li>
+            <li>Removed spurious 99-mag results from lightcurves</li>
+            <li>Transients: Added non-detections to the 'Full Observation Data' table</li>
+            <li>Targets/Transients: Added link to BlackPEARL</li>
+            <li>Targets/Transients: Added link to search Vizier</li>
+            <li>Targets/Transients: Reduced SIMBAD search from 2 to 1 arcminute</li>
         </ul>
     </ul>
     <br>
     <h5>Bugfixes</h5>
     <ul>
         <li>If GEMTOM cannot connect to the Transient server, it should now serve an error message instead of crashing.</li>
+        <li>Transients: Flipped the x-axis in the 'Location on Sky' plot, in order to match the Aladin view.</li>
+        <li>Transients: Removed the 'Flux' columns from the 'Full Observation Data' table (unnecessarily made the table bigger). Also removed the ability to edit the cells.</li>
+        <li>History: Blank Sky Plot no longer made when there is no connection to BlackHub; system instead reports lack of connection.</li>
+        <li>History: Fixed a bug where nightly pages wouldn't appear if there are no detections</li>
     </ul>
 </ul>
 <br>
