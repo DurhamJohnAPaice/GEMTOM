@@ -87,7 +87,8 @@ time0min = (date.today()-timedelta(days=days_ago+ndays+30)).isoformat()+" 12:00:
 time1 = (date.today()-timedelta(days=days_ago)).isoformat()+" 12:00:00"
 
 # folder to save files
-bgfiles = "/Users/JohnAPaice/make-tom/GEMTOM_alt2/GEMTOM/data/history_transients/"
+# bgfiles = user_home + "/make-tom/GEMTOM_alt2/GEMTOM/data/history_transients/"
+bgfiles = user_home + "/GEMTOM/GEMTOM/data/history_transients/"
 
 ## === Make sure we're running... ===
 with open(bgfiles+'run_check.txt', 'w') as f:
@@ -403,7 +404,8 @@ if pipeline!='star':
     nuc_sep = 2 # arcsec.
 
     print("Looking for %d entries in Delve..."%len(res))
-    g = Table.read('/Users/JohnAPaice/make-tom/GEMTOM_alt2/GEMTOM/data/blackgem_crossmatch/delvedr2_mag21_withAGN.fits')
+    # g = Table.read('/Users/JohnAPaice/make-tom/GEMTOM_alt2/GEMTOM/data/blackgem_crossmatch/delvedr2_mag21_withAGN.fits')
+    g = Table.read(user_home + 'GEMTOM/GEMTOM/data/blackgem_crossmatch/delvedr2_mag21_withAGN.fits')
     print("delve catalog is read")
 
     ra1 = np.asarray(res['ra'])
@@ -762,7 +764,8 @@ print(res_select)
 
 
 obs_date = str(time0)[:4]+str(time0)[5:7]+str(time0)[8:10]
-fileout = "/Users/JohnAPaice/make-tom/GEMTOM_alt2/GEMTOM/data/history_transients/" + obs_date + "_" + pipeline + ".csv"
+# fileout = user_home + "/make-tom/GEMTOM_alt2/GEMTOM/data/history_transients/" + obs_date + "_" + pipeline + ".csv"
+fileout = user_home + "/GEMTOM/GEMTOM/data/history_transients/" + obs_date + "_" + pipeline + ".csv"
 
 # res_select = res_select.sort_values(by=['n_datapoints'], ascending=False)
 res_select = res_select.sort_values(by=['i_rb_avg'], ascending=False)
