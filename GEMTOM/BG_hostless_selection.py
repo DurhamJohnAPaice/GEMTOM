@@ -405,7 +405,7 @@ if pipeline!='star':
 
     print("Looking for %d entries in Delve..."%len(res))
     # g = Table.read('/Users/JohnAPaice/make-tom/GEMTOM_alt2/GEMTOM/data/blackgem_crossmatch/delvedr2_mag21_withAGN.fits')
-    g = Table.read(user_home + 'GEMTOM/GEMTOM/data/blackgem_crossmatch/delvedr2_mag21_withAGN.fits')
+    g = Table.read(user_home + '/GEMTOM/GEMTOM/data/blackgem_crossmatch/delvedr2_mag21_withAGN.fits')
     print("delve catalog is read")
 
     ra1 = np.asarray(res['ra'])
