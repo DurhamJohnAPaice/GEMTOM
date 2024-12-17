@@ -914,8 +914,24 @@ def get_any_nights_sky_plot(night):
     image_base64 = image_base64.decode('utf-8')
 
     print("Sky view plotted.")
+    print(night)
 
     return field_stats, image_base64
+
+def get_nightly_hostless(night):
+    hostless_filename = "./data/history_transients/" + night + "_hostless.csv"
+
+    try:
+        df_hostless = pd.read_csv(hostless_filename)
+
+        print("Bark!")
+        print(df_hostless)
+        return df_hostless
+    except:
+        print("No hostless transients that night.")
+        return None
+
+
 
 
 class HistoryView(LoginRequiredMixin, TemplateView):
@@ -1035,6 +1051,16 @@ class HistoryView(LoginRequiredMixin, TemplateView):
         context['orange_fields']    = field_stats[3]
         context['red_fields']       = field_stats[4]
         context['plot_image']       = image_base64
+
+        # df_hostless = get_nightly_hostless(yesterday_date_string)
+        # # print(df.hostless.columns)
+        # if df_hostless:
+        #     context['hostless'] = zip(list(df_hostless.runcat_id), list(df_hostless.q_avg_mag))
+        #     # contest['hostless_bool'] = True
+        # else:
+        #     context['hostless'] = ""
+        #     # contest['hostless_bool'] = False
+        #
 
         if field_stats[0] == 0 and "No" not in context['history_daily_text_1']:
             context['blackhub'] = False
@@ -1814,6 +1840,31 @@ def NightView(request, obs_date):
     lightcurve = plot(fig, output_type='div')
     context['lightcurve']       = lightcurve
 
+    df_hostless = get_nightly_hostless(obs_date)
+    if df_hostless is not None:
+        # print(df_hostless.columns)
+        # print(['%.2f'%x for x in df_hostless.q_rb_avg])
+        df_hostless = df_hostless.sort_values(by=['i_rb_avg'], ascending=False)
+        df_hostless = df_hostless.sort_values(by=['u_rb_avg'], ascending=False)
+        df_hostless = df_hostless.sort_values(by=['q_rb_avg'], ascending=False)
+        df_hostless = df_hostless.fillna('')
+
+        context['hostless'] = zip(
+            list(df_hostless.runcat_id),
+            ['%.3f'%x for x in df_hostless.ra_psf],
+            ['%.3f'%x for x in df_hostless.dec_psf],
+            ['%.5s'%x for x in df_hostless.q_min],
+            ['%.4s'%x for x in df_hostless.q_rb_avg],
+            ['%.5s'%x for x in df_hostless.u_min],
+            ['%.4s'%x for x in df_hostless.u_rb_avg],
+            ['%.5s'%x for x in df_hostless.i_min],
+            ['%.4s'%x for x in df_hostless.i_rb_avg],
+            ['%.4s'%x for x in df_hostless.det_sep],
+        )
+        # context['hostless_bool'] = True
+    else:
+        context['hostless'] = ""
+        # context['hostless_bool'] = False
 
     if field_stats[0] == 0 and "No" not in context['history_daily_text_1']:
         context['blackhub'] = False

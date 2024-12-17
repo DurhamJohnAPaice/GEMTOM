@@ -56,7 +56,7 @@
   <div class="col-md-8">
     <ul class="nav nav-tabs" role="tablist" id="tabs">
       <li class="nav-item">
-        <a class="nav-link active" id="observe-tab" href="#observe" role="tab" data-toggle="tab">Observe</a>
+        <a class="nav-link active" id="observe-tab" href="#observe" role="tab" data-toggle="tab">Overview</a>
       </li>
       <!-- <li class="nav-item">
         <a class="nav-link" id="observations-tab" href="#observations" role="tab" data-toggle="tab">Observations</a>
@@ -95,8 +95,8 @@
         </div>
         <hr/>
         {% other_pages target %}
-        <hr/>
-        <h4>Observe</h4>
+        <!-- <hr/> -->
+        <!-- <h4>Observe</h4>
         {% observing_buttons object %}
         <hr/>
         {% observationtemplate_run object %}
@@ -107,7 +107,7 @@
           {% moon_distance object %}
         {% elif target.type == 'NON_SIDEREAL' %}
           <p>Airmass plotting for non-sidereal targets is not currently supported. If you would like to add this functionality, please check out the <a href="https://github.com/TOMToolkit/tom_nonsidereal_airmass" target="_blank">non-sidereal airmass plugin.</a></p>
-        {% endif %}
+        {% endif %} -->
       </div>
       <div class="tab-pane" id="observations">
         {% existing_observation_form object %}
