@@ -304,7 +304,9 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
                 annotation_textangle = 90,)
 
     fig.update_layout(height=600)
-    fig.update_layout(hovermode="x", xaxis=dict(tickformat ='d'),
+    fig.update_layout(hovermode="x",
+        xaxis=dict(tickformat ='digits'),
+        # xaxis=dict(tickformat ='d'),
     # fig.update_layout(xaxis=dict(tickformat ='d'),
         margin=dict(l=2, r=2),  # Set margins to reduce whitespace
         title="Lightcurves",
@@ -324,12 +326,23 @@ def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
     c = SkyCoord(mid_x, mid_y, frame='icrs', unit='deg')
     min_circle = c.directional_offset_by(45  * u.deg, 1.414 * 5 * u.arcsecond)
     max_circle = c.directional_offset_by(225 * u.deg, 1.414 * 5 * u.arcsecond)
+    # print("Circles")
+    # print(min_circle)
+    # print(max_circle)
 
     # print(min_circle.separation(max_circle))
 
+    circle_x0 = min_circle.ra.value
+    circle_y0 = min_circle.dec.value
+    circle_x1 = max_circle.ra.value
+    circle_y1 = max_circle.dec.value
+
+    if circle_x0 < 1 and circle_x1 > 359:
+        circle_x1 -= 360
+
     fig.add_shape(type="circle",
         xref="x", yref="y",
-        x0=min_circle.ra.value, y0=min_circle.dec.value, x1=max_circle.ra.value, y1=max_circle.dec.value,
+        x0=circle_x0, y0=circle_y0, x1=circle_x1, y1=circle_y1,
         line_color="red",
     )
     fig.update_layout(width=320, height=250,
@@ -893,7 +906,7 @@ def get_any_nights_sky_plot(night):
 
     else:
         ## Plot!
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(8,5), dpi=110)
         ax = fig.add_subplot(111, projection="mollweide")
         ax.grid(True)
 
@@ -1062,8 +1075,11 @@ class HistoryView(LoginRequiredMixin, TemplateView):
         #     # contest['hostless_bool'] = False
         #
 
-        if field_stats[0] == 0 and "No" not in context['history_daily_text_1']:
-            context['blackhub'] = False
+        if 'history_daily_text_1' in context:
+            if field_stats[0] == 0 and "No" not in context['history_daily_text_1']:
+                context['blackhub'] = False
+            else:
+                context['blackhub'] = True
         else:
             context['blackhub'] = True
 
@@ -1849,25 +1865,48 @@ def NightView(request, obs_date):
         df_hostless = df_hostless.sort_values(by=['q_rb_avg'], ascending=False)
         df_hostless = df_hostless.fillna('')
 
-        context['hostless'] = zip(
-            list(df_hostless.runcat_id),
-            ['%.3f'%x for x in df_hostless.ra_psf],
-            ['%.3f'%x for x in df_hostless.dec_psf],
-            ['%.5s'%x for x in df_hostless.q_min],
-            ['%.4s'%x for x in df_hostless.q_rb_avg],
-            ['%.5s'%x for x in df_hostless.u_min],
-            ['%.4s'%x for x in df_hostless.u_rb_avg],
-            ['%.5s'%x for x in df_hostless.i_min],
-            ['%.4s'%x for x in df_hostless.i_rb_avg],
-            ['%.4s'%x for x in df_hostless.det_sep],
-        )
+        if "real_bogus" in df_hostless.columns:
+            context['hostless'] = zip(
+                list(df_hostless.runcat_id),
+                ['%.3f'%x for x in df_hostless.ra_psf],
+                ['%.3f'%x for x in df_hostless.dec_psf],
+                ['%.5s'%x for x in df_hostless.q_min],
+                ['%.4s'%x for x in df_hostless.q_rb_avg],
+                ['%.5s'%x for x in df_hostless.u_min],
+                ['%.4s'%x for x in df_hostless.u_rb_avg],
+                ['%.5s'%x for x in df_hostless.i_min],
+                ['%.4s'%x for x in df_hostless.i_rb_avg],
+                ['%.4s'%x for x in df_hostless.det_sep],
+                [x for x in df_hostless.real_bogus],
+                [x for x in df_hostless.classification],
+            )
+
+        else:
+            context['hostless'] = zip(
+                list(df_hostless.runcat_id),
+                ['%.3f'%x for x in df_hostless.ra_psf],
+                ['%.3f'%x for x in df_hostless.dec_psf],
+                ['%.5s'%x for x in df_hostless.q_min],
+                ['%.4s'%x for x in df_hostless.q_rb_avg],
+                ['%.5s'%x for x in df_hostless.u_min],
+                ['%.4s'%x for x in df_hostless.u_rb_avg],
+                ['%.5s'%x for x in df_hostless.i_min],
+                ['%.4s'%x for x in df_hostless.i_rb_avg],
+                ['%.4s'%x for x in df_hostless.det_sep],
+                ["" for x in df_hostless.det_sep],
+                ["" for x in df_hostless.det_sep],
+            )
+
         # context['hostless_bool'] = True
     else:
         context['hostless'] = ""
         # context['hostless_bool'] = False
 
-    if field_stats[0] == 0 and "No" not in context['history_daily_text_1']:
-        context['blackhub'] = False
+    if 'history_daily_text_1' in context:
+        if field_stats[0] == 0 and "No" not in context['history_daily_text_1']:
+            context['blackhub'] = False
+        else:
+            context['blackhub'] = True
     else:
         context['blackhub'] = True
 
@@ -1959,6 +1998,42 @@ def TNS_to_GEMTOM(request):
     return redirect(reverse('tom_targets:list'))
 
 
+def rate_target(request):
+    '''
+    Rates a target as Real or Bogus
+    '''
+
+    id = request.POST.get('id')
+    real_bogus = request.POST.get('real_bogus')
+    classification = request.POST.get('classification')
+    obs_date = request.POST.get('night')
+
+    # name = iau_name_from_bgem_id(id)
+
+    df_hostless = pd.read_csv("./data/history_transients/"+obs_date+"_hostless.csv")
+
+    index = df_hostless.index[df_hostless['runcat_id'] == int(id)]
+    if "real_bogus" not in df_hostless.columns:
+        df_hostless["real_bogus"] = [None]*len(df_hostless)
+    if "classification" not in df_hostless.columns:
+        df_hostless["classification"] = [None]*len(df_hostless)
+
+    df_hostless["real_bogus"].iloc[index] = real_bogus
+    df_hostless["classification"].iloc[index] = classification
+    df_hostless.to_csv("./data/history_transients/"+obs_date+"_hostless.csv")
+    print("\n\n")
+    print(df_hostless)
+    print(real_bogus)
+    print(id)
+    print(df_hostless.runcat_id)
+    print(index)
+    print(df_hostless.iloc[index])
+    print("\n\n")
+
+    # add_to_GEMTOM(id, name, ra, dec)
+
+    # return redirect(reverse('tom_targets:list'))
+    return redirect('/history/' + obs_date + "/")
 
 ## =============================================================================
 ## ----------------------- Codes for the Transients page -----------------------

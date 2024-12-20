@@ -18,20 +18,17 @@ A list of the main features that have been requested and I intend to work on.
 
         <h5>'History' Page</h5>
         <ul>
-            <li>Expand the status page to include objects of other types, not just Extragalactic.<br>
+            <li>Expand the status page to more objects of other types.<br>
             Note: <b>This is where you come in!</b> If you have any codes that can comb the recent
             transients for any signals, pass them my way, and I can feature the results on GEMTOM.</li>
             <li>Note which targets are Gravitational Wave triggers.</li>
             <li>Have different messages on Night views that are in the future.</li>
-            <li>Longer date list. Maybe in a separate page?</li>
+            <li>Create a page for a full history archive.</li>
             <li>Speed up the plotting of the HR diagram.</li>
             <li>Speed up the plotting of the sky plot.</li>
-            <li>Modify the GCNS file; only contain every Nth target.</li>
-            <li>Modify the GCNS to perhaps be smaller, or maybe even just be a static image on the back of the HR diagram.</li>
             <li>Maybe have the HR diagram show a list of historical BlackGEM transients too...?</li>
             <li>Add a way to distinguish old/new targets on the HR diagram</li>
-            <li>Perhaps have tabs on each page - that night's galactic/extra-galactic sources, for instance.</li>
-            <li>Correct the all-sky plot that's displayed when there's no data</li>
+            <li>Search the records for transients and find past 'Real/Bogus' labels, if present.</li>
         </ul>
     <br>
 
@@ -48,9 +45,9 @@ A list of the main features that have been requested and I intend to work on.
             <li>Transients: Make a cutout from the Aladin skyview and overlay the detection locations onto it.</li>
             <li>Transients: Fix the error where the circle in the Aladin skyview desyncs if you zoom.</li>
             <li>Transients: Search by IAU name.</li>
+            <li>Transients: Some way to look up non-detections of a source</li>
             <li>History: Reduce the time to load a page; e.g. load the HR diagram later.</li>
             <li>History: Fix the error that occurs if there are no Gaia crossmatches.</li>
-            <li>History: Create a full history archive.</li>
             <li>History: Add fields observed to the history table.</li>
             <li>Live Feed: Display the schedule, and also have the it look up which target it’s currently looking at</li>
             <li>Live Feed: Link to the Treasure Map</li>
@@ -64,12 +61,8 @@ A list of the main features that have been requested and I intend to work on.
             <li>Get Hugo’s code on our servers</li>
             <li>Add Daniella’s Code for the Treasure Map</li>
             <li>Post a message onto the Google Chat whenever certain sources change or are added.</li>
-            <li>History: Change SIMBAD search to only be 5 arcsec.</li>
             <li>When a source is uploaded, look for a DES source in a certain radius.</li>
-            <li>Comments: Allow comments longer than 30 words.</li>
-            <li>Allow adding to GEMTOM with a single button click (If the user is signed in...)</li>
             <li>Have it return a message if you're adding a target that's already been added</li>
-            <li>Transient: Some way to look up non-detections of a source</li>
             <!-- <li></li>
             <li></li>
             <li></li> -->
@@ -98,6 +91,7 @@ A list of the main features that have been requested and I intend to work on.
         <li><h6>Hostless Transients!</h6></li>
         <ul>
             <li>The nightly transients page now contains a list of hostless transients, and links to their relevant GEMTOM pages..</li>
+            <li>You can label Hostless Transients as 'Real' or 'Bogus', along with writing a custom classification; this does not transmit any data, and is only used for later reference.</li>
         </ul>
         <br>
         <li><h6>Miscellaneous features</h6></li>
@@ -110,6 +104,7 @@ A list of the main features that have been requested and I intend to work on.
             <li>Targets/Transients: Added link to search Vizier</li>
             <li>Targets/Transients: Reduced SIMBAD search from 2 to 1 arcminute</li>
             <li>Targets: Removed fields related to observations, which have not been set up.</li>
+            <li>History pages now have tabs for Hostless, Gaia, and Extragalactic transients.</li>
         </ul>
     </ul>
     <br>
@@ -118,8 +113,12 @@ A list of the main features that have been requested and I intend to work on.
         <li>If GEMTOM cannot connect to the Transient server, it should now serve an error message instead of crashing.</li>
         <li>Transients: Flipped the x-axis in the 'Location on Sky' plot, in order to match the Aladin view.</li>
         <li>Transients: Removed the 'Flux' columns from the 'Full Observation Data' table (unnecessarily made the table bigger). Also removed the ability to edit the cells.</li>
+        <li>Transients: Fixed a bug where the 10 arcsecond circle in the 'Location on Sky' plot would span the sky if the targets lay within 5 arcseconds of RA 0.</li>
+        <li>Lightcurves: Fixed the x axis so that it plots decimals of MJDs.</li>
         <li>History: Blank Sky Plot no longer made when there is no connection to BlackHub; system instead reports lack of connection.</li>
         <li>History: Fixed a bug where nightly pages wouldn't appear if there are no detections</li>
+        <li>History: Fixed another bug where nightly pages would crash if there are no detections</li>
+        <li>History: Corrected the all-sky plot that's displayed when there's no data (it now fits with all other plots)</li>
     </ul>
 </ul>
 <br>

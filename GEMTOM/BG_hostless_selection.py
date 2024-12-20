@@ -87,8 +87,8 @@ time0min = (date.today()-timedelta(days=days_ago+ndays+30)).isoformat()+" 12:00:
 time1 = (date.today()-timedelta(days=days_ago)).isoformat()+" 12:00:00"
 
 # folder to save files
-# bgfiles = user_home + "/make-tom/GEMTOM_alt2/GEMTOM/data/history_transients/"
-bgfiles = user_home + "/GEMTOM/GEMTOM/data/history_transients/"
+bgfiles = user_home + "/make-tom/GEMTOM_alt2/GEMTOM/data/history_transients/"
+# bgfiles = user_home + "/GEMTOM/GEMTOM/data/history_transients/"
 
 ## === Make sure we're running... ===
 with open(bgfiles+'run_check.txt', 'w') as f:
@@ -237,8 +237,8 @@ if querycat:
     else:               ndet_plural = ""
     print("%d transients have >%d valid datapoint%s"%(n_new, min_ndet,ndet_plural))
 
-    if len(df_new_runcats)==0:
-        raise SystemExit("No transient matching requirements. Stopping code here.")
+    # if len(df_new_runcats)==0:
+        # raise SystemExit("No transient matching requirements. Stopping code here.")
 
     et = time.time()
     print("Elapsed time:",et-st,"seconds")
@@ -404,8 +404,8 @@ if pipeline!='star':
     nuc_sep = 2 # arcsec.
 
     print("Looking for %d entries in Delve..."%len(res))
-    # g = Table.read('/Users/JohnAPaice/make-tom/GEMTOM_alt2/GEMTOM/data/blackgem_crossmatch/delvedr2_mag21_withAGN.fits')
-    g = Table.read(user_home + '/GEMTOM/GEMTOM/data/blackgem_crossmatch/delvedr2_mag21_withAGN.fits')
+    g = Table.read('/Users/JohnAPaice/make-tom/GEMTOM_alt2/GEMTOM/data/blackgem_crossmatch/delvedr2_mag21_withAGN.fits')
+    # g = Table.read(user_home + '/GEMTOM/GEMTOM/data/blackgem_crossmatch/delvedr2_mag21_withAGN.fits')
     print("delve catalog is read")
 
     ra1 = np.asarray(res['ra'])
@@ -421,27 +421,31 @@ if pipeline!='star':
 
     c1 = SkyCoord(ra=ra1,dec=dec1,frame="icrs",unit="deg") # coordinates of BG objects
     c2 = SkyCoord(ra=ra2,dec=dec2,frame="icrs",unit="deg") # coordinates of galaxies
-    idx, d2d, d3d = c1.match_to_catalog_sky(c2)
+    if len(c1) > 0 and len(c2) > 0:
+        idx, d2d, d3d = c1.match_to_catalog_sky(c2)
 
-    # compare each separation to the matching radius
-    if pipeline=='nuclear':
-        posmatch = (d2d.arcsec < nuc_sep)
-    elif pipeline=='offnuclear':
-        posmatch = np.logical_and(d2d.arcsec > nuc_sep, d2d.arcsec < max_sep)
+        # compare each separation to the matching radius
+        if pipeline=='nuclear':
+            posmatch = (d2d.arcsec < nuc_sep)
+        elif pipeline=='offnuclear':
+            posmatch = np.logical_and(d2d.arcsec > nuc_sep, d2d.arcsec < max_sep)
+        else:
+            posmatch = d2d.arcsec > max_sep
+
+        # absmag = res['min']-5*np.log10(g[idx]['D']*1e6)+5
+        absmag = res['q_min']-5*np.log10(g[idx]['D'])+5
+
+        # select SNe, ILOTs and bright novae
+        if pipeline in ['nuclear','offnuclear']:
+            magselect = abs(absmag+14)<=11
+            selection = np.logical_and(list(posmatch), list(magselect))
+            print("%d entries found in Delve"%len(selection))
+        else:
+            selection = posmatch
+            print("%d entries not found in Delve"%len(selection))
     else:
-        posmatch = d2d.arcsec > max_sep
-
-    # absmag = res['min']-5*np.log10(g[idx]['D']*1e6)+5
-    absmag = res['q_min']-5*np.log10(g[idx]['D'])+5
-
-    # select SNe, ILOTs and bright novae
-    if pipeline in ['nuclear','offnuclear']:
-        magselect = abs(absmag+14)<=11
-        selection = np.logical_and(list(posmatch), list(magselect))
-        print("%d entries found in Delve"%len(selection))
-    else:
-        selection = posmatch
-        print("%d entries not found in Delve"%len(selection))
+        print("%d entries not found in Delve"%len(res))
+        selection = range(len(res))
 
 else:
     selection = range(len(res))
@@ -764,8 +768,8 @@ print(res_select)
 
 
 obs_date = str(time0)[:4]+str(time0)[5:7]+str(time0)[8:10]
-# fileout = user_home + "/make-tom/GEMTOM_alt2/GEMTOM/data/history_transients/" + obs_date + "_" + pipeline + ".csv"
-fileout = user_home + "/GEMTOM/GEMTOM/data/history_transients/" + obs_date + "_" + pipeline + ".csv"
+fileout = user_home + "/make-tom/GEMTOM_alt2/GEMTOM/data/history_transients/" + obs_date + "_" + pipeline + ".csv"
+# fileout = user_home + "/GEMTOM/GEMTOM/data/history_transients/" + obs_date + "_" + pipeline + ".csv"
 
 # res_select = res_select.sort_values(by=['n_datapoints'], ascending=False)
 res_select = res_select.sort_values(by=['i_rb_avg'], ascending=False)

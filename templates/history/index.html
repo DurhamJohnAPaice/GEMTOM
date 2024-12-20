@@ -77,6 +77,9 @@
         height: 100%;
         object-position: 100%;
    }
+   td.description {
+      vertical-align: middle;
+    }
 </style>
 
 
@@ -180,33 +183,73 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
         <div class="table_container" style="text-align:center;">
             <table class="table">
                 <thead>
-                    <tr>
-                        <th width="100px">BGEM ID</th>
-                        <th>RA</th>
-                        <th>Dec</th>
-                        <th>Min q mag</th>
-                        <th>q R/B</th>
-                        <th>Min u mag</th>
-                        <th>u R/B</th>
-                        <th>Min i mag</th>
-                        <th>i R/B</th>
-                        <th>Separation</th>
-                    </tr>
+                    <th width="100px">BGEM ID</th>
+                    <th>RA/Dec</th>
+                    <th>qmag
+                    (R/B)</th>
+                    <!-- <th>R/B</th> -->
+                    <th>umag
+                    (R/B)</th>
+                    <th>imag
+                    (R/B)</th>
+                    <!-- <th>Sep</th> -->
+                    <th>Real/Bogus</th>
+                    <th>Classification</th>
+                    <th></th>
                 </thead>
                 <tbody>
                     {% if hostless %}
-                        {% for bgem_id, ra, dec, q_min, q_rb_avg, u_min, u_rb_avg, i_min, i_rb_avg, det_sep in hostless %}
-                            <tr style="color: black;">
-                                <td><a href="/transients/{{ bgem_id }}">{{ bgem_id }}</a> </td>
-                                <td>{{ ra }}</td>
-                                <td>{{ dec }}</td>
-                                <td>{{ q_min }}</td>
-                                <td>{{ q_rb_avg }}</td>
-                                <td>{{ u_min }}</td>
-                                <td>{{ u_rb_avg }}</td>
-                                <td>{{ i_min }}</td>
-                                <td>{{ i_rb_avg }}</td>
-                                <td>{{ det_sep }}</td>
+                        {% for bgem_id, ra, dec, q_min, q_rb_avg, u_min, u_rb_avg, i_min, i_rb_avg, det_sep, real_bogus, classification in hostless %}
+                        {% if real_bogus %}
+                            {% if real_bogus == "Bogus" %}
+                                <tr style="color: #D5D5D5;">
+                            {% else %}
+                                <tr style="color: black;">
+                            {% endif %}
+                        {% endif %}
+                                <td class="description"><a href="/transients/{{ bgem_id }}">{{ bgem_id }}</a> </td>
+                                <td class="description">{{ ra }} {{ dec }}</td>
+                                <!-- <td class="description">{{ dec }}</td> -->
+                                {% if q_min %}
+                                    <td class="description">{{ q_min }}<br>({{ q_rb_avg }})</td>
+                                {% else %}
+                                    <td class="description"></td>
+                                {% endif %}
+
+                                {% if u_min %}
+                                    <td class="description">{{ u_min }}<br>({{ u_rb_avg }})</td>
+                                {% else %}
+                                    <td class="description"></td>
+                                {% endif %}
+
+                                {% if i_min %}
+                                    <td class="description">{{ i_min }}<br>({{ i_rb_avg }})</td>
+                                {% else %}
+                                    <td class="description"></td>
+                                {% endif %}
+
+                                <!-- <td class="description">{{ q_rb_avg }}</td> -->
+                                <!-- <td class="description">{{ det_sep }}</td> -->
+                                <td class="description">{{ real_bogus }}</td>
+                                <td class="description">{{ classification }}</td>
+                                <td class="description">
+                                    <form method="post" action="{% url 'rate_target' %}" class="image-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="id" value="{{ bgem_id }}">
+                                        <input type="hidden" name="night" value="{{ obs_date }}">
+                                        <!-- <input type="hidden" name="real_bogus" value="Real"> -->
+                                        <input type="text" name="classification" placeholder="Classification">
+                                        <button type="submit" name="real_bogus" value="Real" class="btn btn-outline-primary">Real</button>
+                                        <button type="submit" name="real_bogus" value="Bogus" class="btn btn-outline-primary">Bogus</button>
+                                    </form>
+                                </td>
+                                <!-- <td>
+                                    <form method="get" action="{% url 'search_BGEM_ID' %}">
+                                        <label for="user_input">Input ID (e.g. 1516282):</label><br>
+                                        <input type="text" name="user_input" placeholder="Enter text" required>
+                                        <button type="submit" class="btn btn-primary">Query BlackGEM</button>
+                                    </form>
+                                </td> -->
                             </tr>
                         {% endfor %}
                     {% endif %}
