@@ -2570,8 +2570,8 @@ def get_tns_from_ra_dec(ra, dec, radius):
         print("ID Code:", json_data["id_code"])
         print("ID Code:", json_data["id_code"])
         print(json_data.keys())
-        print(json_data["data"]["reply"])
-        print(len(json_data["data"]["reply"]))
+        # print(json_data["data"]["reply"])
+        # print(len(json_data["data"]["reply"]))
         return json_data
 
 def get_ra_dec_from_tns(tns_object_name):
@@ -2832,8 +2832,8 @@ def BGEM_ID_View(request, bgem_id):
         tns_text = "Note: TNS Unauthorised. Please check."
         tns_list = []
     else:
-        tns_reply = tns_data["data"]["reply"]
-        tns_reply_length = len(tns_data["data"]["reply"])
+        tns_reply = tns_data["data"]
+        tns_reply_length = len(tns_data["data"])
         if tns_reply_length == 0:
             tns_text = "No TNS object found within " + str(search_radius) + " arcseconds."
             tns_list = []
@@ -2867,8 +2867,8 @@ def BGEM_ID_View(request, bgem_id):
             # print(tns_object_data["data"]["reply"])
 
             ## Get RA and Dec, and find distance to our current target.
-            this_object_ra      = tns_object_data["data"]["reply"]["radeg"]
-            this_object_dec     = tns_object_data["data"]["reply"]["decdeg"]
+            this_object_ra      = tns_object_data["data"]["radeg"]
+            this_object_dec     = tns_object_data["data"]["decdeg"]
             this_object_radec   = SkyCoord(this_object_ra*u.deg, this_object_dec*u.deg, frame='icrs')
             this_object_sep     = bgem_object_radec.separation(this_object_radec)
 
@@ -2877,11 +2877,11 @@ def BGEM_ID_View(request, bgem_id):
             # print(this_object_sep.arcsecond)
 
             ## Save the individual details
-            tns_object_prefix.append(tns_object_data["data"]["reply"]["name_prefix"])
+            tns_object_prefix.append(tns_object_data["data"]["name_prefix"])
             tns_object_ra.append(this_object_ra)
             tns_object_dec.append(this_object_dec)
             tns_object_sep.append(this_object_sep.arcsecond)
-            tns_object_internalname.append(tns_object_data["data"]["reply"]["internal_names"])
+            tns_object_internalname.append(tns_object_data["data"]["internal_names"])
     # print(tns_objects_data)
     # print(tns_object_ra)
     # print(tns_object_dec)
