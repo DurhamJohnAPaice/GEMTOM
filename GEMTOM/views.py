@@ -2114,31 +2114,43 @@ def rate_target(request):
     '''
     Rates a target as interesting or not
     '''
+    time_list = []
+    time_list.append(time.time())
 
     id = request.POST.get('id')
     yes_no = request.POST.get('yes_no')
     notes = request.POST.get('notes')
     obs_date = request.POST.get('night')
 
+    time_list.append(time.time())
     # name = iau_name_from_bgem_id(id)
 
     # df_orphans = pd.read_csv("./data/history_transients/"+obs_date+"_orphans.csv")
+    all_orphans_exists = True
     try:
         df_orphans = pd.read_csv("./data/history_transients/all_orphans.csv")
+    except:
+        all_orphans_exists = False
+        print("'All orphans' file not present. Please create!")
 
-        index = df_orphans.index[df_orphans['runcat_id'] == int(id)]
+    time_list.append(time.time())
+    if all_orphans_exists:
+        index = df_orphans.index[df_orphans['runcat_id'] == int(id)][0]
+        time_list.append(time.time())
         if "yes_no" not in df_orphans.columns:
             df_orphans["yes_no"] = [None]*len(df_orphans)
         if "notes" not in df_orphans.columns:
             df_orphans["notes"] = [None]*len(df_orphans)
 
-        df_orphans["yes_no"].iloc[index] = yes_no
-        df_orphans["notes"].iloc[index] = notes
+        time_list.append(time.time())
+        df_orphans.loc[index,"yes_no"] = yes_no
+        df_orphans.loc[index,"notes"] = notes
         for column_name in df_orphans.columns:
             if 'Unnamed' in column_name:
                 df_orphans = df_orphans.drop(column_name, axis=1)
-        df_orphans["notes"].iloc[index] = notes
+        time_list.append(time.time())
         df_orphans.to_csv("./data/history_transients/all_orphans.csv")
+        time_list.append(time.time())
         print("\n\n")
         print(df_orphans)
         print(yes_no)
@@ -2148,12 +2160,19 @@ def rate_target(request):
         print(df_orphans.iloc[index])
         print("\n\n")
 
-    except:
-        print("'All orphans' file not present. Please create!")
-
     # add_to_GEMTOM(id, name, ra, dec)
 
     # return redirect(reverse('tom_targets:list'))
+
+    time_list.append(time.time())
+
+    print("rate_target Times:")
+    for i in range(len(time_list)-1):
+        print("t"+str(i)+"->t"+str(i+1)+": "+str(time_list[i+1]-time_list[i]))
+    print("")
+
+
+
     return redirect('/history/' + obs_date + "/")
 
 ## =============================================================================

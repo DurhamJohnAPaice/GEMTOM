@@ -186,15 +186,15 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
             <table class="table">
                 <thead>
                     <th width="100px">BGEM ID</th>
-                    <th>RA/Dec</th>
-                    <th>RA/Dec St.Dev</th>
-                    <th>qmag
-                    (Avg. R/B)</th>
+                    <th>RA<br>Dec</th>
+                    <!-- <th>RA/Dec St.Dev</th> -->
+                    <th>qmag<br>
+                    (R/B)</th>
                     <!-- <th>R/B</th> -->
-                    <th>umag
-                    (Avg. R/B)</th>
-                    <th>imag
-                    (Avg. R/B)</th>
+                    <th>umag<br>
+                    (R/B)</th>
+                    <th>imag<br>
+                    (R/B)</th>
                     <!-- <th>Sep</th> -->
                     <th>Of Interest?</th>
                     <th>Notes</th>
@@ -211,8 +211,8 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
                                     <tr style="color: black;">
                                 {% endif %}
                                 <td class="description"><a href="/transients/{{ bgem_id }}">{{ bgem_id }}</a> </td>
-                                <td class="description">{{ ra }} {{ dec }}</td>
-                                <td class="description">{{ ra_std }} {{ dec_std }}</td>
+                                <td class="description">{{ ra }}<br>{{ dec }}</td>
+                                <!-- <td class="description">{{ ra_std }} {{ dec_std }}</td> -->
                                 <!-- <td class="description">{{ dec }}</td> -->
                                 {% if q_min %}
                                     <td class="description">{{ q_min }}<br>({{ q_rb_avg }})</td>
@@ -243,6 +243,7 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
                                         <input type="hidden" name="night" value="{{ obs_date }}">
                                         <!-- <input type="hidden" name="yes_no" value="Real"> -->
                                         <input type="text" name="notes" placeholder="Notes">
+                                        <br>
                                         <button type="submit" name="yes_no" value="Yes" class="btn btn-outline-primary">Yes</button>
                                         <button type="submit" name="yes_no" value="No" class="btn btn-outline-primary">No</button>
                                     </form>
