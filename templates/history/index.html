@@ -106,7 +106,7 @@
 
 On {{ extended_date }} (MJD {{ mjd }}), BlackGEM observed {{ num_fields }} fields.<br>
 {{ data_length }} transient{{ data_length_plural}} were found, which ha{{ data_length_plural_2 }} {{ num_in_gaia }} crossmatch{{ gaia_plural }} in Gaia (radius 1 arcsec). <br>
-BlackGEM recorded pictures of {{ hostless_sources_length }} orphaned transient{{ hostless_sources_plural }} and {{ extragalactic_sources_length }} possible extragalactic transient{{ extragalactic_sources_plural }}. <br><br>
+BlackGEM recorded pictures of {{ orphans_sources_length }} orphaned transient{{ orphans_sources_plural }} and {{ extragalactic_sources_length }} possible extragalactic transient{{ extragalactic_sources_plural }}. <br><br>
 
 <!-- On {{ extended_date }} (MJD {{ mjd }}), BlackGEM observed {{ data_length }} transient{{ data_length_plural}}, which ha{{ data_length_plural_2 }} {{ num_in_gaia }} crossmatch{{ gaia_plural }} in Gaia (radius 1 arcsec). <br>
 BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extragalactic transient{{ extragalactic_sources_plural }}. <br><br> -->
@@ -161,7 +161,7 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
   <!-- Nav tabs -->
   <ul class="nav nav-tabs nav-fill">
     <li class="nav-item">
-      <a class="nav-link active" data-toggle="tab" href="#hostless">Hostless Transients</a>
+      <a class="nav-link active" data-toggle="tab" href="#orphans">Orphaned Transients</a>
     </li>
     <li class="nav-item">
       <a class="nav-link" data-toggle="tab" href="#gaia">Gaia Transients</a>
@@ -176,12 +176,12 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
   <!-- Tab panes -->
   <div class="tab-content">
 
-    <div class="tab-pane container active" id="hostless">
-        <!-- {{ hostless }} -->
+    <div class="tab-pane container active" id="orphans">
+        <!-- {{ orphans }} -->
 
 
         <div class="table_container" style="text-align:center;">
-            BlackGEM found {{ hostless_sources_length }} orphaned transient{{ hostless_sources_plural }} this night.<br><br>
+            BlackGEM found {{ orphans_sources_length }} orphaned transient{{ orphans_sources_plural }} this night.<br><br>
             <table class="table">
                 <thead>
                     <th width="100px">BGEM ID</th>
@@ -200,8 +200,8 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
                     <th></th>
                 </thead>
                 <tbody>
-                    {% if hostless %}
-                        {% for bgem_id, ra, dec, ra_std, dec_std, q_min, q_rb_avg, u_min, u_rb_avg, i_min, i_rb_avg, det_sep, yes_no, notes in hostless %}
+                    {% if orphans %}
+                        {% for bgem_id, ra, dec, ra_std, dec_std, q_min, q_rb_avg, u_min, u_rb_avg, i_min, i_rb_avg, det_sep, yes_no, notes in orphans %}
                                 {% if yes_no == "No" %}
                                     <tr style="color: #D5D5D5;">
                                 {% elif yes_no == "Yes" %}

@@ -931,17 +931,17 @@ def get_any_nights_sky_plot(night):
 
     return field_stats, image_base64
 
-def get_nightly_hostless(night):
-    hostless_filename = "./data/history_transients/" + night + "_hostless.csv"
+def get_nightly_orphans(night):
+    orphans_filename = "./data/history_transients/" + night + "_orphans.csv"
 
     try:
-        df_hostless = pd.read_csv(hostless_filename)
+        df_orphans = pd.read_csv(orphans_filename)
 
         print("Bark!")
-        print(df_hostless)
-        return df_hostless
+        print(df_orphans)
+        return df_orphans
     except:
-        print("No hostless transients that night.")
+        print("No orphaned transients that night.")
         return None
 
 
@@ -1065,14 +1065,14 @@ class HistoryView(LoginRequiredMixin, TemplateView):
         context['red_fields']       = field_stats[4]
         context['plot_image']       = image_base64
 
-        # df_hostless = get_nightly_hostless(yesterday_date_string)
-        # # print(df.hostless.columns)
-        # if df_hostless:
-        #     context['hostless'] = zip(list(df_hostless.runcat_id), list(df_hostless.q_avg_mag))
-        #     # contest['hostless_bool'] = True
+        # df_orphans = get_nightly_orphans(yesterday_date_string)
+        # # print(df.orphans.columns)
+        # if df_orphans:
+        #     context['orphans'] = zip(list(df_orphans.runcat_id), list(df_orphans.q_avg_mag))
+        #     # contest['orphans_bool'] = True
         # else:
-        #     context['hostless'] = ""
-        #     # contest['hostless_bool'] = False
+        #     context['orphans'] = ""
+        #     # contest['orphans_bool'] = False
         #
 
         if 'history_daily_text_1' in context:
@@ -1856,113 +1856,113 @@ def NightView(request, obs_date):
     lightcurve = plot(fig, output_type='div')
     context['lightcurve']       = lightcurve
 
-    df_hostless = get_nightly_hostless(obs_date)
-    all_hostless = False
+    df_orphans = get_nightly_orphans(obs_date)
+    all_orphans = False
 
     try:
-        df_hostless_all = pd.read_csv("./data/history_transients/all_hostless.csv")
-        all_hostless = True
+        df_orphans_all = pd.read_csv("./data/history_transients/all_orphans.csv")
+        all_orphans = True
 
     except:
-        print("'All Hostless' file not present. Please create!")
+        print("'All orphans' file not present. Please create!")
 
-    if df_hostless is not None:
-        if all_hostless:
+    if df_orphans is not None:
+        if all_orphans:
             yes_no_list = []
             notes_list = []
 
-            for runcat_id in df_hostless.runcat_id:
+            for runcat_id in df_orphans.runcat_id:
                 # print(runcat_id)
-                if runcat_id in list(df_hostless_all.runcat_id):
-                    index = df_hostless_all.index[df_hostless_all['runcat_id'] == int(runcat_id)]
+                if runcat_id in list(df_orphans_all.runcat_id):
+                    index = df_orphans_all.index[df_orphans_all['runcat_id'] == int(runcat_id)]
 
-                    # print(df_hostless_all['yes_no'].values[index][0])
+                    # print(df_orphans_all['yes_no'].values[index][0])
 
-                    yes_no_list.append(df_hostless_all['yes_no'].values[index][0])
-                    notes_list.append(df_hostless_all['notes'].values[index][0])
+                    yes_no_list.append(df_orphans_all['yes_no'].values[index][0])
+                    notes_list.append(df_orphans_all['notes'].values[index][0])
                 else:
                     yes_no_list.append("")
                     notes_list.append("")
 
-            df_hostless['yes_no'] = yes_no_list
-            df_hostless['notes'] = notes_list
+            df_orphans['yes_no'] = yes_no_list
+            df_orphans['notes'] = notes_list
 
         else:
-            df_hostless['yes_no'] = [""]*len(df_hostless)
-            df_hostless['notes']  = [""]*len(df_hostless)
+            df_orphans['yes_no'] = [""]*len(df_orphans)
+            df_orphans['notes']  = [""]*len(df_orphans)
 
-        # print(df_hostless.columns)
-        # print(['%.2f'%x for x in df_hostless.q_rb_avg])
-        df_hostless = df_hostless.sort_values(by=['i_rb_avg'], ascending=False)
-        df_hostless = df_hostless.sort_values(by=['u_rb_avg'], ascending=False)
-        df_hostless = df_hostless.sort_values(by=['q_rb_avg'], ascending=False)
-        df_hostless = df_hostless.fillna('')
+        # print(df_orphans.columns)
+        # print(['%.2f'%x for x in df_orphans.q_rb_avg])
+        df_orphans = df_orphans.sort_values(by=['i_rb_avg'], ascending=False)
+        df_orphans = df_orphans.sort_values(by=['u_rb_avg'], ascending=False)
+        df_orphans = df_orphans.sort_values(by=['q_rb_avg'], ascending=False)
+        df_orphans = df_orphans.fillna('')
 
-        context['hostless'] = zip(
-            list(df_hostless.runcat_id),
-            ['%.3f'%x for x in df_hostless.ra_psf],
-            ['%.3f'%x for x in df_hostless.dec_psf],
-            ['%.3g'%x for x in df_hostless.ra_std],
-            ['%.3g'%x for x in df_hostless.dec_std],
-            ['%.5s'%x for x in df_hostless.q_min],
-            ['%.4s'%x for x in df_hostless.q_rb_avg],
-            ['%.5s'%x for x in df_hostless.u_min],
-            ['%.4s'%x for x in df_hostless.u_rb_avg],
-            ['%.5s'%x for x in df_hostless.i_min],
-            ['%.4s'%x for x in df_hostless.i_rb_avg],
-            ['%.4s'%x for x in df_hostless.det_sep],
-            [x for x in df_hostless.yes_no],
-            [x for x in df_hostless.notes],
+        context['orphans'] = zip(
+            list(df_orphans.runcat_id),
+            ['%.3f'%x for x in df_orphans.ra_psf],
+            ['%.3f'%x for x in df_orphans.dec_psf],
+            ['%.3g'%x for x in df_orphans.ra_std],
+            ['%.3g'%x for x in df_orphans.dec_std],
+            ['%.5s'%x for x in df_orphans.q_min],
+            ['%.4s'%x for x in df_orphans.q_rb_avg],
+            ['%.5s'%x for x in df_orphans.u_min],
+            ['%.4s'%x for x in df_orphans.u_rb_avg],
+            ['%.5s'%x for x in df_orphans.i_min],
+            ['%.4s'%x for x in df_orphans.i_rb_avg],
+            ['%.4s'%x for x in df_orphans.det_sep],
+            [x for x in df_orphans.yes_no],
+            [x for x in df_orphans.notes],
             )
 
-        context['hostless_sources_length'] = len(df_hostless)
-        if len(df_hostless) == 1:
-            context['hostless_sources_plural'] = ""
+        context['orphans_sources_length'] = len(df_orphans)
+        if len(df_orphans) == 1:
+            context['orphans_sources_plural'] = ""
         else:
-            context['hostless_sources_plural'] = "s"
+            context['orphans_sources_plural'] = "s"
 
-        # if "yes_no" in df_hostless.columns:
-        #     context['hostless'] = zip(
-        #         list(df_hostless.runcat_id),
-        #         ['%.3f'%x for x in df_hostless.ra_psf],
-        #         ['%.3f'%x for x in df_hostless.dec_psf],
-        #         ['%.3g'%x for x in df_hostless.ra_std],
-        #         ['%.3g'%x for x in df_hostless.dec_std],
-        #         ['%.5s'%x for x in df_hostless.q_min],
-        #         ['%.4s'%x for x in df_hostless.q_rb_avg],
-        #         ['%.5s'%x for x in df_hostless.u_min],
-        #         ['%.4s'%x for x in df_hostless.u_rb_avg],
-        #         ['%.5s'%x for x in df_hostless.i_min],
-        #         ['%.4s'%x for x in df_hostless.i_rb_avg],
-        #         ['%.4s'%x for x in df_hostless.det_sep],
-        #         [x for x in df_hostless.yes_no],
-        #         [x for x in df_hostless.notes],
+        # if "yes_no" in df_orphans.columns:
+        #     context['orphans'] = zip(
+        #         list(df_orphans.runcat_id),
+        #         ['%.3f'%x for x in df_orphans.ra_psf],
+        #         ['%.3f'%x for x in df_orphans.dec_psf],
+        #         ['%.3g'%x for x in df_orphans.ra_std],
+        #         ['%.3g'%x for x in df_orphans.dec_std],
+        #         ['%.5s'%x for x in df_orphans.q_min],
+        #         ['%.4s'%x for x in df_orphans.q_rb_avg],
+        #         ['%.5s'%x for x in df_orphans.u_min],
+        #         ['%.4s'%x for x in df_orphans.u_rb_avg],
+        #         ['%.5s'%x for x in df_orphans.i_min],
+        #         ['%.4s'%x for x in df_orphans.i_rb_avg],
+        #         ['%.4s'%x for x in df_orphans.det_sep],
+        #         [x for x in df_orphans.yes_no],
+        #         [x for x in df_orphans.notes],
         #     )
         #
         # else:
-        #     context['hostless'] = zip(
-        #         list(df_hostless.runcat_id),
-        #         ['%.3f'%x for x in df_hostless.ra_psf],
-        #         ['%.3f'%x for x in df_hostless.dec_psf],
-        #         ['%.3g'%x for x in df_hostless.ra_std],
-        #         ['%.3g'%x for x in df_hostless.dec_std],
-        #         ['%.5s'%x for x in df_hostless.q_min],
-        #         ['%.4s'%x for x in df_hostless.q_rb_avg],
-        #         ['%.5s'%x for x in df_hostless.u_min],
-        #         ['%.4s'%x for x in df_hostless.u_rb_avg],
-        #         ['%.5s'%x for x in df_hostless.i_min],
-        #         ['%.4s'%x for x in df_hostless.i_rb_avg],
-        #         ['%.4s'%x for x in df_hostless.det_sep],
-        #         ["" for x in df_hostless.det_sep],
-        #         ["" for x in df_hostless.det_sep],
+        #     context['orphans'] = zip(
+        #         list(df_orphans.runcat_id),
+        #         ['%.3f'%x for x in df_orphans.ra_psf],
+        #         ['%.3f'%x for x in df_orphans.dec_psf],
+        #         ['%.3g'%x for x in df_orphans.ra_std],
+        #         ['%.3g'%x for x in df_orphans.dec_std],
+        #         ['%.5s'%x for x in df_orphans.q_min],
+        #         ['%.4s'%x for x in df_orphans.q_rb_avg],
+        #         ['%.5s'%x for x in df_orphans.u_min],
+        #         ['%.4s'%x for x in df_orphans.u_rb_avg],
+        #         ['%.5s'%x for x in df_orphans.i_min],
+        #         ['%.4s'%x for x in df_orphans.i_rb_avg],
+        #         ['%.4s'%x for x in df_orphans.det_sep],
+        #         ["" for x in df_orphans.det_sep],
+        #         ["" for x in df_orphans.det_sep],
         #     )
 
-        # context['hostless_bool'] = True
+        # context['orphans_bool'] = True
     else:
-        context['hostless'] = ""
-        context['hostless_sources_length'] = 0
-        context['hostless_sources_plural'] = "s"
-        # context['hostless_bool'] = False
+        context['orphans'] = ""
+        context['orphans_sources_length'] = 0
+        context['orphans_sources_plural'] = "s"
+        # context['orphans_bool'] = False
 
     if 'history_daily_text_1' in context:
         if field_stats[0] == 0 and "No" not in context['history_daily_text_1']:
@@ -2072,34 +2072,34 @@ def rate_target(request):
 
     # name = iau_name_from_bgem_id(id)
 
-    # df_hostless = pd.read_csv("./data/history_transients/"+obs_date+"_hostless.csv")
+    # df_orphans = pd.read_csv("./data/history_transients/"+obs_date+"_orphans.csv")
     try:
-        df_hostless = pd.read_csv("./data/history_transients/all_hostless.csv")
+        df_orphans = pd.read_csv("./data/history_transients/all_orphans.csv")
 
-        index = df_hostless.index[df_hostless['runcat_id'] == int(id)]
-        if "yes_no" not in df_hostless.columns:
-            df_hostless["yes_no"] = [None]*len(df_hostless)
-        if "notes" not in df_hostless.columns:
-            df_hostless["notes"] = [None]*len(df_hostless)
+        index = df_orphans.index[df_orphans['runcat_id'] == int(id)]
+        if "yes_no" not in df_orphans.columns:
+            df_orphans["yes_no"] = [None]*len(df_orphans)
+        if "notes" not in df_orphans.columns:
+            df_orphans["notes"] = [None]*len(df_orphans)
 
-        df_hostless["yes_no"].iloc[index] = yes_no
-        df_hostless["notes"].iloc[index] = notes
-        for column_name in df_hostless.columns:
+        df_orphans["yes_no"].iloc[index] = yes_no
+        df_orphans["notes"].iloc[index] = notes
+        for column_name in df_orphans.columns:
             if 'Unnamed' in column_name:
-                df_hostless = df_hostless.drop(column_name, axis=1)
-        df_hostless["notes"].iloc[index] = notes
-        df_hostless.to_csv("./data/history_transients/all_hostless.csv")
+                df_orphans = df_orphans.drop(column_name, axis=1)
+        df_orphans["notes"].iloc[index] = notes
+        df_orphans.to_csv("./data/history_transients/all_orphans.csv")
         print("\n\n")
-        print(df_hostless)
+        print(df_orphans)
         print(yes_no)
         print(id)
-        print(df_hostless.runcat_id)
+        print(df_orphans.runcat_id)
         print(index)
-        print(df_hostless.iloc[index])
+        print(df_orphans.iloc[index])
         print("\n\n")
 
     except:
-        print("'All Hostless' file not present. Please create!")
+        print("'All orphans' file not present. Please create!")
 
     # add_to_GEMTOM(id, name, ra, dec)
 
