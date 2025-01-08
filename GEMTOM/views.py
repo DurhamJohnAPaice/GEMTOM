@@ -1718,7 +1718,7 @@ def plot_nightly_hr_diagram(obs_date, gaia_filename):
                                 ],
                             },
                         ]
-                    } for threshold in np.arange(0, 21, 1)/10  # Adjust slider granularity as needed
+                    } for threshold in range(0, 4, 1)  # Adjust slider granularity as needed
                 ]
             }]
         )
@@ -1728,21 +1728,6 @@ def plot_nightly_hr_diagram(obs_date, gaia_filename):
 
     else:
         print("No Gaia sources this night.")
-
-    fig.update_layout(
-        yaxis = dict(autorange="reversed"),
-        height=510,
-        margin=dict(t=0, l=0, r=0, b=100),  # Set margins to reduce whitespace
-        # title="HR Diagram",
-        xaxis_title="BP-RP",
-        yaxis_title="GMag",
-        showlegend=False,
-    )
-
-
-
-    # fig.show()
-    # fig.write_html("../Outputs/OrphanedTransientsGaia-Single.html")
 
     return fig
 
@@ -1754,7 +1739,6 @@ def find_possible_CVs(df):
 
     def cv_cutoff(x):
         return 10.4-(11*np.exp(-x))
-        # return 10-(11*np.exp(-x-0.1))
 
     df_cv_1 = df.copy()
     df_cv_1 = df_cv_1[df_cv_1["BP-RP"] > cv_lower]
@@ -1906,6 +1890,7 @@ def NightView(request, obs_date):
     ## Get transients overplotted HR diagram
 
     fig = plot_nightly_hr_diagram(obs_date, gaia_filename)
+    time_list.append(time.time())
     lightcurve = plot(fig, output_type='div')
     context['lightcurve']       = lightcurve
 
