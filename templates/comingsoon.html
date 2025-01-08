@@ -25,10 +25,8 @@ A list of the main features that have been requested and I intend to work on.
             <li>Have different messages on Night views that are in the future.</li>
             <li>Create a page for a full history archive.</li>
             <li>Speed up the plotting of the HR diagram.</li>
-            <li>Speed up the plotting of the sky plot.</li>
             <li>Maybe have the HR diagram show a list of historical BlackGEM transients too...?</li>
             <li>Add a way to distinguish old/new targets on the HR diagram</li>
-            <li>Search the records for transients and find past 'Real/Bogus' labels, if present.</li>
         </ul>
     <br>
 
@@ -93,8 +91,9 @@ A list of the main features that have been requested and I intend to work on.
     <ul>
         <li><h6>Hostless Transients!</h6></li>
         <ul>
-            <li>The nightly transients page now contains a list of hostless transients, and links to their relevant GEMTOM pages..</li>
-            <li>You can label Hostless Transients as 'Real' or 'Bogus', along with writing a custom classification; this does not transmit any data, and is only used for later reference.</li>
+            <li>The nightly transients page now contains a list of orphaned transients, and links to their relevant GEMTOM pages.</li>
+            <li>You can label orphaned transients as interesting or not ('Yes' or 'No'), along with writing custom notes; this is only saved in GEMTOM, and doesn't communicate elsewhere.</li>
+            <li>GEMTOM also searches its own records for past notes, so if an orphaned transient has already been noted to be a Diffraction Spike or a TNS source, that shows up on each night's page.</li>
         </ul>
         <br>
         <li><h6>Miscellaneous features</h6></li>
@@ -107,7 +106,7 @@ A list of the main features that have been requested and I intend to work on.
             <li>Targets/Transients: Added link to search Vizier</li>
             <li>Targets/Transients: Reduced SIMBAD search from 2 to 1 arcminute</li>
             <li>Targets: Removed fields related to observations, which have not been set up.</li>
-            <li>History pages now have tabs for Hostless, Gaia, and Extragalactic transients.</li>
+            <li>History: Nightly pages now have tabs for Orphaned, Gaia, and Extragalactic transients.</li>
         </ul>
     </ul>
     <br>
@@ -122,6 +121,10 @@ A list of the main features that have been requested and I intend to work on.
         <li>History: Fixed a bug where nightly pages wouldn't appear if there are no detections</li>
         <li>History: Fixed another bug where nightly pages would crash if there are no detections</li>
         <li>History: Corrected the all-sky plot that's displayed when there's no data (it now fits with all other plots)</li>
+        <li>History: Massively sped up the creation of the sky plot and field stats;
+            when a page is loaded, these will be re-created/found each time, up until 12:00UT of the following day.
+            After that, a final version will be created and saved, and from that point on, that version will be used.
+            Pages in the future also no longer look for field stats, and use a pre-saved empty version of the sky plot.</li>
     </ul>
 </ul>
 <br>

@@ -798,138 +798,186 @@ def update_history(days_since_last_update):
 
 def get_any_nights_sky_plot(night):
 
-    bg = authenticate_blackgem()
-    tc = TransientsCatalog(bg)
+    ## Check if it's more than a day ago
+    this_nights_datetime = obs_date_to_datetime(night)
+    now_datetime = datetime.now()
+    time_diff = now_datetime - this_nights_datetime
+    time_diff_days = time_diff.total_seconds()/86400
+    print(time_diff_days)
 
-    time_now = datetime.now(timezone.utc)
-    mjd_now = datetime_to_mjd(time_now)
+    stats_out = "./data/night_"+str(night)+"/" + str(night) + "_fieldstats_final.png"
+    fileout = "./data/night_"+str(night)+"/" + str(night) + "_skyview_final.png"
 
-    qu = """\
-    select i.id
-          , i.filter
-          ,i."date-obs"
-          ,"tqc-flag"
-          ,i.object as tile
-          ,i.dec_cntr_deg
-          ,i.dec_deg
-          ,s.ra_c
-          ,s.dec_c
-      from image i
-          ,skytile s
-     where i.object = s.field_id
-       AND i."date-obs" BETWEEN '%(time0)s'
-                            AND '%(time1)s'
-    order by "date-obs" desc
-    """
+    if time_diff_days < 0.875:
+        return [0,0,0,0,0], "../../data/empty_skyview.png"
 
-    time_night_start = datetime.strptime(night, '%Y%m%d')
-    time_night_end = datetime.strptime(night, '%Y%m%d')+timedelta(days=1)
-    time_night_start = time_night_start.strftime("%Y-%m-%d")+" 12:00:00"
-    time_night_end = time_night_end.strftime("%Y-%m-%d")+" 12:00:00"
-
-    print("Time start:", time_night_start)
-    print("Time close:", time_night_end)
-
-    params = {'time0': time_night_start,
-              'time1': time_night_end,
-             }
-    query = qu % (params)
+    if not os.path.exists("./data/night_"+str(night)+"/"):
+        os.makedirs("./data/night_"+str(night)+"/")
 
 
-    l_results = bg.run_query(query)
-    df_images = pd.DataFrame(l_results, columns=['id', 'filter', 'date-obs',
-                                                 'tqc-flag', 'field',
-                                                 'dec_cntr_deg','dec_deg',
-                                                 'ra_c', 'dec_c'
-                                             ])
+    if not os.path.exists(stats_out) or time_diff_days < 1.5:
+        bg = authenticate_blackgem()
+        tc = TransientsCatalog(bg)
 
-    num_fields  = len(df_images)
-    num_green   = len(df_images['tqc-flag'][df_images['tqc-flag'] == 'green'])
-    num_yellow  = len(df_images['tqc-flag'][df_images['tqc-flag'] == 'yellow'])
-    num_orange  = len(df_images['tqc-flag'][df_images['tqc-flag'] == 'orange'])
-    num_red     = len(df_images['tqc-flag'][df_images['tqc-flag'] == 'red'])
-    print("Number of Fields:", num_fields)
-    print("Green fields:    ", num_green)
-    print("Yellow fields:   ", num_yellow)
-    print("Orange fields:   ", num_orange)
-    print("Red fields:      ", num_red)
-    field_stats = [num_fields, num_green, num_yellow, num_orange, num_red]
+        time_now = datetime.now(timezone.utc)
+        mjd_now = datetime_to_mjd(time_now)
 
-    ## ===== Plotting =====
+        qu = """\
+        select i.id
+              , i.filter
+              ,i."date-obs"
+              ,"tqc-flag"
+              ,i.object as tile
+              ,i.dec_cntr_deg
+              ,i.dec_deg
+              ,s.ra_c
+              ,s.dec_c
+          from image i
+              ,skytile s
+         where i.object = s.field_id
+           AND i."date-obs" BETWEEN '%(time0)s'
+                                AND '%(time1)s'
+        order by "date-obs" desc
+        """
 
-    ## Create list for RA, Dec, and times
-    ra_list = df_images['ra_c']
-    dec_list = df_images['dec_c']
-    if len(df_images) > 0:
-        time_list = np.array([datetime_to_mjd(x) for x in df_images['date-obs']])
-        time_list_2 = (time_list-time_list[-1])
-        time_list_2 /= time_list_2[0]
+        time_night_start = datetime.strptime(night, '%Y%m%d')
+        time_night_end = datetime.strptime(night, '%Y%m%d')+timedelta(days=1)
+        time_night_start = time_night_start.strftime("%Y-%m-%d")+" 12:00:00"
+        time_night_end = time_night_end.strftime("%Y-%m-%d")+" 12:00:00"
 
-        ## Adjust RA/Dec to the right coordinates
-        ra = coord.Angle(ra_list, unit=u.degree)
-        ra = ra.wrap_at(180*u.degree)
-        dec = coord.Angle(dec_list, unit=u.degree)
+        print("Time start:", time_night_start)
+        print("Time close:", time_night_end)
 
-        plt.close("all")
+        params = {'time0': time_night_start,
+                  'time1': time_night_end,
+                 }
+        query = qu % (params)
 
-        ## Plot!
-        fig = plt.figure(figsize=(8,5), dpi=110)
-        ax = fig.add_subplot(111, projection="mollweide")
 
-        ## Plot each point as an area reoughly the size of the telescope's FOV
-        fov_radius = 0.82
-        cmap = cm.cool
-        this_z = len(ra)+10
-        for this_ra, this_dec, this_alpha in zip(ra, dec, time_list_2):
-            this_z -= 1
-            color = cmap(this_alpha)
-            lo_ra   = np.radians(this_ra -fov_radius*u.degree).value
-            hi_ra   = np.radians(this_ra +fov_radius*u.degree).value
-            lo_dec  = np.radians(this_dec-fov_radius*u.degree).value
-            hi_dec  = np.radians(this_dec+fov_radius*u.degree).value
-            ax.fill([lo_ra,lo_ra,hi_ra,hi_ra], [lo_dec,hi_dec,hi_dec,lo_dec], color=color, zorder=this_z)  # Adjust color and transparency with 'alpha'
-        ax.grid(True)
-        ax.set_xlabel("RA")
-        ax.set_ylabel("Dec")
-        ax.xaxis.set_label_position('top')
+        l_results = bg.run_query(query)
+        df_images = pd.DataFrame(l_results, columns=['id', 'filter', 'date-obs',
+                                                     'tqc-flag', 'field',
+                                                     'dec_cntr_deg','dec_deg',
+                                                     'ra_c', 'dec_c'
+                                                 ])
 
-        # Add a color bar
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
-        sm.set_array([])  # Only needed for creating a colorbar
-        cb = plt.colorbar(sm, ax=ax, orientation='horizontal', pad=0.05)
-        cb.set_label('Time', labelpad=-20)
-        tick_positions = [0.08, 0.92]
-        tick_labels = [str(df_images['date-obs'].iloc[-1])[:-7] + "\n(First Obs)", str(df_images['date-obs'].iloc[0])[:-7] + "\n(Last Obs)",]
-        cb.set_ticks(tick_positions)
-        cb.ax.tick_params(bottom = False)
-        cb.set_ticklabels(tick_labels)
+        num_fields  = len(df_images)
+        num_green   = len(df_images['tqc-flag'][df_images['tqc-flag'] == 'green'])
+        num_yellow  = len(df_images['tqc-flag'][df_images['tqc-flag'] == 'yellow'])
+        num_orange  = len(df_images['tqc-flag'][df_images['tqc-flag'] == 'orange'])
+        num_red     = len(df_images['tqc-flag'][df_images['tqc-flag'] == 'red'])
+        print("Number of Fields:", num_fields)
+        print("Green fields:    ", num_green)
+        print("Yellow fields:   ", num_yellow)
+        print("Orange fields:   ", num_orange)
+        print("Red fields:      ", num_red)
+        field_stats = [num_fields, num_green, num_yellow, num_orange, num_red]
+        field_dict = {  'num_fields'    : [num_fields],
+                        'num_green'     : [num_green],
+                        'num_yellow'    : [num_yellow],
+                        'num_orange'    : [num_orange],
+                        'num_red'       : [num_red]}
+        df_field_stats = pd.DataFrame(data=field_dict)
+
+        if time_diff_days < 1.5:
+            stats_out = "./data/night_"+str(night)+"/" + str(night) + "_fieldstats_temp.png"
+
+        df_field_stats.to_csv(stats_out)
 
     else:
-        ## Plot!
-        fig = plt.figure(figsize=(8,5), dpi=110)
-        ax = fig.add_subplot(111, projection="mollweide")
-        ax.grid(True)
+        df = pd.read_csv(stats_out)
+        field_stats = [df.num_fields[0], df.num_green[0], df.num_yellow[0], df.num_orange[0], df.num_red[0]]
+        print(field_stats)
 
-    # plt.show()
-    # fileOut = "./data/BlackGEM_LastNightsSkymap.png"
-    # plt.savefig(fileOut, bbox_inches='tight')
-    # plt.close("all")
+    if not os.path.exists(fileout) or time_diff_days < 1.5:
+        ## ===== Plotting =====
 
-    # Save the plot to a BytesIO object
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format='png', bbox_inches='tight')
-    buffer.seek(0)
-    image_png = buffer.getvalue()
-    buffer.close()
+        ## Create list for RA, Dec, and times
+        ra_list = df_images['ra_c']
+        dec_list = df_images['dec_c']
+        if len(df_images) > 0:
+            time_list = np.array([datetime_to_mjd(x) for x in df_images['date-obs']])
+            time_list_2 = (time_list-time_list[-1])
+            time_list_2 /= time_list_2[0]
 
-    # Encode the image in base64
-    image_base64 = base64.b64encode(image_png)
-    image_base64 = image_base64.decode('utf-8')
+            ## Adjust RA/Dec to the right coordinates
+            ra = coord.Angle(ra_list, unit=u.degree)
+            ra = ra.wrap_at(180*u.degree)
+            dec = coord.Angle(dec_list, unit=u.degree)
 
-    print("Sky view plotted.")
-    print(night)
+            plt.close("all")
 
-    return field_stats, image_base64
+            ## Plot!
+            fig = plt.figure(figsize=(8,5), dpi=110)
+            ax = fig.add_subplot(111, projection="mollweide")
+
+            ## Plot each point as an area reoughly the size of the telescope's FOV
+            fov_radius = 0.82
+            cmap = cm.cool
+            this_z = len(ra)+10
+            for this_ra, this_dec, this_alpha in zip(ra, dec, time_list_2):
+                this_z -= 1
+                color = cmap(this_alpha)
+                lo_ra   = np.radians(this_ra -fov_radius*u.degree).value
+                hi_ra   = np.radians(this_ra +fov_radius*u.degree).value
+                lo_dec  = np.radians(this_dec-fov_radius*u.degree).value
+                hi_dec  = np.radians(this_dec+fov_radius*u.degree).value
+                ax.fill([lo_ra,lo_ra,hi_ra,hi_ra], [lo_dec,hi_dec,hi_dec,lo_dec], color=color, zorder=this_z)  # Adjust color and transparency with 'alpha'
+            ax.grid(True)
+            ax.set_xlabel("RA")
+            ax.set_ylabel("Dec")
+            ax.xaxis.set_label_position('top')
+
+            # Add a color bar
+            sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+            sm.set_array([])  # Only needed for creating a colorbar
+            cb = plt.colorbar(sm, ax=ax, orientation='horizontal', pad=0.05)
+            cb.set_label('Time', labelpad=-20)
+            tick_positions = [0.08, 0.92]
+            tick_labels = [str(df_images['date-obs'].iloc[-1])[:-7] + "\n(First Obs)", str(df_images['date-obs'].iloc[0])[:-7] + "\n(Last Obs)",]
+            cb.set_ticks(tick_positions)
+            cb.ax.tick_params(bottom = False)
+            cb.set_ticklabels(tick_labels)
+
+        else:
+            ## Plot!
+            fig = plt.figure(figsize=(8,5), dpi=110)
+            ax = fig.add_subplot(111, projection="mollweide")
+            ax.grid(True)
+
+        # plt.show()
+        # fileOut = "./data/BlackGEM_LastNightsSkymap.png"
+        # plt.savefig(fileOut, bbox_inches='tight')
+        # plt.close("all")
+
+        # ## -- ORIGINAL - Save the plot to a BytesIO object
+        # buffer = io.BytesIO()
+        # plt.savefig(buffer, format='png', bbox_inches='tight')
+        # buffer.seek(0)
+        # image_png = buffer.getvalue()
+        # buffer.close()
+        #
+        # # Encode the image in base64
+        # image_base64 = base64.b64encode(image_png)
+        # image_base64 = image_base64.decode('utf-8')
+        #
+        # print("Sky view plotted.")
+        # print(night)
+        #
+        # return field_stats, image_base64
+
+        ## -- NEW - Save the plot to a file
+
+        if time_diff_days < 1.5:
+            fileout = "./data/night_"+str(night)+"/" + str(night) + "_skyview_temp.png"
+
+        plt.savefig(fileout)
+        print("Sky view plotted.")
+        print(night)
+
+    return field_stats, "../../"+fileout
+
+
 
 def get_nightly_orphans(night):
     orphans_filename = "./data/history_transients/" + night + "_orphans.csv"
@@ -1787,6 +1835,8 @@ def NightView(request, obs_date):
     Finds and displays data from a certain date.
     '''
     print("Starting NightView...")
+    time_list = []
+    time_list.append(time.time())
 
     response = "You're looking at BlackGEM date %s."
 
@@ -1838,6 +1888,8 @@ def NightView(request, obs_date):
     context['gaia_filename']            = gaia_filename
     context['extragalactic_filename']   = extragalactic_filename
 
+    time_list.append(time.time())
+
     field_stats, image_base64 = get_any_nights_sky_plot(obs_date)
     context['num_fields']       = field_stats[0]
     context['green_fields']     = field_stats[1]
@@ -1849,6 +1901,7 @@ def NightView(request, obs_date):
     context['next_night']       = datetime.strftime(obs_date_to_datetime(obs_date) + timedelta(1), '%Y%m%d')
     # print(context['prev_night'])
     # print(context['next_night'])
+    time_list.append(time.time())
 
     ## Get transients overplotted HR diagram
 
@@ -1856,9 +1909,13 @@ def NightView(request, obs_date):
     lightcurve = plot(fig, output_type='div')
     context['lightcurve']       = lightcurve
 
-    df_orphans = get_nightly_orphans(obs_date)
-    all_orphans = False
+    time_list.append(time.time())
 
+    df_orphans = get_nightly_orphans(obs_date)
+
+    time_list.append(time.time())
+
+    all_orphans = False
     try:
         df_orphans_all = pd.read_csv("./data/history_transients/all_orphans.csv")
         all_orphans = True
@@ -1964,6 +2021,8 @@ def NightView(request, obs_date):
         context['orphans_sources_plural'] = "s"
         # context['orphans_bool'] = False
 
+    time_list.append(time.time())
+
     if 'history_daily_text_1' in context:
         if field_stats[0] == 0 and "No" not in context['history_daily_text_1']:
             context['blackhub'] = False
@@ -1971,6 +2030,12 @@ def NightView(request, obs_date):
             context['blackhub'] = True
     else:
         context['blackhub'] = True
+
+    time_list.append(time.time())
+    print("NightView Times:")
+    for i in range(len(time_list)-1):
+        print("t"+str(i)+"->t"+str(i+1)+": "+str(time_list[i+1]-time_list[i]))
+
 
     return render(request, "history/index.html", context)
 
