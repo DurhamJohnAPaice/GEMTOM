@@ -1857,7 +1857,40 @@ def NightView(request, obs_date):
     context['lightcurve']       = lightcurve
 
     df_hostless = get_nightly_hostless(obs_date)
+    all_hostless = False
+
+    try:
+        df_hostless_all = pd.read_csv("./data/history_transients/all_hostless.csv")
+        all_hostless = True
+
+    except:
+        print("'All Hostless' file not present. Please create!")
+
     if df_hostless is not None:
+        if all_hostless:
+            yes_no_list = []
+            notes_list = []
+
+            for runcat_id in df_hostless.runcat_id:
+                # print(runcat_id)
+                if runcat_id in list(df_hostless_all.runcat_id):
+                    index = df_hostless_all.index[df_hostless_all['runcat_id'] == int(runcat_id)]
+
+                    # print(df_hostless_all['yes_no'].values[index][0])
+
+                    yes_no_list.append(df_hostless_all['yes_no'].values[index][0])
+                    notes_list.append(df_hostless_all['notes'].values[index][0])
+                else:
+                    yes_no_list.append("")
+                    notes_list.append("")
+
+            df_hostless['yes_no'] = yes_no_list
+            df_hostless['notes'] = notes_list
+
+        else:
+            df_hostless['yes_no'] = [""]*len(df_hostless)
+            df_hostless['notes']  = [""]*len(df_hostless)
+
         # print(df_hostless.columns)
         # print(['%.2f'%x for x in df_hostless.q_rb_avg])
         df_hostless = df_hostless.sort_values(by=['i_rb_avg'], ascending=False)
@@ -1865,41 +1898,70 @@ def NightView(request, obs_date):
         df_hostless = df_hostless.sort_values(by=['q_rb_avg'], ascending=False)
         df_hostless = df_hostless.fillna('')
 
-        if "real_bogus" in df_hostless.columns:
-            context['hostless'] = zip(
-                list(df_hostless.runcat_id),
-                ['%.3f'%x for x in df_hostless.ra_psf],
-                ['%.3f'%x for x in df_hostless.dec_psf],
-                ['%.5s'%x for x in df_hostless.q_min],
-                ['%.4s'%x for x in df_hostless.q_rb_avg],
-                ['%.5s'%x for x in df_hostless.u_min],
-                ['%.4s'%x for x in df_hostless.u_rb_avg],
-                ['%.5s'%x for x in df_hostless.i_min],
-                ['%.4s'%x for x in df_hostless.i_rb_avg],
-                ['%.4s'%x for x in df_hostless.det_sep],
-                [x for x in df_hostless.real_bogus],
-                [x for x in df_hostless.classification],
+        context['hostless'] = zip(
+            list(df_hostless.runcat_id),
+            ['%.3f'%x for x in df_hostless.ra_psf],
+            ['%.3f'%x for x in df_hostless.dec_psf],
+            ['%.3g'%x for x in df_hostless.ra_std],
+            ['%.3g'%x for x in df_hostless.dec_std],
+            ['%.5s'%x for x in df_hostless.q_min],
+            ['%.4s'%x for x in df_hostless.q_rb_avg],
+            ['%.5s'%x for x in df_hostless.u_min],
+            ['%.4s'%x for x in df_hostless.u_rb_avg],
+            ['%.5s'%x for x in df_hostless.i_min],
+            ['%.4s'%x for x in df_hostless.i_rb_avg],
+            ['%.4s'%x for x in df_hostless.det_sep],
+            [x for x in df_hostless.yes_no],
+            [x for x in df_hostless.notes],
             )
 
+        context['hostless_sources_length'] = len(df_hostless)
+        if len(df_hostless) == 1:
+            context['hostless_sources_plural'] = ""
         else:
-            context['hostless'] = zip(
-                list(df_hostless.runcat_id),
-                ['%.3f'%x for x in df_hostless.ra_psf],
-                ['%.3f'%x for x in df_hostless.dec_psf],
-                ['%.5s'%x for x in df_hostless.q_min],
-                ['%.4s'%x for x in df_hostless.q_rb_avg],
-                ['%.5s'%x for x in df_hostless.u_min],
-                ['%.4s'%x for x in df_hostless.u_rb_avg],
-                ['%.5s'%x for x in df_hostless.i_min],
-                ['%.4s'%x for x in df_hostless.i_rb_avg],
-                ['%.4s'%x for x in df_hostless.det_sep],
-                ["" for x in df_hostless.det_sep],
-                ["" for x in df_hostless.det_sep],
-            )
+            context['hostless_sources_plural'] = "s"
+
+        # if "yes_no" in df_hostless.columns:
+        #     context['hostless'] = zip(
+        #         list(df_hostless.runcat_id),
+        #         ['%.3f'%x for x in df_hostless.ra_psf],
+        #         ['%.3f'%x for x in df_hostless.dec_psf],
+        #         ['%.3g'%x for x in df_hostless.ra_std],
+        #         ['%.3g'%x for x in df_hostless.dec_std],
+        #         ['%.5s'%x for x in df_hostless.q_min],
+        #         ['%.4s'%x for x in df_hostless.q_rb_avg],
+        #         ['%.5s'%x for x in df_hostless.u_min],
+        #         ['%.4s'%x for x in df_hostless.u_rb_avg],
+        #         ['%.5s'%x for x in df_hostless.i_min],
+        #         ['%.4s'%x for x in df_hostless.i_rb_avg],
+        #         ['%.4s'%x for x in df_hostless.det_sep],
+        #         [x for x in df_hostless.yes_no],
+        #         [x for x in df_hostless.notes],
+        #     )
+        #
+        # else:
+        #     context['hostless'] = zip(
+        #         list(df_hostless.runcat_id),
+        #         ['%.3f'%x for x in df_hostless.ra_psf],
+        #         ['%.3f'%x for x in df_hostless.dec_psf],
+        #         ['%.3g'%x for x in df_hostless.ra_std],
+        #         ['%.3g'%x for x in df_hostless.dec_std],
+        #         ['%.5s'%x for x in df_hostless.q_min],
+        #         ['%.4s'%x for x in df_hostless.q_rb_avg],
+        #         ['%.5s'%x for x in df_hostless.u_min],
+        #         ['%.4s'%x for x in df_hostless.u_rb_avg],
+        #         ['%.5s'%x for x in df_hostless.i_min],
+        #         ['%.4s'%x for x in df_hostless.i_rb_avg],
+        #         ['%.4s'%x for x in df_hostless.det_sep],
+        #         ["" for x in df_hostless.det_sep],
+        #         ["" for x in df_hostless.det_sep],
+        #     )
 
         # context['hostless_bool'] = True
     else:
         context['hostless'] = ""
+        context['hostless_sources_length'] = 0
+        context['hostless_sources_plural'] = "s"
         # context['hostless_bool'] = False
 
     if 'history_daily_text_1' in context:
@@ -2000,35 +2062,44 @@ def TNS_to_GEMTOM(request):
 
 def rate_target(request):
     '''
-    Rates a target as Real or Bogus
+    Rates a target as interesting or not
     '''
 
     id = request.POST.get('id')
-    real_bogus = request.POST.get('real_bogus')
-    classification = request.POST.get('classification')
+    yes_no = request.POST.get('yes_no')
+    notes = request.POST.get('notes')
     obs_date = request.POST.get('night')
 
     # name = iau_name_from_bgem_id(id)
 
-    df_hostless = pd.read_csv("./data/history_transients/"+obs_date+"_hostless.csv")
+    # df_hostless = pd.read_csv("./data/history_transients/"+obs_date+"_hostless.csv")
+    try:
+        df_hostless = pd.read_csv("./data/history_transients/all_hostless.csv")
 
-    index = df_hostless.index[df_hostless['runcat_id'] == int(id)]
-    if "real_bogus" not in df_hostless.columns:
-        df_hostless["real_bogus"] = [None]*len(df_hostless)
-    if "classification" not in df_hostless.columns:
-        df_hostless["classification"] = [None]*len(df_hostless)
+        index = df_hostless.index[df_hostless['runcat_id'] == int(id)]
+        if "yes_no" not in df_hostless.columns:
+            df_hostless["yes_no"] = [None]*len(df_hostless)
+        if "notes" not in df_hostless.columns:
+            df_hostless["notes"] = [None]*len(df_hostless)
 
-    df_hostless["real_bogus"].iloc[index] = real_bogus
-    df_hostless["classification"].iloc[index] = classification
-    df_hostless.to_csv("./data/history_transients/"+obs_date+"_hostless.csv")
-    print("\n\n")
-    print(df_hostless)
-    print(real_bogus)
-    print(id)
-    print(df_hostless.runcat_id)
-    print(index)
-    print(df_hostless.iloc[index])
-    print("\n\n")
+        df_hostless["yes_no"].iloc[index] = yes_no
+        df_hostless["notes"].iloc[index] = notes
+        for column_name in df_hostless.columns:
+            if 'Unnamed' in column_name:
+                df_hostless = df_hostless.drop(column_name, axis=1)
+        df_hostless["notes"].iloc[index] = notes
+        df_hostless.to_csv("./data/history_transients/all_hostless.csv")
+        print("\n\n")
+        print(df_hostless)
+        print(yes_no)
+        print(id)
+        print(df_hostless.runcat_id)
+        print(index)
+        print(df_hostless.iloc[index])
+        print("\n\n")
+
+    except:
+        print("'All Hostless' file not present. Please create!")
 
     # add_to_GEMTOM(id, name, ra, dec)
 
@@ -2382,7 +2453,7 @@ def get_limiting_magnitudes_from_BGEM_ID(blackgem_id):
           ,i1."t-lmag"
           ,i1.filter
       FROM image i1
-          ,(SELECt i0.id AS imageid
+          ,(SELECT i0.id AS imageid
              FROM image i0
                  ,(SELECT x.object
                      FROM assoc a
@@ -2396,7 +2467,7 @@ def get_limiting_magnitudes_from_BGEM_ID(blackgem_id):
            SELECT x.image AS imageid
              FROM assoc a
                  ,extractedsource x
-            WHERE a.runcat = 31744960
+            WHERE a.runcat = '%(blackgem_id)s'
               AND a.xtrsrc = x.id
             ) t1
      WHERE i1.id = t1.imageid
@@ -2449,9 +2520,9 @@ def get_lightcurve_from_BGEM_ID(transient_id):
 
     ## Remove all points in the limiting_mag lightcurve that have detections.
     # num_removed = 0
-    for i in range(len(df_limiting_mag["date_obs"])):
-        if df_limiting_mag["date_obs"][i] in df_bgem_lightcurve['i."date-obs"'].unique():
-            df_limiting_mag = df_limiting_mag.drop([i])
+    # for i in range(len(df_limiting_mag["date_obs"])):
+    #     if df_limiting_mag["date_obs"][i] in df_bgem_lightcurve['i."date-obs"'].unique():
+    #         df_limiting_mag = df_limiting_mag.drop([i])
             # num_removed += 1
     # print(num_removed, "points removed.")
     # print(len(df_bgem_lightcurve), "points in lightcurve.")
@@ -2570,8 +2641,8 @@ def get_tns_from_ra_dec(ra, dec, radius):
         print("ID Code:", json_data["id_code"])
         print("ID Code:", json_data["id_code"])
         print(json_data.keys())
-        # print(json_data["data"]["reply"])
-        # print(len(json_data["data"]["reply"]))
+        # print(json_data["data"])
+        # print(len(json_data["data"]))
         return json_data
 
 def get_ra_dec_from_tns(tns_object_name):
@@ -2692,6 +2763,10 @@ def BGEM_ID_View(request, bgem_id):
         'i.filter'          : "filter",
     })
 
+    print("Standard Deviations:")
+    print(np.std(df_bgem_lightcurve['ra_psf_d']))
+    print(np.std(df_bgem_lightcurve['dec_psf_d']))
+
     # df_new = pd.concat([df_bgem_lightcurve,df_limiting_mag]).reset_index(drop=True)
     # print("\n")
     # print(df_bgem_lightcurve.iloc[0])
@@ -2701,6 +2776,9 @@ def BGEM_ID_View(request, bgem_id):
     df_ful = df_ful.sort_values(by=['mjd'])
     # print(df_new)
     # print("\n")
+
+    print(np.std(df_ful['ra_psf_d']))
+    print(np.std(df_ful['dec_psf_d']))
 
     # df_new.style.format({
     #     # 'runcat_id' : make_runcat_clickable,
@@ -2864,7 +2942,6 @@ def BGEM_ID_View(request, bgem_id):
         else:
             # print(tns_object_data)
             # print(tns_object_data["data"])
-            # print(tns_object_data["data"]["reply"])
 
             ## Get RA and Dec, and find distance to our current target.
             this_object_ra      = tns_object_data["data"]["radeg"]
