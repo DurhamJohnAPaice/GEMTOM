@@ -2157,7 +2157,8 @@ def rate_target(request):
 
         time_list.append(time.time())
         df_orphans.loc[index,"yes_no"] = yes_no
-        df_orphans.loc[index,"notes"] = notes
+        if len(notes) > 0:
+            df_orphans.loc[index,"notes"] = notes
         for column_name in df_orphans.columns:
             if 'Unnamed' in column_name:
                 df_orphans = df_orphans.drop(column_name, axis=1)
