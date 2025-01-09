@@ -3804,15 +3804,13 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
 class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
     template_name = 'orphaned_transients.html'
 
-    # def get_context_data(self, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #
-    #     ## --- Update Recent Transients ---
-    #     # recent_transients = blackgem_recent_transients()
-    #     recent_transients = blackgem_rated_orphans()
-    #     # recent_transients = check_blackgem_recent_transients(recent_transients)
-    #
-    #     return context
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        ## --- Update Orphaned Transients ---
+        df = blackgem_rated_orphans()
+
+        return context
 
 
     ## ===== Plot orphaned transients =====
