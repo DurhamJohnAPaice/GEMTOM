@@ -11,9 +11,17 @@ For customization instructions, see tom_common/base.html
 <li class="nav-item">
     <a class="nav-link" href="{% url 'history' %}">History</a>
 </li>
-<li class="nav-item">
+<!-- <li class="nav-item">
     <a class="nav-link" href="{% url 'transients' %}">Transients</a>
+</li> -->
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle {% if request.resolver_match.namespace == 'targets' %}active{% endif %}" data-toggle="dropdown">Transients</a>
+    <div class="dropdown-menu">
+        <a class="dropdown-item" href="{% url 'transients' %}">All Transients</a>
+        <a class="dropdown-item" href="{% url 'orphaned_transients' %}">Orphaned Transients</a>
+    </div>
 </li>
+
 <li class="nav-item dropdown">
     <a class="nav-link dropdown-toggle {% if request.resolver_match.namespace == 'targets' %}active{% endif %}" data-toggle="dropdown">Targets</a>
     <div class="dropdown-menu">

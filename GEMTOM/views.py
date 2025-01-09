@@ -2258,6 +2258,51 @@ def blackgem_recent_transients():
     return recent_transients
 
 
+def blackgem_rated_orphans():
+    '''
+    Fetches BlackGEM's rated orphans and returns as a pandas dataframe
+    '''
+
+    filepath = "./data/history_transients/rated_orphans.csv"
+    if os.path.isfile(filepath):
+        rated_orphans = pd.read_csv(filepath)
+    else:
+        rated_orphans = pd.DataFrame({
+            'runcat_id'             : [0],
+            'ra'                    : [0],
+            'dec'                   : [0],
+            'ra_psf'                : [0],
+            'dec_psf'               : [0],
+            'ra_std'                : [0],
+            'dec_std'               : [0],
+            'xtrsrc'                : [0],
+            'n_datapoints'          : [0],
+            'q_min'                 : [0],
+            'q_max'                 : [0],
+            'q_avg'                 : [0],
+            'q_rb_avg'              : [0],
+            'q_num'                 : [0],
+            'u_min'                 : [0],
+            'u_max'                 : [0],
+            'u_avg'                 : [0],
+            'u_rb_avg'              : [0],
+            'u_num'                 : [0],
+            'i_min'                 : [0],
+            'i_max'                 : [0],
+            'i_avg'                 : [0],
+            'i_rb_avg'              : [0],
+            'i_num'                 : [0],
+            'all_num_datapoints'    : [0],
+            'det_sep'               : [0],
+            'yes_no'                : [""],
+            'notes'                 : [""],
+        })
+
+
+        rated_orphans.to_csv(filepath, index=False)
+
+    return rated_orphans
+
 def obs_date_to_datetime(obs_date):
     return datetime.strptime(obs_date, '%Y%m%d')
 
@@ -3750,6 +3795,288 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
 
         return
 
+
+
+## =============================================================================
+## ------------------- Codes for the Orphaned Transients page ------------------
+
+
+class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
+    template_name = 'orphaned_transients.html'
+
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #
+    #     ## --- Update Recent Transients ---
+    #     # recent_transients = blackgem_recent_transients()
+    #     recent_transients = blackgem_rated_orphans()
+    #     # recent_transients = check_blackgem_recent_transients(recent_transients)
+    #
+    #     return context
+
+
+    ## ===== Plot orphaned transients =====
+
+    ## --- Step 1: The 'Orphaned Transients' Table ---
+    ## Uses a Dash AG Grid
+
+    # Initialize the Dash app
+    app = DjangoDash('OrphanedTransients')
+
+    # Read CSV data
+    df = blackgem_rated_orphans()
+    df = df.sort_values(by=['yes_no', 'runcat_id'], ascending=False)
+    # df = df.sort_values(by=['yes_no'], ascending=False)
+
+    ## Round values for displaying
+    df['ra_sml']        = round(df['ra'],3)
+    df['dec_sml']       = round(df['dec'],3)
+    df['ra_std_sml']        = round(df['ra_std']*360*60,4)
+    df['dec_std_sml']       = round(df['dec_std']*360*60,4)
+    df['det_sep_sml']       = round(df['det_sep'],2)
+    # df['iauname_short'] = df['iauname'].str[5:]
+    df['qavg_sml']     = round(df['q_avg'],2)
+    df['uavg_sml']     = round(df['u_avg'],2)
+    df['iavg_sml']     = round(df['i_avg'],2)
+    df['qrbavg_sml']     = round(df['q_rb_avg'],2)
+    df['urbavg_sml']     = round(df['u_rb_avg'],2)
+    df['irbavg_sml']     = round(df['i_rb_avg'],2)
+    # df['q_max_sml']     = round(df['q_max'],1)
+    # df['u_max_sml']     = round(df['u_max'],1)
+    # df['i_max_sml']     = round(df['i_max'],1)
+    # df['q_dif']         = round(df['q_max']-df['q_min'],2)
+    # df['u_dif']         = round(df['u_max']-df['u_min'],2)
+    # df['i_dif']         = round(df['i_max']-df['i_min'],2)
+
+    ## Define the layout of the Dash app
+    app.layout = html.Div([
+        dag.AgGrid(
+            id='csv-grid',
+            rowData=df.to_dict('records'),
+            columnDefs=[
+                {'headerName': 'BGEM ID', 'field': 'runcat_id',         'minWidth': 95, 'maxWidth': 95},
+
+                {'headerName': 'RA', 'field': 'ra_sml',                 'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'Dec', 'field': 'dec_sml',               'minWidth': 75, 'maxWidth': 75},
+                # {'headerName': 'RA StDev', 'field': 'ra_std_sml',       'minWidth': 95, 'maxWidth': 95},
+                # {'headerName': 'Dec StDev', 'field': 'dec_std_sml',     'minWidth': 95, 'maxWidth': 95},
+                {'headerName': '#Datapoints', 'field': 'n_datapoints',  'minWidth': 48, 'maxWidth': 48},
+
+                # {'headerName': 'q min',     'field': 'q_min',       'minWidth': 75, 'maxWidth': 75},
+                # {'headerName': 'q max',     'field': 'q_max',       'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'q avg',     'field': 'qavg_sml',      'minWidth': 73, 'maxWidth': 73},
+                {'headerName': 'q R/B', 'field': 'qrbavg_sml',    'minWidth': 75, 'maxWidth': 75},
+                # {'headerName': 'q num',     'field': 'q_num',       'minWidth': 75, 'maxWidth': 75},
+
+                # {'headerName': 'u min',     'field': 'u_min',       'minWidth': 75, 'maxWidth': 75},
+                # {'headerName': 'u max',     'field': 'u_max',       'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'u avg',     'field': 'uavg_sml',      'minWidth': 73, 'maxWidth': 73},
+                {'headerName': 'u R/B', 'field': 'urbavg_sml',    'minWidth': 75, 'maxWidth': 75},
+                # {'headerName': 'u num',     'field': 'u_num',       'minWidth': 75, 'maxWidth': 75},
+
+                # {'headerName': 'i min',     'field': 'i_min',       'minWidth': 75, 'maxWidth': 75},
+                # {'headerName': 'i max',     'field': 'i_max',       'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'i avg',     'field': 'iavg_sml',      'minWidth': 73, 'maxWidth': 73},
+                {'headerName': 'i R/B', 'field': 'irbavg_sml',    'minWidth': 75, 'maxWidth': 75},
+                # {'headerName': 'i num',     'field': 'i_num',       'minWidth': 75, 'maxWidth': 75},
+
+                # {'headerName': 'sum(Datapoints)', 'field': 'all_num_datapoints'},
+                # {'headerName': 'Separation', 'field': 'det_sep_sml',    'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'Interest', 'field': 'yes_no',       'minWidth': 90, 'maxWidth': 90},
+                {'headerName': 'Notes', 'field': 'notes',               'minWidth': 75},
+
+
+            ],
+            defaultColDef={
+                'sortable': True,
+                'filter': True,
+                'resizable': True,
+            },
+            columnSize="autoSize",
+            dashGridOptions = {"skipHeaderOnAutoSize": True, "rowSelection": "single"},
+            style={'height': '400px', 'width': '100%'},  # Set explicit height for the table
+            className='ag-theme-balham'  # Add a theme for better appearance
+        ),
+        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data, for when a row is clicked
+
+        ## The following are sections that show information based on the row clicked
+        html.Div(id='information-div'),     ## For Step 2: Displays the Object ID, IAU Name, RA, and Dec
+        dcc.Graph(id='lightcurve-graph'),   ## For Step 3: Displays the Lightcurve
+        html.Div(id='output-div'),          ## For Step 4: Displays the link to Transients, the 'Add to GEMTOM' button, and the full data.
+
+    ], style={'height': '1700px', 'width': '100%'} # Set explicit height for the full app, includine the extra information.
+    )
+
+    ## --- Step 1 Cont': Handle selecting rows ---
+    @app.callback(
+        Output('selected-row-data', 'data'),
+        Input('csv-grid', 'selectedRows')
+    )
+    def update_selected_row(selectedRows):
+        if selectedRows:
+            return selectedRows[0]  # Assuming single row selection
+        return {}
+
+    ## --- Step 2: Display the Object ID, IAU Name, RA, and Dec ---
+
+
+
+    @app.callback(
+        Output('information-div', 'children'),
+        Input('selected-row-data', 'data')
+    )
+    def display_information(row_data):
+
+        primary_button_dict = {
+            'font-family': 'Arial',
+            'font-size': '16px',
+            'color': '#007bff',
+            'background-color': '#white',
+            'border': '2px solid #007bff',
+            'padding': '10px 20px',
+            'text-align': 'center',
+            'text-decoration': 'none',
+            'display': 'inline-block',
+            'margin': '4px 2px',
+            'cursor': 'pointer',
+            'border-radius': '12px'
+        }
+
+        add_to_gemtom_dict = {
+            'font-family': 'Arial',
+            'font-size': '16px',
+            'color': 'white',
+            'background-color': '#007bff',
+            'border': 'none',
+            'padding': '10px 20px',
+            'text-align': 'center',
+            'text-decoration': 'none',
+            'display': 'inline-block',
+            'margin': '4px 2px',
+            'cursor': 'pointer',
+            'border-radius': '12px'
+        }
+
+        if row_data:
+            if (row_data["yes_no"] == "Yes"):
+                this_colour = "green"
+            else:
+                this_colour = "grey"
+            return html.Div([
+                        html.Br(),
+                        html.A(str(row_data["runcat_id"]) + ' - ' + str(row_data["notes"]), style={'color':this_colour, 'font-size':'20px'}),
+                        html.Br(), html.Br(),
+                        html.A("BlackView", href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid=" + str(row_data['runcat_id']), target="_blank", style=primary_button_dict),
+                        html.A("BlackPEARL", href="https://blackpearl.blackgem.org/analyze.php", target="_blank", style=primary_button_dict),
+                        html.A("GEMTOM", href='/transients/'+str(row_data['runcat_id']), target="_blank", style=primary_button_dict),
+                        html.A("SIMBAD", href="https://simbad.u-strasbg.fr/simbad/sim-coo?Coord=" + str(row_data['ra']) + "d" + str(row_data['dec']) + "d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=1&Radius.unit=arcmin&submit=submit+query&CoordList=", target="_blank", style=primary_button_dict),
+                        html.A("Vizier", href="https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-c=" + str(row_data['ra']) + "%20" + str(row_data['dec']) + "&-c.u=arcsec&-c.r=1.5&-c.eq=J2000&-c.geom=r&-out.max=50&-out.add=_r", target="_blank", style=primary_button_dict),
+                        # html.Br(), html.Br(),
+                        html.Div(html.Button('Add to GEMTOM', id='call-function-button', n_clicks=0, style=add_to_gemtom_dict)),
+                        html.P(id='button-click-message')  # Div to display the message when button is clicked
+                        ], style={'font-family': 'Arial', 'text-align': 'center'}
+            )
+
+
+        return html.Div(
+            html.Em(html.P("Select a row")), style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif", "color":"grey"}
+        )
+
+
+    ## --- Step 3: Make the Lightcurve of a given source ---
+    @app.callback(
+        Output('lightcurve-graph', 'figure'),
+        Input('selected-row-data', 'data'),
+        prevent_initial_call=True  # Prevent the callback from being called when the app loads
+    )
+    def create_lightcurve(row_data):
+
+        if row_data:
+            bgem_id = row_data['runcat_id']
+
+            ## --- Lightcurve ---
+            df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
+            fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
+
+            return fig
+
+        return go.Figure()
+
+    ## --- Step 4: Display the link to Transients, the 'Add to GEMTOM' button, and the full data ---
+
+    ## First, create the 'Add to GEMTOM' button
+    ## Callback to handle button click:
+    @app.callback(
+        Output('button-click-message', 'children'),  # Allow multiple outputs to the same component
+        Input('call-function-button', 'n_clicks'),
+        State('selected-row-data', 'data'),
+        prevent_initial_call=True  # Prevent the callback from being called when the app loads
+    )
+    ## Function to add the transient to GEMTOM:
+    # def transient_to_GEMTOM(n_clicks, row_data):
+    #     if n_clicks > 0 and row_data:
+    #
+    #         id      = str(row_data['runcat_id'])
+    #         name    = str(row_data['iauname'])
+    #         ra      = str(row_data['ra'])
+    #         dec     = str(row_data['dec'])
+    #
+    #         add_to_GEMTOM(id, name, ra, dec)
+    #
+    #         return [html.P(f"Transient added to GEMTOM as " + name, style={'display': 'inline-block'}), html.A(". Please see the Targets page", href="/targets/", target="_blank", style={'text-decoration':'None', 'display': 'inline-block'}), html.P(".", style={'display': 'inline-block'})]
+    #         # return [html.P(f"Target added to GEMTOM as " + name + ". Please see the ", style={'display': 'inline-block'}), html.P("Targets page.", style={'display': 'inline-block'})]
+
+    ## Then, assumble all the rest of the information
+    @app.callback(
+        Output('output-div', 'children'),
+        Input('selected-row-data', 'data')
+    )
+    def display_selected_row_data(row_data):
+
+        ## When a row is selected, we either need to show the lightcurve or a link to request one:
+        if row_data:
+
+            # Format columns
+            formatted_columns = [
+                {'name': k, 'id': k, 'type': 'numeric', 'format': dash_table.Format.Format(precision=2, scheme=dash_table.Format.Scheme.fixed).group(True), 'presentation': 'input'} if isinstance(row_data[k], (int, float)) else {'name': k, 'id': k}
+                for k in row_data.keys()
+            ]
+
+            ## Main data (Name, RA/Dec, Datapoints, etc.)
+            table_1 = dash_table.DataTable(
+                data=[row_data],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['runcat_id', 'ra', 'dec', 'ra_std', 'dec_std', 'xtrsrc', 'n_datapoints']],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## q mag
+            table_2 = dash_table.DataTable(
+                data=[row_data],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if 'q_' in k],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## u mag
+            table_3 = dash_table.DataTable(
+                data=[row_data],
+                # columns=[[{'name': k, 'id': k} for k in row_data.keys()][i] for i in [13,14,15,16,17,44]],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if 'u_' in k],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## i mag
+            table_4 = dash_table.DataTable(
+                data=[row_data],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if 'i_' in k],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## Extra 1
+            table_5 = dash_table.DataTable(
+                data=[row_data],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['all_num_datapoints', 'det_sep', 'yes_no', 'notes']],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## Extra 2
+            return [table_1] + [table_2] + [table_3] + [table_4] + [table_5]
+
+        return
 
 ## =============================================================================
 ## ------------------- Codes for the Live Feed page ---------------------

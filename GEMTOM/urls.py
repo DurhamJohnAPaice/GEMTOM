@@ -48,6 +48,7 @@ urlpatterns = [
     path('transients/<int:bgem_id>/', BGEM_ID_View, name='bgem_id'),
 
     path('transients/', UnifiedTransientsView.as_view(), name='transients'),
+    path('transients/orphans/', OrphanedTransientsView.as_view(), name='orphaned_transients'),
 
     path('history/', HistoryView.as_view(), name='history'),
     path('history/<int:obs_date>/', NightView, name='night'),

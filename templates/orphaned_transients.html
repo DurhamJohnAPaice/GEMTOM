@@ -1,0 +1,35 @@
+{% extends 'tom_common/base.html' %}
+{% block content %}
+{% load plotly_dash %}
+
+<!-- --------------------------- -->
+<head>
+<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<div style="text-align:center">
+
+<p>
+On this page, you can search for information on all rated orphaned transients.<br>
+Click on an entry below to see more about the target.
+</p>
+<hr>
+
+<head>
+    <title>CSV Data Grid</title>
+    <link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-grid.css">
+    <link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-theme-balham.css">
+</head>
+
+<body>
+    <h5>Orphaned Transients</h5>
+    {% load plotly_dash %}
+    <div class="dash-container">
+        {% plotly_app name="OrphanedTransients" ratio=1.7 %}
+    </div>
+</body>
+
+
+<!-- --------------------------- -->
+{% endblock %}
