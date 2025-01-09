@@ -2597,8 +2597,8 @@ def get_lightcurve_from_BGEM_ID(transient_id):
         print("No lightcurve found.")
         return df_bgem_lightcurve, df_limiting_mag
 
-    print(df_bgem_lightcurve.iloc[0])
-    print(df_limiting_mag.iloc[0])
+    # print(df_bgem_lightcurve.iloc[0])
+    # print(df_limiting_mag.iloc[0])
 
     ## Remove all points in the limiting_mag lightcurve that have detections.
     # num_removed = 0
