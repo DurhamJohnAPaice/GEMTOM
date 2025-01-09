@@ -1900,16 +1900,16 @@ def NightView(request, obs_date):
 
     time_list.append(time.time())
 
-    all_orphans = False
+    rated_orphans = False
     try:
-        df_orphans_all = pd.read_csv("./data/history_transients/all_orphans.csv")
-        all_orphans = True
+        df_orphans_all = pd.read_csv("./data/history_transients/rated_orphans.csv")
+        rated_orphans = True
 
     except:
-        print("'All orphans' file not present. Please create!")
+        print("'Rated Orphans' file not present. Please create!")
 
     if df_orphans is not None:
-        if all_orphans:
+        if rated_orphans:
             yes_no_list = []
             notes_list = []
 
@@ -2126,16 +2126,29 @@ def rate_target(request):
     # name = iau_name_from_bgem_id(id)
 
     # df_orphans = pd.read_csv("./data/history_transients/"+obs_date+"_orphans.csv")
-    all_orphans_exists = True
+    rated_orphans_exists = True
     try:
-        df_orphans = pd.read_csv("./data/history_transients/all_orphans.csv")
+        df_orphans = pd.read_csv("./data/history_transients/rated_orphans.csv")
     except:
-        all_orphans_exists = False
-        print("'All orphans' file not present. Please create!")
+        rated_orphans_exists = False
+        print("'Rated orphans' file not present. Please create!")
 
     time_list.append(time.time())
-    if all_orphans_exists:
-        index = df_orphans.index[df_orphans['runcat_id'] == int(id)][0]
+    if rated_orphans_exists:
+        index_list = df_orphans.index[df_orphans['runcat_id'] == int(id)]
+
+        if len(index_list) == 0:
+            df_this_night = pd.read_csv("./data/history_transients/"+obs_date+"_orphans.csv")
+            this_index = df_this_night.index[df_this_night['runcat_id'] == int(id)][0]
+            print(df_this_night.loc[this_index,"runcat_id"])
+            # df_orphans = pd.concat([df_orphans, df_this_night.iloc[this_index]]).reset_index(drop=True)
+            index = len(df_orphans)
+            df_orphans.loc[index] = df_this_night.iloc[this_index]
+            print(df_orphans.loc[index,"runcat_id"])
+
+        else:
+            index = index_list[0]
+
         time_list.append(time.time())
         if "yes_no" not in df_orphans.columns:
             df_orphans["yes_no"] = [None]*len(df_orphans)
@@ -2149,7 +2162,7 @@ def rate_target(request):
             if 'Unnamed' in column_name:
                 df_orphans = df_orphans.drop(column_name, axis=1)
         time_list.append(time.time())
-        df_orphans.to_csv("./data/history_transients/all_orphans.csv")
+        df_orphans.to_csv("./data/history_transients/rated_orphans.csv")
         time_list.append(time.time())
         print("\n\n")
         print(df_orphans)
@@ -2970,6 +2983,7 @@ def BGEM_ID_View(request, bgem_id):
 
 
     ## TNS:
+    print("Starting TNS Query...")
     search_radius = 10
     tns_data = get_tns_from_ra_dec(ra, dec, search_radius)
     if tns_data == "Too many requests!":
