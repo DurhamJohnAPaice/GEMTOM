@@ -7,7 +7,8 @@ import pandas as pd
 from astropy.coordinates import SkyCoord, Galactocentric
 from astropy import units as u
 import plotly.express as px
-from dash import Dash, dcc, html, Input, Output, State, callback, dash_table
+import dash
+from dash import Dash, dcc, html, Input, Output, State, callback, dash_table, ctx
 from io import StringIO
 import dash_bootstrap_components as dbc
 import time
@@ -303,13 +304,14 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
                 annotation_font_color = "grey",
                 annotation_textangle = 90,)
 
-    fig.update_layout(height=600)
+    fig.update_layout(height=400)
     fig.update_layout(hovermode="x",
         xaxis=dict(tickformat ='digits'),
         # xaxis=dict(tickformat ='d'),
     # fig.update_layout(xaxis=dict(tickformat ='d'),
-        margin=dict(l=2, r=2),  # Set margins to reduce whitespace
-        title="Lightcurves",
+        # margin=dict(l=2, r=2),  # Set margins to reduce whitespace
+        margin=dict(t=0, b=50, l=2, r=2),  # Set margins to reduce whitespace
+        # title="Lightcurves",
         xaxis_title="MJD",
         yaxis_title="Magnitude",)
     fig.update_yaxes(autorange="reversed")
@@ -2114,7 +2116,6 @@ def rate_target(request):
     '''
     Rates a target as interesting or not
     '''
-    time_list = []
     time_list.append(time.time())
 
     id = request.POST.get('id')
@@ -2122,6 +2123,13 @@ def rate_target(request):
     notes = request.POST.get('notes')
     obs_date = request.POST.get('night')
 
+    true_rate_target(id, yes_no, notes, obs_date)
+
+    return redirect('/history/' + obs_date + "/")
+
+def true_rate_target(id, yes_no, notes, obs_date):
+
+    time_list = []
     time_list.append(time.time())
     # name = iau_name_from_bgem_id(id)
 
@@ -3800,7 +3808,6 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
 ## =============================================================================
 ## ------------------- Codes for the Orphaned Transients page ------------------
 
-
 class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
     template_name = 'orphaned_transients.html'
 
@@ -3832,19 +3839,12 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
     df['ra_std_sml']        = round(df['ra_std']*360*60,4)
     df['dec_std_sml']       = round(df['dec_std']*360*60,4)
     df['det_sep_sml']       = round(df['det_sep'],2)
-    # df['iauname_short'] = df['iauname'].str[5:]
     df['qavg_sml']     = round(df['q_avg'],2)
     df['uavg_sml']     = round(df['u_avg'],2)
     df['iavg_sml']     = round(df['i_avg'],2)
     df['qrbavg_sml']     = round(df['q_rb_avg'],2)
     df['urbavg_sml']     = round(df['u_rb_avg'],2)
     df['irbavg_sml']     = round(df['i_rb_avg'],2)
-    # df['q_max_sml']     = round(df['q_max'],1)
-    # df['u_max_sml']     = round(df['u_max'],1)
-    # df['i_max_sml']     = round(df['i_max'],1)
-    # df['q_dif']         = round(df['q_max']-df['q_min'],2)
-    # df['u_dif']         = round(df['u_max']-df['u_min'],2)
-    # df['i_dif']         = round(df['i_max']-df['i_min'],2)
 
     ## Define the layout of the Dash app
     app.layout = html.Div([
@@ -3898,7 +3898,11 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
         dcc.Store(id='selected-row-data'),  # Store to hold the selected row data, for when a row is clicked
 
         ## The following are sections that show information based on the row clicked
-        html.Div(id='information-div'),     ## For Step 2: Displays the Object ID, IAU Name, RA, and Dec
+        html.Hr(),
+        html.Div([
+            html.Div(id='information-div', style={"flex": "3", "border": "1px solid #ccc"}),     ## For Step 2: Displays the Object ID, IAU Name, RA, and Dec
+            html.Div(id='detections-list', children=[], style={"flex": "2"}),
+        ], style={"display": "flex"}),
         dcc.Graph(id='lightcurve-graph'),   ## For Step 3: Displays the Lightcurve
         html.Div(id='output-div'),          ## For Step 4: Displays the link to Transients, the 'Add to GEMTOM' button, and the full data.
 
@@ -3916,9 +3920,6 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
         return {}
 
     ## --- Step 2: Display the Object ID, IAU Name, RA, and Dec ---
-
-
-
     @app.callback(
         Output('information-div', 'children'),
         Input('selected-row-data', 'data')
@@ -3962,7 +3963,7 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
                 this_colour = "grey"
             return html.Div([
                         html.Br(),
-                        html.A(str(row_data["runcat_id"]) + ' - ' + str(row_data["notes"]), style={'color':this_colour, 'font-size':'20px'}),
+                        html.A(str(row_data["runcat_id"]) + ' - "' + str(row_data["notes"]) + '"', style={'color':this_colour, 'font-size':'20px'}),
                         html.Br(), html.Br(),
                         html.A("BlackView", href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid=" + str(row_data['runcat_id']), target="_blank", style=primary_button_dict),
                         html.A("BlackPEARL", href="https://blackpearl.blackgem.org/analyze.php", target="_blank", style=primary_button_dict),
@@ -3971,15 +3972,100 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
                         html.A("Vizier", href="https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-c=" + str(row_data['ra']) + "%20" + str(row_data['dec']) + "&-c.u=arcsec&-c.r=1.5&-c.eq=J2000&-c.geom=r&-out.max=50&-out.add=_r", target="_blank", style=primary_button_dict),
                         # html.Br(), html.Br(),
                         html.Div(html.Button('Add to GEMTOM', id='call-function-button', n_clicks=0, style=add_to_gemtom_dict)),
-                        html.P(id='button-click-message')  # Div to display the message when button is clicked
+                        html.P(id='button-click-message'),  # Div to display the message when button is clicked
+
+                        # html.Form(method="post", action="rate_target", className = "image-form", id='rate-target-form',
+                        #    children=[
+                        #        dbc.Input(id="notes", name="notes", type="text", placeholder="Notes"),
+                        #        dbc.Input(id="submit_yes", name="yes_no", type="submit", value="Yes"),
+                        #        dbc.Input(id="submit_no",  name="yes_no", type="submit", value="No"),
+                        #    ],
+                        # ),
+
+                                # First column with text field and buttons
+                        html.Div(
+                            children=[
+                                html.Label("Update Notes:", style={'font-family': 'Arial', 'text-align': 'center', 'color': 'grey', "font-style": "italic"}),
+                                dcc.Input(
+                                    id="notes",
+                                    type="text",
+                                    placeholder="Notes",
+                                    style={"marginLeft": "10px", "marginRight": "10px", "padding" : "12px 20px", 'font-size': '16px',},
+                                ),
+                                html.Button(
+                                    "Yes",
+                                    id="Yes",
+                                    n_clicks=0,
+                                    # style={"marginRight": "10px"},
+                                    style={**primary_button_dict, ** {'background-color': '#ffffff'}},
+                                ),
+                                html.Button(
+                                    "No",
+                                    id="No",
+                                    n_clicks=0,
+                                    style={**primary_button_dict, ** {'background-color': '#ffffff'}},
+                                ),
+                                html.Div(id="feedback", style={"marginTop": "10px", "color": "black"}),
+                            ],
+                        ),
+
                         ], style={'font-family': 'Arial', 'text-align': 'center'}
             )
 
+    # <form method="post" action="{% url 'rate_target' %}" class="image-form">
+    #     {% csrf_token %}
+    #     <input type="hidden" name="id" value="{{ bgem_id }}">
+    #     <input type="hidden" name="night" value="{{ obs_date }}">
+    #     <!-- <input type="hidden" name="yes_no" value="Real"> -->
+    #     <input type="text" name="notes" placeholder="Notes">
+    #     <br>
+    #     <button type="submit" name="yes_no" value="Yes" class="btn btn-outline-primary">Yes</button>
+    #     <button type="submit" name="yes_no" value="No" class="btn btn-outline-primary">No</button>
+    # </form>
 
         return html.Div(
             html.Em(html.P("Select a row")), style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif", "color":"grey"}
         )
 
+
+    ## --- Re-rate the Transient ---
+
+    @app.callback(
+        Output("feedback", "children"),
+        [Input("Yes", "n_clicks"),
+         Input("No", "n_clicks"),
+         Input('selected-row-data', 'data'),
+         ],
+        [State("notes", "value")]
+    )
+    def handle_buttons(yes, no, row_data, notes):
+        # if not input_value:
+        #     return "Please enter a value."
+        #
+        ctx = dash.callback_context
+        if not ctx.triggered:
+            return ""
+        button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+        if notes == None:
+            notes = ""
+
+        # print(row_data)
+        id = row_data['runcat_id']
+
+        if button_id == "Yes":
+            true_rate_target(id, button_id, notes, "19700101")
+            if len(notes) == 0:
+                return f"Target updated: Interest = Yes. (This will take a while to update)"
+            else:
+                return f"Target updated: Interest = Yes; '{notes}'. (This will take a while to update)"
+
+        elif button_id == "No":
+            true_rate_target(id, button_id, notes, "19700101")
+            if len(notes) == 0:
+                return f"Target updated: Interest = No. (This will take a while to update)"
+            else:
+                return f"Target updated: Interest = No; '{notes}'. (This will take a while to update)"
 
     ## --- Step 3: Make the Lightcurve of a given source ---
     @app.callback(
@@ -4000,7 +4086,67 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
 
         return go.Figure()
 
-    ## --- Step 4: Display the link to Transients, the 'Add to GEMTOM' button, and the full data ---
+
+    ## --- Find the individual detections of a given source ---
+    @app.callback(
+        Output('detections-list', 'children'),
+        Input('selected-row-data', 'data'),
+        prevent_initial_call=True  # Prevent the callback from being called when the app loads
+    )
+    def update_new_grid(row_data):
+        if not row_data:
+            return []
+
+        print(row_data)
+
+        bgem_id = row_data['runcat_id']
+
+        df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
+
+        df_new = df_bgem_lightcurve.rename(columns={
+            'a.xtrsrc'          : "xtrsrc",
+            'x.ra_psf_d'        : "ra_psf_d",
+            'x.dec_psf_d'       : "dec_psf_d",
+            'x.flux_zogy'       : "flux_zogy",
+            'x.fluxerr_zogy'    : "fluxerr_zogy",
+            'x.mag_zogy'        : "mag_zogy",
+            'x.magerr_zogy'     : "magerr_zogy",
+            'i."mjd-obs"'       : "mjd",
+            'i."date-obs"'      : "date_obs",
+            'i.filter'          : "filter",
+        })
+
+        df_new['xtrsrc'] = df_new['xtrsrc'].apply(lambda x: f'[{int(x)}](https://staging.apps.blackgem.org/transients/blackview/show_xtrsrc/{int(x)})' if x > 0 else 'None')
+
+        new_grid = dag.AgGrid(
+            id='observation-grid',
+            rowData=df_new.to_dict('records'),
+            columnDefs=[
+                        {'headerName': 'a.xtrsrc', 'field':  'xtrsrc', 'cellRenderer': 'markdown'},
+                        {'headerName': 'MJD', 'field':  'mjd',
+                            "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
+                        {'headerName': 'Filter', 'field': 'filter'},
+                        {'headerName': 'mag', 'field':  'mag_zogy',
+                            "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
+            ],
+            defaultColDef={
+                'sortable': True,
+                'filter': True,
+                'resizable': True,
+                'editable': False,
+            },
+            columnSize="autoSize",
+            dashGridOptions={
+                "skipHeaderOnAutoSize": True,
+                "rowSelection": "single",
+            },
+            style={'height': '100%', 'width': '100%'},  # Set explicit height for the grid
+            className='ag-theme-balham'  # Add a theme for better appearance
+        )
+
+        return [new_grid]  # Return the new grid as the content of the container
+
+    ## --- Display the link to Transients, the 'Add to GEMTOM' button, and the full data ---
 
     ## First, create the 'Add to GEMTOM' button
     ## Callback to handle button click:
@@ -4010,19 +4156,21 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
         State('selected-row-data', 'data'),
         prevent_initial_call=True  # Prevent the callback from being called when the app loads
     )
-    ## Function to add the transient to GEMTOM:
-    # def transient_to_GEMTOM(n_clicks, row_data):
-    #     if n_clicks > 0 and row_data:
-    #
-    #         id      = str(row_data['runcat_id'])
-    #         name    = str(row_data['iauname'])
-    #         ra      = str(row_data['ra'])
-    #         dec     = str(row_data['dec'])
-    #
-    #         add_to_GEMTOM(id, name, ra, dec)
-    #
-    #         return [html.P(f"Transient added to GEMTOM as " + name, style={'display': 'inline-block'}), html.A(". Please see the Targets page", href="/targets/", target="_blank", style={'text-decoration':'None', 'display': 'inline-block'}), html.P(".", style={'display': 'inline-block'})]
-    #         # return [html.P(f"Target added to GEMTOM as " + name + ". Please see the ", style={'display': 'inline-block'}), html.P("Targets page.", style={'display': 'inline-block'})]
+    # Function to add the transient to GEMTOM:
+    def transient_to_GEMTOM(n_clicks, row_data):
+        if n_clicks > 0 and row_data:
+
+            id      = str(row_data['runcat_id'])
+            name    = all_stats_from_bgem_id(id)[0]
+            ra      = str(row_data['ra'])
+            dec     = str(row_data['dec'])
+
+            add_to_GEMTOM(id, name, ra, dec)
+
+            return [html.A(f"Transient added to GEMTOM as " + name, style={'display': 'inline-block'}), html.A("Please see the Targets page", href="/targets/", target="_blank", style={'text-decoration':'None', 'display': 'inline-block'}), html.P(".", style={'display': 'inline-block'})]
+            # return [html.P(f"Target added to GEMTOM as " + name + ". Please see the ", style={'display': 'inline-block'}), html.P("Targets page.", style={'display': 'inline-block'})]
+
+
 
     ## Then, assumble all the rest of the information
     @app.callback(
