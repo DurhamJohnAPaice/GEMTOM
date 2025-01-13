@@ -3845,6 +3845,17 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
     df['urbavg_sml']     = round(df['u_rb_avg'],2)
     df['irbavg_sml']     = round(df['i_rb_avg'],2)
 
+
+    getRowStyle = {
+        "styleConditions": [
+            {
+                "condition": "params.data.yes_no == 'No'",
+                "style": {"color": "lightgrey"},
+            },
+        ],
+        "defaultStyle": {"color": "black"},
+    }
+
     ## Define the layout of the Dash app
     app.layout = html.Div([
         dag.AgGrid(
@@ -3884,6 +3895,7 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
 
 
             ],
+            getRowStyle=getRowStyle,
             defaultColDef={
                 'sortable': True,
                 'filter': True,
