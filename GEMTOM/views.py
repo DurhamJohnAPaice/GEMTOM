@@ -3979,7 +3979,7 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
                         html.A("BlackView", href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid=" + str(row_data['runcat_id']), target="_blank", style=primary_button_dict),
                         html.A("BlackPEARL", href="https://blackpearl.blackgem.org/analyze.php", target="_blank", style=primary_button_dict),
                         html.A("GEMTOM", href='/transients/'+str(row_data['runcat_id']), target="_blank", style=primary_button_dict),
-                        html.A("SIMBAD", href="https://simbad.u-strasbg.fr/simbad/sim-coo?Coord=" + str(row_data['ra']) + "d" + str(row_data['dec']) + "d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=1&Radius.unit=arcmin&submit=submit+query&CoordList=", target="_blank", style=primary_button_dict),
+                        html.A("SIMBAD", href="https://simbad.u-strasbg.fr/simbad/sim-coo?Coord=" + str(row_data['ra']) + "d" + str(row_data['dec']) + "d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=10&Radius.unit=arcsec&submit=submit+query&CoordList=", target="_blank", style=primary_button_dict),
                         html.A("Vizier", href="https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-c=" + str(row_data['ra']) + "%20" + str(row_data['dec']) + "&-c.u=arcsec&-c.r=1.5&-c.eq=J2000&-c.geom=r&-out.max=50&-out.add=_r", target="_blank", style=primary_button_dict),
                         # html.Br(), html.Br(),
                         html.Div(html.Button('Add to GEMTOM', id='call-function-button', n_clicks=0, style=add_to_gemtom_dict)),
