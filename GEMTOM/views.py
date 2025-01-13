@@ -2116,7 +2116,6 @@ def rate_target(request):
     '''
     Rates a target as interesting or not
     '''
-    time_list.append(time.time())
 
     id = request.POST.get('id')
     yes_no = request.POST.get('yes_no')
