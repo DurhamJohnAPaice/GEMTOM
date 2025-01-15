@@ -196,13 +196,17 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
                     <th>imag<br>
                     (R/B)</th>
                     <!-- <th>Sep</th> -->
+                    <th>eigval_max</th>
+                    <th>eigval_min</th>
+                    <th>fraction_eigs</th>
+                    <th>angle_eigs</th>
                     <th>Of Interest?</th>
                     <th>Notes</th>
                     <th></th>
                 </thead>
                 <tbody>
                     {% if orphans %}
-                        {% for bgem_id, ra, dec, ra_std, dec_std, q_min, q_rb_avg, u_min, u_rb_avg, i_min, i_rb_avg, det_sep, yes_no, notes in orphans %}
+                        {% for bgem_id, ra, dec, q_min, q_rb_avg, u_min, u_rb_avg, i_min, i_rb_avg, eigval_max, eigval_min, fraction_eigs, angle_eigs, det_sep, yes_no, notes in orphans %}
                                 {% if yes_no == "No" %}
                                     <tr style="color: #D5D5D5;">
                                 {% elif yes_no == "Yes" %}
@@ -234,6 +238,10 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
 
                                 <!-- <td class="description">{{ q_rb_avg }}</td> -->
                                 <!-- <td class="description">{{ det_sep }}</td> -->
+                                <td class="description">{{ eigval_max }}</td>
+                                <td class="description">{{ eigval_min }}</td>
+                                <td class="description">{{ fraction_eigs }}</td>
+                                <td class="description">{{ angle_eigs }}</td>
                                 <td class="description">{{ yes_no }}</td>
                                 <td class="description">{{ notes }}</td>
                                 <td class="description">

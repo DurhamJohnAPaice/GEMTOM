@@ -243,6 +243,10 @@ def download_lightcurve(request):
 
 def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 
+    print("Starting BGEM lightcurve plotting...")
+
+    time_list = []
+    time_list.append(time.time())
     # print("\n\nBark!")
     # print(df_bgem_lightcurve.columns)
     # print(df_limiting_mag.columns)
@@ -250,6 +254,8 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 
     time_now = datetime.now(timezone.utc)
     mjd_now = datetime_to_mjd(time_now)
+
+    time_list.append(time.time())
 
     ## Lightcurve
     filters = ['u', 'g', 'q', 'r', 'i', 'z']
@@ -259,53 +265,58 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
     fig = go.Figure()
 
     for f in filters:
+        time_list.append(time.time())
         df_2 = df_bgem_lightcurve.loc[df_bgem_lightcurve['i.filter'] == f]
         # print(len(df_2))
         df_2 = df_2[df_2['x.mag_zogy'] != 99]
         # print(len(df_2))
         df_limiting_mag_2 = df_limiting_mag.loc[df_limiting_mag['filter'] == f]
 
-        fig.add_trace(go.Scatter(
-                    x               = df_2['i."mjd-obs"'],
-                    y               = df_2['x.mag_zogy'],
-                    error_y         = dict(
-                                        type='data',
-                                        array = df_2['x.magerr_zogy'],
-                                        thickness=1,
-                                        width=3,
-                                      ),
-                    mode            = 'markers',
-                    marker_color    = colors[filters.index(f)],
-                    name            = filters[filters.index(f)],
-                    hovertemplate   =
-                        'MJD: %{x:.3f}<br>' +
-                        'Mag: %{y:.3f} ± %{customdata[0]:.3f}<br>' +
-                        'Flux: %{customdata[1]:.3f} ± %{customdata[2]:.3f} µJy',
+        if len(df_2) > 0 or len(df_limiting_mag_2) >0:
 
-                    customdata = [(df_2['x.magerr_zogy'].iloc[i], df_2['x.flux_zogy'].iloc[i], df_2['x.fluxerr_zogy'].iloc[i]) for i in range(len(df_2['x.fluxerr_zogy']))]
-        ))
-        fig.add_trace(go.Scatter(
-                    x               = df_limiting_mag_2['mjd'],
-                    y               = df_limiting_mag_2['limiting_mag'],
-                    mode            = 'markers',
-                    marker          = dict(symbol='arrow-wide', angle=180, size=12),
-                    marker_color    = colors[filters.index(f)],
-                    opacity         = 0.3,
-                    name            = filters[filters.index(f)],
-                    hovertemplate   =
-                        '<i>MJD: %{x:.3f}</i><br>' +
-                        '<i>Limit: %{y:.3f}</i>',
-                    hoverlabel      = dict(bgcolor="white")
+            fig.add_trace(go.Scatter(
+                        x               = df_2['i."mjd-obs"'],
+                        y               = df_2['x.mag_zogy'],
+                        error_y         = dict(
+                                            type='data',
+                                            array = df_2['x.magerr_zogy'],
+                                            thickness=1,
+                                            width=3,
+                                          ),
+                        mode            = 'markers',
+                        marker_color    = colors[filters.index(f)],
+                        name            = filters[filters.index(f)],
+                        hovertemplate   =
+                            'MJD: %{x:.3f}<br>' +
+                            'Mag: %{y:.3f} ± %{customdata[0]:.3f}<br>' +
+                            'Flux: %{customdata[1]:.3f} ± %{customdata[2]:.3f} µJy',
 
-        ))
-        fig.add_vline(x=mjd_now, line_width=1, line_dash="dash", line_color="grey",
-                annotation_text="Now ",
-                annotation_position="bottom left",
-                annotation_font_color = "grey",
-                annotation_textangle = 90,)
+                        customdata = [(df_2['x.magerr_zogy'].iloc[i], df_2['x.flux_zogy'].iloc[i], df_2['x.fluxerr_zogy'].iloc[i]) for i in range(len(df_2['x.fluxerr_zogy']))]
+            ))
+            fig.add_trace(go.Scatter(
+                        x               = df_limiting_mag_2['mjd'],
+                        y               = df_limiting_mag_2['limiting_mag'],
+                        mode            = 'markers',
+                        marker          = dict(symbol='arrow-wide', angle=180, size=12),
+                        marker_color    = colors[filters.index(f)],
+                        opacity         = 0.3,
+                        name            = filters[filters.index(f)],
+                        hovertemplate   =
+                            '<i>MJD: %{x:.3f}</i><br>' +
+                            '<i>Limit: %{y:.3f}</i>',
+                        hoverlabel      = dict(bgcolor="white")
 
-    fig.update_layout(height=400)
-    fig.update_layout(hovermode="x",
+            ))
+    fig.add_vline(x=mjd_now, line_width=1, line_dash="dash", line_color="grey",
+            annotation_text="Now ",
+            annotation_position="bottom left",
+            annotation_font_color = "grey",
+            annotation_textangle = 90,)
+
+    time_list.append(time.time())
+    fig.update_layout(
+        height=400,
+        hovermode="x",
         xaxis=dict(tickformat ='digits'),
         # xaxis=dict(tickformat ='d'),
     # fig.update_layout(xaxis=dict(tickformat ='d'),
@@ -315,6 +326,11 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
         xaxis_title="MJD",
         yaxis_title="Magnitude",)
     fig.update_yaxes(autorange="reversed")
+
+
+    print("Plot BGEM Lightcurve Times:")
+    for i in range(len(time_list)-1):
+        print("t"+str(i)+"->t"+str(i+1)+": "+str(time_list[i+1]-time_list[i]))
 
     return fig
 
@@ -1946,14 +1962,18 @@ def NightView(request, obs_date):
             list(df_orphans.runcat_id),
             ['%.3f'%x for x in df_orphans.ra_psf],
             ['%.3f'%x for x in df_orphans.dec_psf],
-            ['%.3g'%x for x in df_orphans.ra_std],
-            ['%.3g'%x for x in df_orphans.dec_std],
+            # ['%.3g'%x for x in df_orphans.ra_std],
+            # ['%.3g'%x for x in df_orphans.dec_std],
             ['%.5s'%x for x in df_orphans.q_min],
             ['%.4s'%x for x in df_orphans.q_rb_avg],
             ['%.5s'%x for x in df_orphans.u_min],
             ['%.4s'%x for x in df_orphans.u_rb_avg],
             ['%.5s'%x for x in df_orphans.i_min],
             ['%.4s'%x for x in df_orphans.i_rb_avg],
+            ['%.4g'%x for x in df_orphans.eigval_max],
+            ['%.4g'%x for x in df_orphans.eigval_min],
+            ['%.4g'%x for x in df_orphans.fraction_eigs],
+            ['%.4g'%x for x in df_orphans.angle_eigs],
             ['%.4s'%x for x in df_orphans.det_sep],
             [x for x in df_orphans.yes_no],
             [x for x in df_orphans.notes],
@@ -2280,8 +2300,8 @@ def blackgem_rated_orphans():
             'dec'                   : [0],
             'ra_psf'                : [0],
             'dec_psf'               : [0],
-            'ra_std'                : [0],
-            'dec_std'               : [0],
+            # 'ra_std'                : [0],
+            # 'dec_std'               : [0],
             'xtrsrc'                : [0],
             'n_datapoints'          : [0],
             'q_min'                 : [0],
@@ -2753,6 +2773,9 @@ def get(get_obj):
     return response
 
 def format_to_json(source):
+    print(source[:11])
+    if source[:11] == "The website":
+        return False
     parsed = json.loads(source, object_pairs_hook = OrderedDict)
     result = json.dumps(parsed, indent = 4)
     return result
@@ -2766,6 +2789,8 @@ def get_tns_from_ra_dec(ra, dec, radius):
 
     response = search(search_obj)
     json_data = format_to_json(response.text)
+    if json_data == False:
+        return "Website Error"
     # print(json_data)
     json_data = json.loads(json_data)
     if json_data["id_code"] == 429:
@@ -2817,16 +2842,20 @@ def BGEM_ID_View(request, bgem_id):
     '''
     Displays data of a certain transient
     '''
+    print("Beginning BGEM ID View...")
 
-    t0 = time.time()
+    time_list = []
+    time_list.append(time.time())
 
+    print("Fetching BGEM Lightcurve...")
     df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
     # print(df_bgem_lightcurve)
     # print(df_bgem_lightcurve.columns)
 
-    t1 = time.time()
+    time_list.append(time.time())
 
     ## Get the name, ra, and dec:
+    print("Authenticating with BLackGEM...")
     bg = authenticate_blackgem()
 
     qu = """\
@@ -2845,18 +2874,18 @@ def BGEM_ID_View(request, bgem_id):
 
     l_results = bg.run_query(query)
     source_data = pd.DataFrame(l_results, columns=['id','iau_name','ra_deg','dec_deg'])
+
     if len(source_data) == 0:
 
-        context = {
-            "bgem_id"           : bgem_id,
-        }
+        context = {"bgem_id" : bgem_id,}
 
         return render(request, "transient/index_2.html", context)
+
     iau_name    = source_data['iau_name'][0]
     ra          = source_data['ra_deg'][0]
     dec         = source_data['dec_deg'][0]
 
-    t2 = time.time()
+    time_list.append(time.time())
 
     response = "You're looking at BlackGEM transient %s."
 
@@ -2867,7 +2896,7 @@ def BGEM_ID_View(request, bgem_id):
     # print(df_bgem_lightcurve['x.ra_psf_d'])
     # print(df_bgem_lightcurve['x.dec_psf_d'])
 
-    t3 = time.time()
+    time_list.append(time.time())
 
     ## --- Lightcurve ---
     fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
@@ -2877,7 +2906,7 @@ def BGEM_ID_View(request, bgem_id):
     # print(source_data)
     # print(l_results)
 
-    t4 = time.time()
+    time_list.append(time.time())
 
 
     ## Detail each observation:
@@ -3032,18 +3061,22 @@ def BGEM_ID_View(request, bgem_id):
     ], style={'height': '300px', 'width': '100%'}
     )
 
-    t5 = time.time()
+    time_list.append(time.time())
 
 
     ## TNS:
     print("Starting TNS Query...")
     search_radius = 10
     tns_data = get_tns_from_ra_dec(ra, dec, search_radius)
+    time_list.append(time.time())
     if tns_data == "Too many requests!":
         tns_text = "Too many TNS requests. Please check later."
         tns_list = []
     elif tns_data == "Unauthorised!":
         tns_text = "Note: TNS Unauthorised. Please check."
+        tns_list = []
+    elif tns_data == "Website Error":
+        tns_text = "TNS site encountered an error. Please try again later."
         tns_list = []
     else:
         tns_reply = tns_data["data"]
@@ -3133,7 +3166,7 @@ def BGEM_ID_View(request, bgem_id):
         tns_flag_name = ""
         tns_flag_sep = ""
 
-    t6 = time.time()
+    time_list.append(time.time())
 
     # ## --- Find the image ---
     # print("Getting image...")
@@ -3146,9 +3179,6 @@ def BGEM_ID_View(request, bgem_id):
     #     file_name = "../" + get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve)
     #
     # print("Image name:", file_name)
-
-    t7 = time.time()
-
 
 
 
@@ -3222,17 +3252,12 @@ def BGEM_ID_View(request, bgem_id):
 
     # print(context["image_name"])
 
-    t8 = time.time()
+    time_list.append(time.time())
 
-    print("Times:")
-    print("t0->t1:", t1-t0)
-    print("t1->t2:", t2-t1)
-    print("t2->t3:", t3-t2)
-    print("t3->t4:", t4-t3)
-    print("t4->t5:", t5-t4)
-    print("t5->t6:", t6-t5)
-    print("t6->t7:", t7-t6)
-    print("t7->t8:", t8-t7)
+    print("Transients ID View Times:")
+    for i in range(len(time_list)-1):
+        print("t"+str(i)+"->t"+str(i+1)+": "+str(time_list[i+1]-time_list[i]))
+
 
     return render(request, "transient/index.html", context)
 
@@ -3835,8 +3860,8 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
     ## Round values for displaying
     df['ra_sml']        = round(df['ra'],3)
     df['dec_sml']       = round(df['dec'],3)
-    df['ra_std_sml']        = round(df['ra_std']*360*60,4)
-    df['dec_std_sml']       = round(df['dec_std']*360*60,4)
+    # df['ra_std_sml']        = round(df['ra_std']*360*60,4)
+    # df['dec_std_sml']       = round(df['dec_std']*360*60,4)
     df['det_sep_sml']       = round(df['det_sep'],2)
     df['qavg_sml']     = round(df['q_avg'],2)
     df['uavg_sml']     = round(df['u_avg'],2)
@@ -3890,6 +3915,12 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
 
                 # {'headerName': 'sum(Datapoints)', 'field': 'all_num_datapoints'},
                 # {'headerName': 'Separation', 'field': 'det_sep_sml',    'minWidth': 75, 'maxWidth': 75},
+
+                {'headerName': 'eigval_max', 'field': 'eigval_max',    'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'eigval_min', 'field': 'eigval_min',    'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'fraction_eigs', 'field': 'fraction_eigs',    'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'angle_eigs', 'field': 'angle_eigs',    'minWidth': 75, 'maxWidth': 75},
+
                 {'headerName': 'Interest', 'field': 'yes_no',       'minWidth': 90, 'maxWidth': 90},
                 {'headerName': 'Notes', 'field': 'notes',               'minWidth': 75},
 
@@ -4202,7 +4233,8 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
             ## Main data (Name, RA/Dec, Datapoints, etc.)
             table_1 = dash_table.DataTable(
                 data=[row_data],
-                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['runcat_id', 'ra', 'dec', 'ra_std', 'dec_std', 'xtrsrc', 'n_datapoints']],
+                # columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['runcat_id', 'ra', 'dec', 'ra_std', 'dec_std', 'xtrsrc', 'n_datapoints']],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['runcat_id', 'ra', 'dec', 'xtrsrc', 'n_datapoints']],
                 style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
             )
             ## q mag
@@ -4224,14 +4256,19 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
                 columns=[{'name': k, 'id': k} for k in row_data.keys() if 'i_' in k],
                 style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
             )
-            ## Extra 1
             table_5 = dash_table.DataTable(
+                data=[row_data],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['eigval_max', 'eigval_min', 'fraction_eigs', 'angle_eigs']],
+                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            )
+            ## Extra 1
+            table_6 = dash_table.DataTable(
                 data=[row_data],
                 columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['all_num_datapoints', 'det_sep', 'yes_no', 'notes']],
                 style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
             )
             ## Extra 2
-            return [table_1] + [table_2] + [table_3] + [table_4] + [table_5]
+            return [table_1] + [table_2] + [table_3] + [table_4] + [table_5] + [table_6]
 
         return
 
