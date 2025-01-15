@@ -1958,6 +1958,13 @@ def NightView(request, obs_date):
         df_orphans = df_orphans.sort_values(by=['q_rb_avg'], ascending=False)
         df_orphans = df_orphans.fillna('')
 
+        if "eigval_max" not in df_orphans.columns:
+            df_orphans['eigval_max']    = [np.nan for x in df_orphans.det_sep]
+            df_orphans['eigval_min']    = [np.nan for x in df_orphans.det_sep]
+            df_orphans['fraction_eigs'] = [np.nan for x in df_orphans.det_sep]
+            df_orphans['angle_eigs']    = [np.nan for x in df_orphans.det_sep]
+
+
         context['orphans'] = zip(
             list(df_orphans.runcat_id),
             ['%.3f'%x for x in df_orphans.ra_psf],
@@ -1977,7 +1984,8 @@ def NightView(request, obs_date):
             ['%.4s'%x for x in df_orphans.det_sep],
             [x for x in df_orphans.yes_no],
             [x for x in df_orphans.notes],
-            )
+        )
+
 
         context['orphans_sources_length'] = len(df_orphans)
         if len(df_orphans) == 1:
@@ -2759,7 +2767,7 @@ def search(search_obj):
     json_file = OrderedDict(search_obj)
     search_data = {'api_key': TNS_API_KEY, 'data': json.dumps(json_file)}
     response = requests.post(search_url, headers = headers, data = search_data)
-    print("TNS API Key:", TNS_API_KEY)
+    # print("TNS API Key:", TNS_API_KEY)
 
     return response
 
