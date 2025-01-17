@@ -1958,11 +1958,11 @@ def NightView(request, obs_date):
         df_orphans = df_orphans.sort_values(by=['q_rb_avg'], ascending=False)
         df_orphans = df_orphans.fillna('')
 
-        if "eigval_max" not in df_orphans.columns:
-            df_orphans['eigval_max']    = [np.nan for x in df_orphans.det_sep]
-            df_orphans['eigval_min']    = [np.nan for x in df_orphans.det_sep]
-            df_orphans['fraction_eigs'] = [np.nan for x in df_orphans.det_sep]
-            df_orphans['angle_eigs']    = [np.nan for x in df_orphans.det_sep]
+        if "std_max" not in df_orphans.columns:
+            df_orphans['std_max'] = [np.nan for x in df_orphans.det_sep]
+            df_orphans['std_min'] = [np.nan for x in df_orphans.det_sep]
+            df_orphans['std_frc'] = [np.nan for x in df_orphans.det_sep]
+            df_orphans['std_ang'] = [np.nan for x in df_orphans.det_sep]
 
 
         context['orphans'] = zip(
@@ -1977,11 +1977,11 @@ def NightView(request, obs_date):
             ['%.4s'%x for x in df_orphans.u_rb_avg],
             ['%.5s'%x for x in df_orphans.i_min],
             ['%.4s'%x for x in df_orphans.i_rb_avg],
-            ['%.4g'%x for x in df_orphans.eigval_max],
-            ['%.4g'%x for x in df_orphans.eigval_min],
-            ['%.4g'%x for x in df_orphans.fraction_eigs],
+            ['%.4g'%x for x in df_orphans.std_max],
+            ['%.4g'%x for x in df_orphans.std_min],
+            ['%.4g'%x for x in df_orphans.std_frc],
             ['%.4g'%x for x in df_orphans.angle_eigs],
-            ['%.4s'%x for x in df_orphans.det_sep],
+            ['%.4s'%x for x in df_orphans.std_ang],
             [x for x in df_orphans.yes_no],
             [x for x in df_orphans.notes],
         )
@@ -2796,7 +2796,10 @@ def get_tns_from_ra_dec(ra, dec, radius):
                        ("internal_name_exact_match", 0), ("objid", ""), ("public_timestamp", "")]
 
     response = search(search_obj)
-    json_data = format_to_json(response.text)
+    try:
+        json_data = format_to_json(response.text)
+    except:
+        return "Website Error"
     if json_data == False:
         return "Website Error"
     # print(json_data)
@@ -2816,7 +2819,10 @@ def get_tns_from_ra_dec(ra, dec, radius):
 def get_ra_dec_from_tns(tns_object_name):
     get_obj             = [("objname", tns_object_name), ("objid", ""), ("photometry", ""), ("spectra", "")]
     response = get(get_obj)
-    json_data = format_to_json(response.text)
+    try:
+        json_data = format_to_json(response.text)
+    except:
+        return "Website Error"
     json_data = json.loads(json_data)
     # print(json_data)
     if json_data["id_code"] == 429:
@@ -3877,6 +3883,9 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
     df['qrbavg_sml']     = round(df['q_rb_avg'],2)
     df['urbavg_sml']     = round(df['u_rb_avg'],2)
     df['irbavg_sml']     = round(df['i_rb_avg'],2)
+    df['std_max_sml']     = round(df['std_max'],7)
+    df['std_frc_sml']     = round(df['std_frc'],2)
+    df['std_ang_sml']     = round(df['std_ang'],2)
 
 
     getRowStyle = {
@@ -3924,10 +3933,10 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
                 # {'headerName': 'sum(Datapoints)', 'field': 'all_num_datapoints'},
                 # {'headerName': 'Separation', 'field': 'det_sep_sml',    'minWidth': 75, 'maxWidth': 75},
 
-                {'headerName': 'eigval_max', 'field': 'eigval_max',    'minWidth': 75, 'maxWidth': 75},
-                {'headerName': 'eigval_min', 'field': 'eigval_min',    'minWidth': 75, 'maxWidth': 75},
-                {'headerName': 'fraction_eigs', 'field': 'fraction_eigs',    'minWidth': 75, 'maxWidth': 75},
-                {'headerName': 'angle_eigs', 'field': 'angle_eigs',    'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'std_max', 'field': 'std_max_sml',    'minWidth': 125, 'maxWidth': 125},
+                # {'headerName': 'std_min', 'field': 'std_min',    'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'std_frc', 'field': 'std_frc_sml',    'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'std_ang', 'field': 'std_ang_sml',    'minWidth': 75, 'maxWidth': 75},
 
                 {'headerName': 'Interest', 'field': 'yes_no',       'minWidth': 90, 'maxWidth': 90},
                 {'headerName': 'Notes', 'field': 'notes',               'minWidth': 75},
@@ -4266,7 +4275,7 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
             )
             table_5 = dash_table.DataTable(
                 data=[row_data],
-                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['eigval_max', 'eigval_min', 'fraction_eigs', 'angle_eigs']],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['std_max', 'std_min', 'std_frc', 'std_ang']],
                 style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
             )
             ## Extra 1
