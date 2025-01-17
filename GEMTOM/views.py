@@ -1967,7 +1967,7 @@ def NightView(request, obs_date):
         # df_orphans.std_min = df_orphans.std_min.fillna(value=np.nan)
         df_orphans.std_min = df_orphans.std_min.replace('', np.nan)
         # df_orphans.std_frc = df_orphans.std_min.fillna(value=np.nan)
-        df_orphans.std_frc = df_orphans.std_min.replace('', np.nan)
+        df_orphans.std_frc = df_orphans.std_frc.replace('', np.nan)
         # print(df_orphans['std_min'][2:5])
         # print(type(df_orphans['std_min'][3]))
         # aaa_orphans_std_min = df_orphans.std_min
