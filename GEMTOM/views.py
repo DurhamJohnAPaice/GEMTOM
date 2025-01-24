@@ -2126,10 +2126,11 @@ def url_to_GEMTOM(request, bgem_id):
     '''
     Imports a target from the bgem_id
     '''
+    print("Running url_to_GEMTOM...")
 
     name, ra, dec = all_stats_from_bgem_id(bgem_id)
 
-    if name == None:
+    if name == None or name == "None":
         messages.error(
             request,
             'Upload failed; are you sure that ' + str(bgem_id) + ' is a valid BlackGEM ID? \
@@ -2148,6 +2149,7 @@ def history_to_GEMTOM(request):
     '''
     Imports a target from the History tab
     '''
+    print("Running history_to_GEMTOM...")
 
     bgem_id = request.POST.get('id')
     name = request.POST.get('name')
@@ -2628,7 +2630,7 @@ def get_recent_blackgem_transients(days_since_last_update):
         df['ra_sml']        = round(df['ra'],4)
         df['dec_sml']       = round(df['dec'],4)
         df['snr_zogy_sml']  = round(df['snr_zogy'],1)
-        # df['iauname_short'] = df['iauname'].str[5:]
+        df['iauname_short'] = df['iauname'].str[5:]
         df['q_min_sml']     = round(df['q_min'],1)
         df['u_min_sml']     = round(df['u_min'],1)
         df['i_min_sml']     = round(df['i_min'],1)
@@ -3822,6 +3824,10 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
             ra      = str(row_data['ra'])
             dec     = str(row_data['dec'])
 
+            if name == None or name == "None":
+                all_stats = all_stats_from_bgem_id(id)
+                name = all_stats[0]
+
             add_to_GEMTOM(id, name, ra, dec)
 
             return [html.P(f"Transient added to GEMTOM as " + name, style={'display': 'inline-block'}), html.A(". Please see the Targets page", href="/targets/", target="_blank", style={'text-decoration':'None', 'display': 'inline-block'}), html.P(".", style={'display': 'inline-block'})]
@@ -4290,6 +4296,10 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
             name    = all_stats_from_bgem_id(id)[0]
             ra      = str(row_data['ra'])
             dec     = str(row_data['dec'])
+
+            if name == None or name == "None":
+                all_stats = all_stats_from_bgem_id(id)
+                name = all_stats[0]
 
             add_to_GEMTOM(id, name, ra, dec)
 
