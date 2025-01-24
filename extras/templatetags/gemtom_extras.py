@@ -21,6 +21,7 @@ from GEMTOM import views
 # from io import BytesIO
 # from PIL import Image, ImageDraw
 # import base64
+from guardian.shortcuts import get_objects_for_user
 
 from tom_dataproducts.models import ReducedDatum
 # from tom_dataproducts.forms import DataProductUploadForm, DataShareForm
@@ -755,6 +756,8 @@ def blackgem_for_target(context, target, width=700, height=400, background=None,
         photometry_data_type = 'blackgem_data'
     photometry_data = {}
     if settings.TARGET_PERMISSIONS_ONLY:
+        # print(ReducedDatum.__doc__)
+        # print(ReducedDatum.target.value)
         datums = ReducedDatum.objects.filter(target=target, data_type=photometry_data_type)
     else:
         datums = get_objects_for_user(context['request'].user,
@@ -763,8 +766,16 @@ def blackgem_for_target(context, target, width=700, height=400, background=None,
                                         target=target,
                                         data_type=photometry_data_type))
 
+    # print(ReducedDatum.value)
+
+    # print(datums[0].value)
+
     ## If there's data, start the plot!
     if len(datums) > 0:
+
+        # print("\n\n\n\n\n\n")
+        # print("BARKBARKBARKBARKBARK")
+        # print("\n\n\n\n\n\n")
 
         ## For each datum, grab the right bit of the data.
         for datum in datums:
@@ -775,8 +786,10 @@ def blackgem_for_target(context, target, width=700, height=400, background=None,
 
             ## Deal with datums with no errors
             if datum.value.get('error') == None:
+                # print("No uncertainties!")
                 photometry_data.setdefault('error', []).append(0)
             else:
+                # print("Uncertainties present!")
                 photometry_data.setdefault('error', []).append(float(datum.value.get('error')))
 
         # print(photometry_data)
@@ -810,7 +823,7 @@ def blackgem_for_target(context, target, width=700, height=400, background=None,
         ## Convert Datetime to MJD
         df_lightcurve['i."mjd-obs"']    = pd.DatetimeIndex(df_lightcurve['jd']).to_julian_date() - 2400000.5
         df_limiting_mag['mjd']          = pd.DatetimeIndex(df_limiting_mag['jd']).to_julian_date() - 2400000.5
-        print(df_lightcurve)
+        print(df_lightcurve.iloc[0])
 
         ## Plot using my usual graph function!
         fig = views.plot_BGEM_lightcurve(df_lightcurve, df_limiting_mag)
@@ -862,6 +875,7 @@ def photometry_for_target(context, target, width=700, height=600, background=Non
     :param grid: Whether to show grid lines.
     :type grid: bool
     """
+
 
     # print("\n\n\n\n\n\nBARKBARKBARK\n\n\n\n\n\n")
 

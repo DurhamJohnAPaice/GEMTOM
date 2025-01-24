@@ -63,6 +63,7 @@ class PhotometryProcessor(DataProcessor):
         if 'magnitude' not in data.colnames: raise InvalidFileFormatException("No 'magnitude' column found in file; Photometry only supports magnitude.")
         ## Step 2: Error...
         if 'mag_err' in data.colnames: data['mag_err'].name = 'error'
+        if 'magerr' in data.colnames: data['magerr'].name = 'error'
         if 'magnitude_error' in data.colnames and 'error' not in data.colnames:
             data['magnitude_error'].name ='error'
 
