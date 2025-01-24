@@ -104,7 +104,7 @@ On this page, you can find the data for a specific BlackGEM transient.
             <b><a href="#" onclick='window.open("https://www.wis-tns.org/object/{{ tns_flag_name }}");return false;'>{{tns_flag_prefix}} {{tns_flag_name}}</a></b><br>
             <a style="color:grey"><em>Separation: {{ tns_flag_sep }} arcseconds</em></a>
             <div style="padding:5px">
-                <form method="post" action="{% url 'TNS_to_GEMTOM' %}" class="image-form">
+                <form method="post" action="{% url 'history_to_GEMTOM' %}" class="image-form">
                     {% csrf_token %}
                     <input type="hidden" name="id" value="{{ bgem_id }}">
                     <input type="hidden" name="name" value="{{ iau_name }}">

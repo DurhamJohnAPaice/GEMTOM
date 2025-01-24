@@ -192,8 +192,7 @@ def get_lightcurve(bgem_id):
 def add_to_GEMTOM(id, name, ra, dec, tns_prefix=False, tns_name=False):
 
     # get_lightcurve(id)
-    if tns_prefix and tns_name:
-        name = tns_prefix + " " + tns_name
+
 
     gemtom_dataframe = pd.DataFrame({
         'name' : [name],
@@ -214,11 +213,39 @@ def add_to_GEMTOM(id, name, ra, dec, tns_prefix=False, tns_name=False):
     result = import_targets(csv_stream)
 
     if tns_prefix and tns_name:
-        print(tns_prefix + " " + tns_name)
+        # print(tns_prefix + " " + tns_name)
         target = Target.objects.get(name=name)
         target.save(extras={'TNS Name': tns_prefix + " " + tns_name})
 
-    return redirect(reverse('tom_targets:list'))
+    ## --- Did this target already exist? ---
+    existing_target_id = None
+    all_targets = Target.objects.all()
+    num_targets = len(list(all_targets))
+
+    ## Find the id of this target
+    for i in range(num_targets):
+        if str(list(all_targets)[i]) == name:
+            break
+    existing_target_id = all_targets[i].id
+
+    ## If the most recent target is this target...
+    if all_targets[len(all_targets)-1].name == name:
+
+        ## If it was made more than 10 seconds ago, it already existed.
+        time_created = all_targets[len(all_targets)-1].created
+        time_now = datetime.now(timezone.utc)
+        if (time_now-time_created).seconds < 2:
+            print("Target Created")
+            existing_target_id = all_targets[len(all_targets)-1].id
+            created = True
+        else:
+            print("Target Already Existed")
+            created = False
+    else:
+        print("Target Already Existed")
+        created = False
+
+    return created, existing_target_id
 
 def test_print():
     print("Hello World!")
@@ -2110,43 +2137,74 @@ def url_to_GEMTOM(request, bgem_id):
         )
         return redirect(reverse('tom_targets:list'))
 
-    add_to_GEMTOM(bgem_id, name, ra, dec)
+    created, existing_target_id = add_to_GEMTOM(bgem_id, name, ra, dec)
 
-    return redirect(reverse('tom_targets:list'))
+    add_to_GEMTOM_message(request, name, created, existing_target_id)
+
+    # return redirect(reverse('tom_targets:list'))
+    return redirect(f'/targets/{existing_target_id}')
 
 def history_to_GEMTOM(request):
     '''
     Imports a target from the History tab
     '''
 
-    id = request.POST.get('id')
+    bgem_id = request.POST.get('id')
     name = request.POST.get('name')
     ra = request.POST.get('ra')
     dec = request.POST.get('dec')
-
-    name = iau_name_from_bgem_id(id)
-
-    add_to_GEMTOM(id, name, ra, dec)
-
-    return redirect(reverse('tom_targets:list'))
-
-def TNS_to_GEMTOM(request):
-    '''
-    Imports a target from the History tab with a TNS ID
-    '''
-
-    id          = request.POST.get('id')
-    name        = request.POST.get('name')
-    ra          = request.POST.get('ra')
-    dec         = request.POST.get('dec')
     tns_prefix  = request.POST.get('tns_prefix')
     tns_name    = request.POST.get('tns_name')
 
-    print(tns_prefix + " " + tns_name)
+    if tns_prefix and tns_name:
+        name = tns_prefix + " " + tns_name
+    else:
+        name = iau_name_from_bgem_id(bgem_id)
 
-    add_to_GEMTOM(id, name, ra, dec, tns_prefix, tns_name)
 
-    return redirect(reverse('tom_targets:list'))
+    created, existing_target_id = add_to_GEMTOM(bgem_id, name, ra, dec)
+
+    add_to_GEMTOM_message(request, name, created, existing_target_id)
+
+    # return redirect(reverse('tom_targets:list'))
+    return redirect(f'/targets/{existing_target_id}')
+
+def add_to_GEMTOM_message(request, name, created, existing_target_id):
+
+    print("created:")
+    print(created)
+
+    if created:
+        messages.success(
+            request,
+            'Target created: ' + name + " (/targets/" + str(existing_target_id) + "/)"
+        )
+    else:
+        messages.warning(
+            request,
+            'Target already exists: ' + name + " (/targets/" + str(existing_target_id) + "/)"
+        )
+
+    return
+
+
+# def TNS_to_GEMTOM(request):
+#     '''
+#     Imports a target from the History tab with a TNS ID
+#     '''
+#
+#     id          = request.POST.get('id')
+#     name        = request.POST.get('name')
+#     ra          = request.POST.get('ra')
+#     dec         = request.POST.get('dec')
+#     tns_prefix  = request.POST.get('tns_prefix')
+#     tns_name    = request.POST.get('tns_name')
+#
+#     print(tns_prefix + " " + tns_name)
+#
+#     add_to_GEMTOM(id, name, ra, dec, tns_prefix, tns_name)
+#
+#     return redirect(reverse('tom_targets:list'))
 
 
 def rate_target(request):
