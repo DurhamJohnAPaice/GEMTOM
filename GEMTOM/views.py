@@ -2345,7 +2345,7 @@ def blackgem_recent_transients():
             'ra_sml'        : [0],
             'dec_sml'       : [0],
             'snr_zogy_sml'  : [0],
-            'iauname_short' : [0],
+            # 'iauname_short' : [0],
             'q_min_sml'     : [0],
             'u_min_sml'     : [0],
             'i_min_sml'     : [0],
@@ -2630,7 +2630,7 @@ def get_recent_blackgem_transients(days_since_last_update):
         df['ra_sml']        = round(df['ra'],4)
         df['dec_sml']       = round(df['dec'],4)
         df['snr_zogy_sml']  = round(df['snr_zogy'],1)
-        df['iauname_short'] = df['iauname'].str[5:]
+        # df['iauname_short'] = df['iauname'].str[5:]
         df['q_min_sml']     = round(df['q_min'],1)
         df['u_min_sml']     = round(df['u_min'],1)
         df['i_min_sml']     = round(df['i_min'],1)
@@ -3723,7 +3723,7 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
             rowData=df.to_dict('records'),
             columnDefs=[
                 {'headerName': 'BGEM ID', 'field': 'runcat_id'},
-                {'headerName': 'IAU Name', 'field': 'iauname_short'},
+                # {'headerName': 'IAU Name', 'field': 'iauname_short'},
                 {'headerName': 'RA', 'field': 'ra_sml'},
                 {'headerName': 'Dec', 'field': 'dec_sml'},
                 {'headerName': '#Datapoints', 'field': 'datapoints'},
