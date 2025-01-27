@@ -53,18 +53,21 @@ On this page, you can find the data for a specific BlackGEM transient.
 </div>
 
 <div class="row">
-  <div class="col-md-2" style="
+  <div class="col-md-4" style="
     padding:5px;
     border-right:thin solid #dddddd;
     text-align:center;
     vertical-align: middle;">
         <a class="btn btn-outline-primary" href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}" target="_blank">BlackView</a>
-  </div>
+  <!-- </div>
   <div class="col-md-2" style="
     padding:5px;
     border-right:thin solid #dddddd;
     text-align:center;
-    vertical-align: middle;">
+    vertical-align: middle;"> -->
+        &nbsp
+        &nbsp
+        &nbsp
         <a class="btn btn-outline-primary" href="https://blackpearl.blackgem.org/analyze.php" target="_blank">BlackPEARL</a>
   </div>
   <div class="col-md-4" style="
@@ -80,21 +83,38 @@ On this page, you can find the data for a specific BlackGEM transient.
         <button type="submit" class="btn btn-primary">Add to GEMTOM</button>
     </form>
   </div>
-  <div class="col-md-2" style="
+  <div class="col-md-4" style="
     padding:5px;
     border-left:thin solid #dddddd;
     text-align:center;
     vertical-align: middle;">
         <a class="btn btn-outline-primary" href="https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ ra }}d{{ dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=10&Radius.unit=arcsec&submit=submit+query&CoordList=" target="_blank">SIMBAD</a>
+        &nbsp
+        &nbsp
+        &nbsp
+        <a class="btn btn-outline-primary" href="https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-c={{ ra }}%20{{ dec }}&-c.u=arcsec&-c.r=1.5&-c.eq=J2000&-c.geom=r&-out.max=50&-out.add=_r" target="_blank">VizieR</a>
+        &nbsp
+        &nbsp
+        &nbsp
+        <a class="btn btn-outline-primary" href="https://www.legacysurvey.org/viewer?ra={{ ra }}&dec={{ dec }}&zoom=15&mark={{ ra }},{{ dec }}" target="_blank">DESI</a>
   </div>
-  <div class="col-md-2" style="
+  <!-- <div class="col-md-2" style="
     padding:5px;
     border-left:thin solid #dddddd;
     text-align:center;
     vertical-align: middle;">
         <a class="btn btn-outline-primary" href="https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-c={{ ra }}%20{{ dec }}&-c.u=arcsec&-c.r=1.5&-c.eq=J2000&-c.geom=r&-out.max=50&-out.add=_r" target="_blank">VizieR</a>
-  </div>
+  </div> -->
 </div>
+
+<!-- <div style="
+  padding:5px;
+  border-left:thin solid #dddddd;
+  text-align:center;
+  vertical-align: middle;">
+      <a class="btn btn-outline-primary" href="https://www.legacysurvey.org/viewer?ra={{ ra }}&dec={{ dec }}&zoom=15&mark={{ ra }},{{ dec }}" target="_blank">DESI</a>
+</div> -->
+
 
 {% if tns_flag %}
     <div class="row" style="margin-top:10px">
