@@ -3239,6 +3239,7 @@ def BGEM_ID_View(request, bgem_id):
 
     tns_objects_potential = tns_objects_data.loc[tns_objects_data['Separation'] < 10]
     if len(tns_objects_potential) > 0:
+        tns_objects_potential = tns_objects_potential.sort_values(by=['Separation'])
         tns_flag = True
         tns_flag_prefix = tns_objects_potential["Prefix"].iloc[0]
         tns_flag_name = tns_objects_potential["Name"].iloc[0]
