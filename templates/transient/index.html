@@ -137,6 +137,11 @@ On this page, you can find the data for a specific BlackGEM transient.
                     <button type="submit" class="btn btn-outline-success">Add to GEMTOM with TNS</button>
                 </form>
             </div>
+            {% if tns_flag_bgem %}
+                <a style="color:mediumaquamarine"><em>BlackGEM data reported to TNS</em></a>
+            {% else %}
+                <a style="color:darkorange"><em>BlackGEM data not in TNS!</em></a>
+            {% endif %}
         </div>
         <div class="col-md-4"></div>
     </div>

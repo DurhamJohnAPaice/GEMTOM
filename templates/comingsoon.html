@@ -121,7 +121,8 @@ A list of the main features that have been requested and I intend to work on.
             <li>Targets can now be added to GEMTOM via a URL (/url_to_GEMTOM/[BlackGEM ID]), useful to adding from external tools.</li>
             <li>Word display limit has been removed on comments. Character count remains at 3000 (roughly 500 words, or an A4 page of text)</li>
             <li>Removed spurious 99-mag results from lightcurves</li>
-            <li>Transients: Added non-detections to the 'Full Observation Data' table</li>
+            <li>Transients: Added non-detections to a 'Full Observation Data' table</li>
+            <li>Transients: The 'TNS Object withing 10 arcsecond' highlight now states whether BlackGEM data has been reported to TNS (it checks to see if 'BGEM' exists in the internal name)</li>
             <li>Targets/Transients: Added link to BlackPEARL</li>
             <li>Targets/Transients: Added link to search Vizier</li>
             <li>Targets/Transients: Added link to search DESI</li>
@@ -139,6 +140,7 @@ A list of the main features that have been requested and I intend to work on.
         <li>Transients: Flipped the x-axis in the 'Location on Sky' plot, in order to match the Aladin view.</li>
         <li>Transients: Removed the 'Flux' columns from the 'Full Observation Data' table (unnecessarily made the table bigger). Also removed the ability to edit the cells.</li>
         <li>Transients: Fixed a bug where the 10 arcsecond circle in the 'Location on Sky' plot would span the sky if the targets lay within 5 arcseconds of RA 0.</li>
+        <li>Transients: Fixed a bug where, if multiple TNS sources were within 10 arcseconds, the nearest one was not highlighted at the top of the page.</li>
         <li>Lightcurves: Fixed the x axis so that it plots decimals of MJDs.</li>
         <li>History: Blank Sky Plot no longer made when there is no connection to BlackHub; system instead reports lack of connection.</li>
         <li>History: Fixed a bug where nightly pages wouldn't appear if there are no detections</li>

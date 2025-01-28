@@ -3244,11 +3244,14 @@ def BGEM_ID_View(request, bgem_id):
         tns_flag_prefix = tns_objects_potential["Prefix"].iloc[0]
         tns_flag_name = tns_objects_potential["Name"].iloc[0]
         tns_flag_sep = round(tns_objects_potential["Separation"].iloc[0], 2)
+        if "BGEM" in tns_objects_potential["Internal_Name"].iloc[0]: tns_flag_bgem = True
+        else: tns_flag_bgem = False
     else:
         tns_flag = False
         tns_flag_prefix = ""
         tns_flag_name = ""
         tns_flag_sep = ""
+        tns_flag_bgem = ""
 
     time_list.append(time.time())
 
@@ -3326,6 +3329,7 @@ def BGEM_ID_View(request, bgem_id):
         "tns_flag_prefix"   : tns_flag_prefix,
         "tns_flag_name"     : tns_flag_name,
         "tns_flag_sep"      : tns_flag_sep,
+        "tns_flag_bgem" : tns_flag_bgem,
         "tns_data"          : tns_data,
         "tns_text"          : tns_text,
         "tns_list"          : tns_list,
