@@ -212,7 +212,10 @@ def add_to_GEMTOM(id, name, ra, dec, tns_prefix=False, tns_name=False):
     ## And finally, read them in!
     result = import_targets(csv_stream)
 
+    print(tns_prefix)
+    print(tns_name)
     if tns_prefix and tns_name:
+        print("Saving TNS Name...")
         # print(tns_prefix + " " + tns_name)
         target = Target.objects.get(name=name)
         target.save(extras={'TNS Name': tns_prefix + " " + tns_name})
@@ -1991,6 +1994,12 @@ def NightView(request, obs_date):
             df_orphans['std_frc'] = [np.nan for x in df_orphans.det_sep]
             df_orphans['std_ang'] = [np.nan for x in df_orphans.det_sep]
 
+        if "probabilities" not in df_orphans.columns:
+            df_orphans['probabilities'] = [np.nan for x in df_orphans.det_sep]
+
+        df_orphans = df_orphans.sort_values(by=['probabilities'], ascending=False)
+
+
         # df_orphans.std_min = df_orphans.std_min.fillna(value=np.nan)
         df_orphans.std_min = df_orphans.std_min.replace('', np.nan)
         # df_orphans.std_frc = df_orphans.std_min.fillna(value=np.nan)
@@ -2018,6 +2027,7 @@ def NightView(request, obs_date):
             ['%.4g'%x for x in df_orphans.std_frc],
             ['%.4g'%x for x in df_orphans.angle_eigs],
             ['%.4s'%x for x in df_orphans.std_ang],
+            ['%.3f'%x for x in df_orphans.probabilities],
             [x for x in df_orphans.yes_no],
             [x for x in df_orphans.notes],
         )
@@ -2938,7 +2948,7 @@ def BGEM_ID_View(request, bgem_id):
     time_list.append(time.time())
 
     ## Get the name, ra, and dec:
-    print("Authenticating with BLackGEM...")
+    print("Authenticating with BlackGEM...")
     bg = authenticate_blackgem()
 
     qu = """\

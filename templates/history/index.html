@@ -196,19 +196,21 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
                     <th>imag<br>
                     (R/B)</th>
                     <!-- <th>Sep</th> -->
-                    <th style="border-left:thin solid #dddddd"><br>
+                    <th style="border-left:thin solid #dddddd">StDev<br>
                         (Max)</th>
-                    <th>StDev<br>
+                    <th><br>
                         (Frac.)</th>
-                    <th style="border-right:thin solid #dddddd"><br>
-                        (Angle)</th>
-                    <th>Of Interest?</th>
+                    <!-- <th style="border-right:thin solid #dddddd"><br>
+                        (Angle)</th> -->
+                    <th style="border-left:thin solid #dddddd">Hostless<br>
+                        R/B</th>
+                    <th style="border-left:thin solid #dddddd">?</th>
                     <th>Notes</th>
                     <th></th>
                 </thead>
                 <tbody>
                     {% if orphans %}
-                        {% for bgem_id, ra, dec, q_min, q_rb_avg, u_min, u_rb_avg, i_min, i_rb_avg, std_max, std_min, std_frc, std_ang, det_sep, yes_no, notes in orphans %}
+                        {% for bgem_id, ra, dec, q_min, q_rb_avg, u_min, u_rb_avg, i_min, i_rb_avg, std_max, std_min, std_frc, std_ang, det_sep, probabilities, yes_no, notes in orphans %}
                                 {% if yes_no == "No" %}
                                     <tr style="color: #D5D5D5;">
                                 {% elif yes_no == "Yes" %}
@@ -240,7 +242,8 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
 
                                 <td class="description">{{ std_max }}</td>
                                 <td class="description">{{ std_frc }}</td>
-                                <td class="description">{{ std_ang }}</td>
+                                <!-- <td class="description">{{ std_ang }}</td> -->
+                                <td class="description">{{ probabilities }}</td>
                                 <td class="description">{{ yes_no }}</td>
                                 <td class="description">{{ notes }}</td>
                                 <td class="description">

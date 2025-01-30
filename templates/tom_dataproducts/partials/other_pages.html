@@ -4,12 +4,11 @@
 </head>
 
 {% if tns_name %}
-    <div class="row">
+    <!-- <div class="row">
       <div class="col-md-3" style="
         border-right:thin solid #dddddd;
         text-align:center">
             <h6><a class="btn btn-outline-primary btn-lg" href="/transients/{{ bgem_id }}" target="_blank">GEMTOM</a></h6>
-            <!-- <a href='' target="_blank">GEMTOM page</a> -->
       </div>
       <div class="col-md-3" style="
         border-right:thin solid #dddddd;
@@ -22,14 +21,29 @@
         text-align:center;
         vertical-align: middle;">
             <h6><a class="btn btn-outline-primary btn-lg" href="https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ target_ra }}d{{ target_dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=2&Radius.unit=arcmin&submit=submit+query&CoordList=" target="_blank">SIMBAD</a></h6>
-            <!-- <a href="#" onclick='window.open("https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ target_ra }}d{{ target_dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=2&Radius.unit=arcmin&submit=submit+query&CoordList=");return false;'>SIMBAD page</a> -->
       </div>
       <div class="col-md-3" style="
         text-align:center;
         vertical-align: middle;">
             <h6><a class="btn btn-outline-success btn-lg" href="https://www.wis-tns.org/object/{{ tns_name }}" target="_blank">TNS</a></h6>
-            <!-- <a href="#" onclick='window.open("https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ target_ra }}d{{ target_dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=2&Radius.unit=arcmin&submit=submit+query&CoordList=");return false;'>SIMBAD page</a> -->
       </div>
+    </div> -->
+    <div style="
+      text-align:center;
+      vertical-align: middle;">
+          <a class="btn btn-outline-primary" href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}" target="_blank">BlackView</a>
+          &nbsp
+          <a class="btn btn-outline-primary" href="https://blackpearl.blackgem.org/analyze.php" target="_blank">BlackPEARL</a>
+          &nbsp
+          <a class="btn btn-outline-primary" href="/transients/{{ bgem_id }}" target="_blank">GEMTOM</a>
+          &nbsp
+          <a class="btn btn-outline-primary" href="https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ target_ra }}d{{ target_dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=1&Radius.unit=arcmin&submit=submit+query&CoordList=" target="_blank">SIMBAD</a>
+          &nbsp
+          <a class="btn btn-outline-primary" href="https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-c={{ target_ra }}%20{{ target_dec }}&-c.u=arcsec&-c.r=1.5&-c.eq=J2000&-c.geom=r&-out.max=50&-out.add=_r" target="_blank">VizieR</a>
+          &nbsp
+          <a class="btn btn-outline-primary" href="https://www.legacysurvey.org/viewer?ra={{ target_ra }}&dec={{ target_dec }}&zoom=15&mark={{ target_ra }},{{ target_dec }}" target="_blank">DESI</a>
+          &nbsp
+          <a class="btn btn-outline-success" href="https://www.wis-tns.org/object/{{ tns_name }}" target="_blank">TNS</a>
     </div>
 {% else %}
       <div style="
@@ -38,18 +52,13 @@
             <a class="btn btn-outline-primary" href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}" target="_blank">BlackView</a>
             &nbsp
             <a class="btn btn-outline-primary" href="https://blackpearl.blackgem.org/analyze.php" target="_blank">BlackPEARL</a>
-            <!-- <h6><a class="btn btn-outline-primary btn-lg" href="/transients/{{ bgem_id }}" target="_blank">GEMTOM</a></h6> -->
-            <!-- <a href='' target="_blank">GEMTOM page</a> -->
             &nbsp
             <a class="btn btn-outline-primary" href="/transients/{{ bgem_id }}" target="_blank">GEMTOM</a>
-            <!-- <a href='' target="_blank">GEMTOM page</a> -->
             &nbsp
             <a class="btn btn-outline-primary" href="https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ target_ra }}d{{ target_dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=1&Radius.unit=arcmin&submit=submit+query&CoordList=" target="_blank">SIMBAD</a>
-            <!-- <a href="#" onclick='window.open("https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ target_ra }}d{{ target_dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=2&Radius.unit=arcmin&submit=submit+query&CoordList=");return false;'>SIMBAD page</a> -->
             &nbsp
             <a class="btn btn-outline-primary" href="https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-c={{ target_ra }}%20{{ target_dec }}&-c.u=arcsec&-c.r=1.5&-c.eq=J2000&-c.geom=r&-out.max=50&-out.add=_r" target="_blank">VizieR</a>
             &nbsp
             <a class="btn btn-outline-primary" href="https://www.legacysurvey.org/viewer?ra={{ target_ra }}&dec={{ target_dec }}&zoom=15&mark={{ target_ra }},{{ target_dec }}" target="_blank">DESI</a>
-            <!-- <a href="#" onclick='window.open("https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ target_ra }}d{{ target_dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=2&Radius.unit=arcmin&submit=submit+query&CoordList=");return false;'>SIMBAD page</a> -->
       </div>
 {% endif %}
