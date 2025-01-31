@@ -228,6 +228,10 @@ On this page, you can find the data for a specific BlackGEM transient.
         </div>
         <script type="text/javascript" src="//aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.js" charset="utf-8"></script>
         <script type="text/javascript">
+            var hipsDir = "https://alasky.cds.unistra.fr/DESI-legacy-surveys/DR10/CDS_P_DESI-Legacy-Surveys_DR10_color/";
+            aladin.createImageSurvey('Legacy DR10 color', 'Legacy DR10 color', hipsDir, 'equatorial', 11, {imgFormat: 'png'});
+        </script>
+        <script type="text/javascript">
 
             let aladin = A.aladin('#aladin-lite-div', {
               survey: "P/DSS2/color",
@@ -327,6 +331,9 @@ On this page, you can find the data for a specific BlackGEM transient.
                 annotateChart(ra, dec);
               }
             }
+
+            var hipsDir = "https://alasky.cds.unistra.fr/DESI-legacy-surveys/DR10/CDS_P_DESI-Legacy-Surveys_DR10_color/";
+            aladin.createImageSurvey('Legacy DR10 color', 'Legacy DR10 color', hipsDir, 'equatorial', 11, {imgFormat: 'png'});
 
             Text = (function() {
               // The AladinLite API does not provide a way to draw arbitrary text at an arbitrary location in an overlay layer.
