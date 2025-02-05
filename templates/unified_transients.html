@@ -19,9 +19,43 @@ Scroll down to see all recent transients (from the past 30 days).
 <!-- <strong>Status ground:</strong> -->
 </p>
 
+<!-- <div class="row">
+  <div class="col-md-6" style="
+    padding:5px;
+    border-left:thin solid #dddddd;
+    border-right:thin solid #dddddd;
+    text-align:center;
+    vertical-align: middle;"> -->
+
+<h5>Search for a specific BlackGEM ID:</h5>
+
+<form method="get" action="{% url 'search_BGEM_ID' %}">
+    <label for="user_input" style="color:grey"><em>(Try 25030590) &nbsp</em></label>
+    <input type="text" name="user_input" placeholder="Input BlackGEM ID" required> &nbsp
+    <button type="submit" class="btn btn-primary">Query BlackGEM</button>
+</form>
+
+<hr>
+
+<h5>TNS Search:</h5>
+
+<form method="get" action="{% url 'search_TNS_ID' %}">
+    <!-- <label for="user_input" style="color:grey"><em>Or search by TNS ID: &nbsp</em></label> -->
+    <label for="user_input" style="color:grey"><em>(Try AT2025ajq) &nbsp</em></label>
+    <input type="text" name="user_input" placeholder="Input TNS ID" required> &nbsp
+    <button type="submit" class="btn btn-outline-primary">Query TNS</button>
+</form>
 
 
-        <h5>Search for a specific BlackGEM ID:</h5>
+  <!-- </div>
+  <div class="col-md-6" style="
+    padding:5px;
+    border-left:thin solid #dddddd;
+    border-right:thin solid #dddddd;
+    text-align:center;
+    vertical-align: middle;">
+
+    <h5>Search for a specific BlackGEM ID:</h5>
 
     <form method="get" action="{% url 'search_BGEM_ID' %}">
         <label for="user_input" style="color:grey"><em>(Try 25030590) &nbsp</em></label>
@@ -29,7 +63,9 @@ Scroll down to see all recent transients (from the past 30 days).
         <button type="submit" class="btn btn-primary">Query BlackGEM</button>
     </form>
 
+  </div>
 
+</div> -->
 
 
 <hr>

@@ -2895,6 +2895,91 @@ def get_tns_from_ra_dec(ra, dec, radius):
         # print(len(json_data["data"]))
         return json_data
 
+
+def search_TNS_ID(request):
+    '''
+    Redirects to a transient page based on a TNS ID
+    '''
+    tns_object_name = request.GET.get('user_input')
+    print(tns_object_name)
+    bgem_message, bgem_id, tns_name, tns_ra, tns_dec, tns_success = get_bgem_id_from_tns(tns_object_name)
+    if tns_success:
+        print("BGEM ID Found:", bgem_id)
+        return redirect(f'/transients/{bgem_id}')
+    else:
+        print("BGEM ID Not Found")
+    #     return redirect(f'/GEMTOM/transients/{user_input}')
+    # return redirect('/GEMTOM/transients')  # Redirect to the original view if no input
+        context = {
+            "bgem_message" : bgem_message,
+            "bgem_id" : bgem_id,
+            "tns_name" : tns_name,
+            "tns_object_name" : tns_object_name,
+            "tns_ra" : tns_ra,
+            "tns_dec" : tns_dec,
+        }
+
+        return render(request, "transient/index_noTNS.html", context)
+
+
+def get_bgem_id_from_tns(tns_object_name):
+    tns_object_data = get_ra_dec_from_tns(tns_object_name)
+    print(tns_object_data)
+    tns_success     = False
+    if tns_object_data == "Too many requests!":
+        tns_object_data = "Too many TNS requests. Please check later."
+        bgem_message    = tns_object_data
+        bgem_id         = ""
+        tns_name        = tns_object_name
+        tns_ra          = ""
+        tns_dec         = ""
+    else:
+        if tns_object_data["id_message"] == "Bad request":
+            bgem_message    = "Bad Request; TNS Object does not exist. Have you checked the name?"
+            bgem_id         = ""
+            tns_name        = tns_object_name
+            tns_ra          = ""
+            tns_dec         = ""
+
+        elif tns_object_data["id_code"] == 200:
+            tns_ra      = tns_object_data["data"]["radeg"]
+            tns_dec     = tns_object_data["data"]["decdeg"]
+            tns_name    = tns_object_data["data"]['name_prefix'] + " " + tns_object_data["data"]['objname']
+
+            df = transient_cone_search(tns_ra, tns_dec, radius=100)
+            if len(df) == 0:
+                print("TNS Target exists. No BlackGEM ID associated.")
+                bgem_message = "No BlackGEM Transient ID found within 100 arcseconds. (Is the BlackGEM server up?)"
+                bgem_id      = ""
+            else:
+                print(df)
+                print(df.columns)
+                df = df.sort_values(by=['distance_arcsec'])
+                print("Closest BlackGEM target within 2 arcseconds:")
+                print(df.iloc[0])
+
+                if df.distance_arcsec[0] > 2:
+                    bgem_message = "Closest BlackGEM transient (%.0f)"%df['id'][0] + " is %.1f arcseconds away."%df.distance_arcsec[0]
+                    bgem_id      = df['id'][0]
+                    print(bgem_message)
+                else:
+                    tns_success  = True
+                    bgem_message = "Closest BlackGEM transient within 2 arcseconds: " + str(df['id'][0])
+                    bgem_id      = df['id'][0]
+
+        else:
+            bgem_message = tns_object_data["id_message"]
+            bgem_id         = ""
+            tns_name        = tns_object_name
+            tns_ra          = ""
+            tns_dec         = ""
+
+
+    return bgem_message, bgem_id, tns_name, tns_ra, tns_dec, tns_success
+
+
+
+
 def get_ra_dec_from_tns(tns_object_name):
     get_obj             = [("objname", tns_object_name), ("objid", ""), ("photometry", ""), ("spectra", "")]
     response = get(get_obj)
@@ -3647,6 +3732,12 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
     )
     def update_results(n_clicks, ra, dec, radius):
         print(ra, dec, radius)
+
+        # tns_object_name = "SN2024zmm"
+        # tns_message, tns_bgem_id = get_bgem_id_from_tns(tns_object_name)
+        # print(tns_message)
+        # print(tns_bgem_id)
+
         if ra is not None and dec is not None:
             df = transient_cone_search(ra, dec, radius)
             if len(df) == 0:
@@ -4890,11 +4981,16 @@ class LiveFeed(LoginRequiredMixin, TemplateView):
                     # min_y = np.min([df_y, df_limiting_mag['x.mag_zogy']])
                     max_y = np.max([np.max(df_y), np.max(df_limiting_mag['limiting_mag'])])
 
+                    if np.isfinite(min_x) == False: min_x = np.min(np.min(df_x))
+                    if np.isfinite(max_x) == False: max_x = np.max(np.min(df_x))
+                    if np.isfinite(max_y) == False: max_y = np.max(np.min(df_y))
+
 
                     fig = plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag)
                     time_last_update = Time(df_bgem_lightcurve['i."mjd-obs"'].iloc[-1], format='mjd')
 
                 ## Get time since last update
+                print("\n\nTesting...")
                 time_now = Time.now()
                 print(time_now.mjd)
                 print(time_last_update.mjd)

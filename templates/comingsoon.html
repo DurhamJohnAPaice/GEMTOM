@@ -9,10 +9,17 @@ A list of the main features that have been requested and I intend to work on.
 <br>
 <ul>
 
+        <h5>Merging of BlackPEARL and GEMTOM</h5>
+        <ul>
+            <li>Taking all the functionality of BlackPEARL and placing it into GEMTOM. This should hopefully streamline the process of object identification and categorisation!</li>
+        </ul>
+
+    <br>
+
         <h5>Cutouts</h5>
         <ul>
-        <li>Reference/difference images for each detection.</li>
-    </ul>
+            <li>Reference/difference images for each detection.</li>
+        </ul>
 
     <br>
 
@@ -119,6 +126,12 @@ A list of the main features that have been requested and I intend to work on.
             <li>Orphaned Transients are continuously fed through a Random Forest classifier, based on the user-submitted notes. This generates a Real/Bogus score specifically made for orphaned sources.</li>
         </ul>
         <br>
+        <li><h6>Search by TNS</h6></li>
+        <ul>
+            <li>The Transients page now lets you search by TNS. The nearest target within 100 arcseconds is returned.<br>
+                If present, you're redirected automatically to the nearest target within 2 arcseconds.</li>
+        </ul>
+        <br>
         <li><h6>Miscellaneous features</h6></li>
         <ul>
             <li>Targets can now be added to GEMTOM via a URL (/url_to_GEMTOM/[BlackGEM ID]), useful to adding from external tools.</li>
@@ -146,6 +159,7 @@ A list of the main features that have been requested and I intend to work on.
         <li>Transients: Fixed a bug where the 10 arcsecond circle in the 'Location on Sky' plot would span the sky if the targets lay within 5 arcseconds of RA 0.</li>
         <li>Transients: Fixed a bug where, if multiple TNS sources were within 10 arcseconds, the nearest one was not highlighted at the top of the page.</li>
         <li>Lightcurves: Fixed the x axis so that it plots decimals of MJDs.</li>
+        <li>Live Feed: Fixed a bug that occurred if there was no limiting magnitude data for a transient ID.</li>
         <li>History: Blank Sky Plot no longer made when there is no connection to BlackHub; system instead reports lack of connection.</li>
         <li>History: Fixed a bug where nightly pages wouldn't appear if there are no detections</li>
         <li>History: Fixed another bug where nightly pages would crash if there are no detections</li>

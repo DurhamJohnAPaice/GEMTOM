@@ -1,0 +1,29 @@
+{% extends 'tom_common/base.html' %}
+{% block content %}
+<!-- --------------------------- -->
+
+<head>
+<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-grid.css">
+<link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-theme-balham.css">
+</head>
+
+<div align="center">
+<h3>{{ tns_name }}</h3>
+{% if tns_ra %}
+    <h5>RA/Dec: {{ tns_ra }}, {{ tns_dec }}</h5><br>
+{% endif %}
+<p>{{ bgem_message }}</p>
+<!-- <p>No BlackGEM transient ID found within 2 arcseconds.</p>
+<p>If you're sure there should be, then check that the TNS ID is correct, and that the BlackGEM server is up!</p> -->
+
+{% if bgem_id %}
+    <br>
+    <a class="btn btn-outline-primary btn-lg" href="/transients/{{ bgem_id }}">GEMTOM page for {{ bgem_id }}</a>
+{% endif %}
+
+
+<!-- --------------------------- -->
+{% endblock %}
