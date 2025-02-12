@@ -46,6 +46,7 @@ urlpatterns = [
     # path('plot/', plot_graph_view, name='plot_graph'),
     path('search_BGEM_ID/', search_BGEM_ID, name='search_BGEM_ID'),
     path('search_TNS_ID/', search_TNS_ID, name='search_TNS_ID'),
+    path('search_fuzzy_iauname/', search_fuzzy_iauname, name='search_fuzzy_iauname'),
     path('transients/<int:bgem_id>/', BGEM_ID_View, name='bgem_id'),
 
     path('transients/', UnifiedTransientsView.as_view(), name='transients'),

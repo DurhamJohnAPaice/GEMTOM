@@ -51,15 +51,16 @@ import io
 import urllib, base64
 
 ## For the Transients View
-from django_plotly_dash import DjangoDash
 import dash_ag_grid as dag
 import json
-from pathlib import Path
 import plotly.graph_objs as go
-from plotly.offline import plot
-from mocpy import MOC
-from PIL import Image, ImageDraw
+import re
 import shutil # save img locally
+from django_plotly_dash import DjangoDash
+from mocpy import MOC
+from pathlib import Path
+from PIL import Image, ImageDraw
+from plotly.offline import plot
 from urllib.request import urlretrieve
 
 ## For the ToO Forms
@@ -1907,7 +1908,7 @@ def NightView(request, obs_date):
     }
 
     if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0") and (extragalactic_sources[0] == "") and (images_urls_sorted == ""):
-        observed_string = "No transients were recorded by BlackGEM that night (" + extended_date + ")"
+        observed_string = "No transients were recorded by BlackGEM that night."
         images_daily_text_1 = zip([], ["No transients were recorded by BlackGEM that night."])
     else:
         observed_string = "Yes!"
@@ -2130,6 +2131,7 @@ def all_stats_from_bgem_id(bgem_id):
         return [l_results[0][1], l_results[0][2], l_results[0][3]]
     else:
         return [None, None, None]
+
 
 @login_required
 def url_to_GEMTOM(request, bgem_id):
@@ -2920,6 +2922,85 @@ def search_TNS_ID(request):
         }
 
         return render(request, "transient/index_noTNS.html", context)
+
+
+def search_fuzzy_iauname(request):
+    '''
+    Redirects to a transient page based on an IAU name. Search is fuzzy, and can return several options.
+    '''
+    bg = authenticate_blackgem()
+
+    iauname = request.GET.get('user_input')
+
+    iauname_edited = iauname
+    iauname_edited = iauname_edited.replace(" -", "-")
+    iauname_edited = iauname_edited.replace(" +", "+")
+
+    iauname = iauname.replace("-", " -")
+    iauname = iauname.replace("+", " +")
+    iauname = iauname.replace("  ", " ")
+    iauname = iauname.replace("BGEMJ", "BGEM J")
+    iauname_split = re.split('_| ', iauname)
+    if len(iauname_split) == 1:
+        context = {"iauname" : iauname_edited}
+        return render(request, "transient/index_noIAU.html", context)
+
+    if iauname_split[0][0] == "B": iauname_split = iauname_split[1:]
+
+    if len(iauname_split) == 1:
+        context = {"iauname" : iauname_edited}
+        return render(request, "transient/index_noIAU.html", context)
+
+    if (len(iauname_split[0]) < 4) or (len(iauname_split[1]) < 4):
+        context = {"iauname" : iauname_edited}
+        return render(request, "transient/index_noIAU.html", context)
+
+    qu = """\
+    SELECT id
+          ,iau_name
+          ,ra_deg
+          ,dec_deg
+          ,datapoints
+      FROM runcat
+
+    """
+    qu = qu + "WHERE iau_name LIKE '%" + iauname_split[0] + "%'\n"
+    qu = qu + "  AND iau_name LIKE '%" + iauname_split[1] + "%'\n"
+
+    # query = qu % (params)
+
+    # Call the run_query function that can execute any sql query
+    l_results = bg.run_query(qu)
+
+    # print(l_results)
+
+    df = pd.DataFrame(l_results, columns=['id', 'iau_name', 'ra', 'dec', 'datapoints'])
+
+
+    if len(df) == 1:
+        return redirect(f'/transients/{df.id[0]}')
+
+    elif len(df) > 1:
+        df_lists = zip(list(df.id),
+                    list(df.iau_name),
+                    list(df.ra),
+                    list(df.dec),
+                    list(df.datapoints)
+        )
+
+        context = {
+            "iauname" : iauname_edited,
+            "df" : df_lists
+        }
+
+        return render(request, "transient/index_multiIAU.html", context)
+
+    else:
+        context = {"iauname" : iauname_edited}
+        return render(request, "transient/index_noIAU.html", context)
+
+
+    return df
 
 
 def get_bgem_id_from_tns(tns_object_name):

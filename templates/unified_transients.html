@@ -19,13 +19,7 @@ Scroll down to see all recent transients (from the past 30 days).
 <!-- <strong>Status ground:</strong> -->
 </p>
 
-<!-- <div class="row">
-  <div class="col-md-6" style="
-    padding:5px;
-    border-left:thin solid #dddddd;
-    border-right:thin solid #dddddd;
-    text-align:center;
-    vertical-align: middle;"> -->
+
 
 <h5>Search for a specific BlackGEM ID:</h5>
 
@@ -37,6 +31,12 @@ Scroll down to see all recent transients (from the past 30 days).
 
 <hr>
 
+<div class="row">
+  <div class="col-md-6" style="
+    padding:5px;
+    text-align:center;
+    vertical-align: middle;">
+
 <h5>TNS Search:</h5>
 
 <form method="get" action="{% url 'search_TNS_ID' %}">
@@ -46,26 +46,25 @@ Scroll down to see all recent transients (from the past 30 days).
     <button type="submit" class="btn btn-outline-primary">Query TNS</button>
 </form>
 
+<!-- <hr> -->
 
-  <!-- </div>
-  <div class="col-md-6" style="
-    padding:5px;
-    border-left:thin solid #dddddd;
-    border-right:thin solid #dddddd;
-    text-align:center;
-    vertical-align: middle;">
+</div>
+<div class="col-md-6" style="
+  padding:5px;
+  border-left:thin solid #dddddd;
+  text-align:center;
+  vertical-align: middle;">
+<h5>IAU Name Search (Fuzzy):</h5>
 
-    <h5>Search for a specific BlackGEM ID:</h5>
-
-    <form method="get" action="{% url 'search_BGEM_ID' %}">
-        <label for="user_input" style="color:grey"><em>(Try 25030590) &nbsp</em></label>
-        <input type="text" name="user_input" placeholder="Input BlackGEM ID" required>
-        <button type="submit" class="btn btn-primary">Query BlackGEM</button>
-    </form>
+<form method="get" action="{% url 'search_fuzzy_iauname' %}">
+    <label for="user_input" style="color:grey"><em>(Try BGEM J052319-702403) &nbsp</em></label>
+    <input type="text" name="user_input" placeholder="BGEM J123456-789012" required> &nbsp
+    <button type="submit" class="btn btn-outline-primary">Search</button>
+</form>
 
   </div>
 
-</div> -->
+</div>
 
 
 <hr>

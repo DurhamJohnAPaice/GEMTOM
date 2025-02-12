@@ -45,7 +45,6 @@ A list of the main features that have been requested and I intend to work on.
             <li>OR: Get the code on BlackPEARL</li>
             <li>Get the Detections on Sky plot on the Orphaned Transients page</li>
             <li>Improve the SQL query finding the Orphaned Transients</li>
-            <li>Grey out the rated transients with 'No' interest.</li>
         </ul>
     <br>
 
@@ -126,10 +125,12 @@ A list of the main features that have been requested and I intend to work on.
             <li>Orphaned Transients are continuously fed through a Random Forest classifier, based on the user-submitted notes. This generates a Real/Bogus score specifically made for orphaned sources.</li>
         </ul>
         <br>
-        <li><h6>Search by TNS</h6></li>
+        <li><h6>Search by TNS and IAU Name</h6></li>
         <ul>
             <li>The Transients page now lets you search by TNS. The nearest target within 100 arcseconds is returned.<br>
                 If present, you're redirected automatically to the nearest target within 2 arcseconds.</li>
+            <li>You can also search by IAU Name (BGEM JXXX-XXX). This is a fuzzy search, which will return all objects roughly matching your query.<br>
+                If multiple targets match, a list will be returned.</li>
         </ul>
         <br>
         <li><h6>Miscellaneous features</h6></li>
@@ -138,7 +139,7 @@ A list of the main features that have been requested and I intend to work on.
             <li>Word display limit has been removed on comments. Character count remains at 3000 (roughly 500 words, or an A4 page of text)</li>
             <li>Removed spurious 99-mag results from lightcurves</li>
             <li>Transients: Added non-detections to a 'Full Observation Data' table</li>
-            <li>Transients: The 'TNS Object withing 10 arcsecond' highlight now states whether BlackGEM data has been reported to TNS (it checks to see if 'BGEM' exists in the internal name)</li>
+            <li>Transients: The 'TNS Object within 10 arcsecond' highlight now states whether BlackGEM data has been reported to TNS (it checks to see if 'BGEM' exists in the internal name)</li>
             <li>Targets/Transients: Added link to BlackPEARL</li>
             <li>Targets/Transients: Added link to search Vizier</li>
             <li>Targets/Transients: Added link to search DESI</li>
