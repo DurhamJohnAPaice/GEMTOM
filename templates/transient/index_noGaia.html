@@ -1,0 +1,32 @@
+{% extends 'tom_common/base.html' %}
+{% block content %}
+<!-- --------------------------- -->
+
+<head>
+<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-grid.css">
+<link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-theme-balham.css">
+</head>
+
+<div align="center">
+<!-- <h3>{{ iauname }}</h3> -->
+{% if success %}
+    <br>
+    <h3>No sources found matching to {{ gaia_id }} within 10 arcseconds</h3>
+    <br>
+    <h5>{{ ra }}, {{ dec }}</h5>
+{% else %}
+    <br>
+    <h3>{{ gaia_id }} not a valid Gaia ID.</h3>
+    <br>
+    Have you checked the ID is valid?
+{% endif %}
+
+
+<!-- Please make sure you format the name correctly. It should match this format:<br>
+BGEM 123456-789012 -->
+
+<!-- --------------------------- -->
+{% endblock %}

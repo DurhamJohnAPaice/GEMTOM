@@ -62,6 +62,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 from plotly.offline import plot
 from urllib.request import urlretrieve
+from astroquery.gaia import Gaia
 
 ## For the ToO Forms
 from .forms import *
@@ -3000,6 +3001,146 @@ def search_fuzzy_iauname(request):
         return render(request, "transient/index_noIAU.html", context)
 
 
+    return df
+
+
+def search_GAIA_ID(request):
+    '''
+    Redirects to a transient page based on a Gaia ID, or if there are multiple, returns several options.
+    '''
+    bg = authenticate_blackgem()
+
+    gaia_id = request.GET.get('user_input')
+
+    ## TEST
+    # coord = SkyCoord(ra=80.82952060687916, dec=-70.40108318595331, unit=(u.degree, u.degree), frame='icrs')
+    # j = Gaia.cone_search_async(coord, radius=u.Quantity(0.01, u.deg))
+    # r = j.get_results()
+    ## TEST
+
+    ## Step 1: Find RA, Dec of Gaia Source
+    # gaia_id = '6636090334814214528'
+
+    if gaia_id[:4] != "Gaia": gaia_id = "Gaia DR3 " + gaia_id
+
+    ## Get RA/Dec from GAIA Designation
+    job = Gaia.launch_job("select top 10 "
+                      "designation,ra,dec "
+                      "from gaiadr3.gaia_source "
+                      "where designation = '" + gaia_id + "' "
+                      "order by source_id ")
+
+    if len(job.get_results()) == 0:
+        context = {
+                "gaia_id" : gaia_id,
+                "success" : False
+                }
+        return render(request, "transient/index_noGaia.html", context)
+
+
+    ra = job.get_results()["ra"].data.data[0]
+    dec = job.get_results()["dec"].data.data[0]
+
+    df = transient_cone_search(ra, dec, 10)
+
+    if len(df) == 0:
+        context = {
+                "gaia_id" : gaia_id,
+                "ra" : ra,
+                "dec" : dec,
+                "success" : True
+                }
+        return render(request, "transient/index_noGaia.html", context)
+    elif len(df) == 1:
+        return redirect(f'/transients/{df.id[0]}')
+    elif len(df) > 1:
+        print(df.columns)
+        df_lists = zip(
+                    list(df.id),
+                    list(df.ra_deg),
+                    list(df.dec_deg),
+                    list(df.datapoints),
+                    list(df.distance_arcsec),
+        )
+
+        context = {
+            "gaia_id" : gaia_id,
+            "ra" : ra,
+            "dec" : dec,
+            "success" : True,
+            "df" : df_lists
+        }
+
+        return render(request, "transient/index_multiGaia.html", context)
+
+
+
+
+    # return df
+
+    ## Step 2: Search for BlackGEM sources using RA/Dec:
+
+
+
+    # if len(iauname_split) == 1:
+    #     context = {"iauname" : iauname_edited}
+    #     return render(request, "transient/index_noIAU.html", context)
+    #
+    # if iauname_split[0][0] == "B": iauname_split = iauname_split[1:]
+    #
+    # if len(iauname_split) == 1:
+    #     context = {"iauname" : iauname_edited}
+    #     return render(request, "transient/index_noIAU.html", context)
+    #
+    # if (len(iauname_split[0]) < 4) or (len(iauname_split[1]) < 4):
+    #     context = {"iauname" : iauname_edited}
+    #     return render(request, "transient/index_noIAU.html", context)
+    #
+    # qu = """\
+    # SELECT id
+    #       ,iau_name
+    #       ,ra_deg
+    #       ,dec_deg
+    #       ,datapoints
+    #   FROM runcat
+    #
+    # """
+    # qu = qu + "WHERE iau_name LIKE '%" + iauname_split[0] + "%'\n"
+    # qu = qu + "  AND iau_name LIKE '%" + iauname_split[1] + "%'\n"
+    #
+    # # query = qu % (params)
+    #
+    # # Call the run_query function that can execute any sql query
+    # l_results = bg.run_query(qu)
+    #
+    # # print(l_results)
+    #
+    # df = pd.DataFrame(l_results, columns=['id', 'iau_name', 'ra', 'dec', 'datapoints'])
+    #
+    #
+    # if len(df) == 1:
+    #     return redirect(f'/transients/{df.id[0]}')
+    #
+    # elif len(df) > 1:
+    #     df_lists = zip(list(df.id),
+    #                 list(df.iau_name),
+    #                 list(df.ra),
+    #                 list(df.dec),
+    #                 list(df.datapoints)
+    #     )
+    #
+    #     context = {
+    #         "iauname" : iauname_edited,
+    #         "df" : df_lists
+    #     }
+    #
+    #     return render(request, "transient/index_multiIAU.html", context)
+    #
+    # else:
+    #     context = {"iauname" : iauname_edited}
+    #     return render(request, "transient/index_noIAU.html", context)
+    #
+    #
     return df
 
 

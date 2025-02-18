@@ -56,11 +56,11 @@ A list of the main features that have been requested and I intend to work on.
 
         <h5>Miscellaneous Features and Bugfixes:</h5>
         <ul>
+            <li>Requested: Look up targets by Gaia ID.</li>
             <li>Transients: Interpret HMS as well as Deg.</li>
             <li>Transients: Lookup and add a link to a transient's Portal entry</li>
             <li>Transients: Make a cutout from the Aladin skyview and overlay the detection locations onto it.</li>
             <li>Transients: Fix the error where the circle in the Aladin skyview desyncs if you zoom.</li>
-            <li>Transients: Search by IAU name.</li>
             <li>Transients: Some way to look up non-detections of a source</li>
             <li>Transients: Fix bug where 'EachObservation' table sometimes errors if multiple pages are open in a short time span.</li>
             <li>Transients: Fix bug where a lot of the Transients page mixes up data if multiple pages are open in a short time span.</li>
@@ -118,19 +118,20 @@ A list of the main features that have been requested and I intend to work on.
     <ul>
         <li><h6>Orphaned Transients!</h6></li>
         <ul>
-            <li>The nightly transients page now contains a list of orphaned transients, and links to their relevant GEMTOM pages.</li>
+            <li>The nightly transients page now contains a list of orphaned transients found that night, and links to their relevant GEMTOM pages.</li>
+            <li>BlackGEM is queried for new orphaned transients every day (at 10, 12, and 14 UT).</li>
+            <li>These transients are continuously fed through a Random Forest classifier, based on the user-submitted notes. This generates a Real/Bogus score specifically made for orphaned sources.</li>
             <li>You can label orphaned transients as interesting or not ('Yes' or 'No'), along with writing custom notes; this is only saved in GEMTOM, and doesn't communicate elsewhere.</li>
             <li>GEMTOM also searches its own records for past notes, so if an orphaned transient has already been noted to be a Diffraction Spike or a TNS source, that shows up on each night's page.</li>
-            <li>A new transients page for Orphaned Transients can also be accessed! All Orphans rated on the History pages will appear in this list. Orphans can also be reviewed and re-rated here.</li>
-            <li>Orphaned Transients are continuously fed through a Random Forest classifier, based on the user-submitted notes. This generates a Real/Bogus score specifically made for orphaned sources.</li>
+            <li>All labelled Orphaned Transients are listed on a new Transients page. Orphans can also be reviewed and re-rated here.</li>
         </ul>
         <br>
-        <li><h6>Search by TNS and IAU Name</h6></li>
+        <li><h6>Search by TNS, IAU Name, and Gaia DR3 Designation</h6></li>
         <ul>
             <li>The Transients page now lets you search by TNS. The nearest target within 100 arcseconds is returned.<br>
                 If present, you're redirected automatically to the nearest target within 2 arcseconds.</li>
-            <li>You can also search by IAU Name (BGEM JXXX-XXX). This is a fuzzy search, which will return all objects roughly matching your query.<br>
-                If multiple targets match, a list will be returned.</li>
+            <li>You can also search by IAU Name (BGEM JXXX-XXX). This is a fuzzy search, which will return all objects roughly matching your query. If multiple targets match, a list will be returned.</li>
+            <li>Finally, you can also search by Gaia DR3 Designation. If multiple targets match, a list will be returned, with their distances.</li>
         </ul>
         <br>
         <li><h6>Miscellaneous features</h6></li>

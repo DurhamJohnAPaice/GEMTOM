@@ -21,7 +21,7 @@ Scroll down to see all recent transients (from the past 30 days).
 
 
 
-<h5>Search for a specific BlackGEM ID:</h5>
+<h4>Search for a specific BlackGEM ID:</h4>
 
 <form method="get" action="{% url 'search_BGEM_ID' %}">
     <label for="user_input" style="color:grey"><em>(Try 25030590) &nbsp</em></label>
@@ -31,7 +31,7 @@ Scroll down to see all recent transients (from the past 30 days).
 
 <hr>
 
-<div class="row">
+<!-- <div class="row">
   <div class="col-md-6" style="
     padding:5px;
     text-align:center;
@@ -40,13 +40,10 @@ Scroll down to see all recent transients (from the past 30 days).
 <h5>TNS Search:</h5>
 
 <form method="get" action="{% url 'search_TNS_ID' %}">
-    <!-- <label for="user_input" style="color:grey"><em>Or search by TNS ID: &nbsp</em></label> -->
     <label for="user_input" style="color:grey"><em>(Try AT2025ajq) &nbsp</em></label>
     <input type="text" name="user_input" placeholder="Input TNS ID" required> &nbsp
     <button type="submit" class="btn btn-outline-primary">Query TNS</button>
 </form>
-
-<!-- <hr> -->
 
 </div>
 <div class="col-md-6" style="
@@ -64,8 +61,72 @@ Scroll down to see all recent transients (from the past 30 days).
 
   </div>
 
-</div>
+</div> -->
 
+
+<!-- <h5>Gaia ID Search:</h5> -->
+
+<!-- <form method="get" action="{% url 'search_fuzzy_iauname' %}">
+    <label for="user_input"><b>Search by IAU Name (Fuzzy):</b> &nbsp&nbsp</label>
+    <input type="text" name="user_input" placeholder="BGEM J123456-789012" required> &nbsp
+    <button type="submit" class="btn btn-outline-primary">Search</button>
+    <label style="color:grey"><em>(Try BGEM J052319-702403) &nbsp</em></label>
+</form>
+
+<form method="get" action="{% url 'search_TNS_ID' %}">
+    <label for="user_input"><b>Search by TNS ID:</b> &nbsp&nbsp</label>
+    <input type="text" name="user_input" placeholder="Input TNS ID" required> &nbsp
+    <button type="submit" class="btn btn-outline-primary">Query TNS</button>
+    <label style="color:grey"><em>(Try AT2025ajq) &nbsp</em></label>
+</form>
+
+<form method="get" action="{% url 'search_GAIA_ID' %}">
+  <label for="user_input"><b>Search by Gaia ID:</b> &nbsp&nbsp GAIA DR3</label>
+  <input type="text" name="user_input" placeholder="4651918901314394624" required> &nbsp
+  <button type="submit" class="btn btn-outline-primary">Search</button>
+  <label><span style="color:grey"><em>&nbsp(Try 4651918901314394624) &nbsp</em></span></label>
+</form> -->
+
+<h5> Alternate search methods: </h5>
+
+<div class="row">
+  <div class="col-md-4" style="
+    padding:0px;
+    text-align:right;
+    vertical-align: middle;">
+
+    <div style="padding-block:10px">Search by IAU Name (Fuzzy):</div>
+    <div style="padding-block:10px">Search by TNS ID:</div>
+    <div style="padding-block:10px">Search by Gaia DR3 Designation:</div>
+  </div>
+  <div class="col-md-4" style="
+    padding:5px;
+    text-align:middle;
+    vertical-align: middle;">
+    <form method="get" action="{% url 'search_fuzzy_iauname' %}">
+        <input type="text" name="user_input" placeholder="BGEM J123456-789012" required> &nbsp
+        <button type="submit" class="btn btn-outline-primary">Search</button>
+    </form>
+    <form method="get" action="{% url 'search_TNS_ID' %}"  style="
+      padding:5px;">
+        <input type="text" name="user_input" placeholder="AT2025ajq" required> &nbsp
+        <button type="submit" class="btn btn-outline-primary">Search</button>
+    </form>
+    <form method="get" action="{% url 'search_GAIA_ID' %}">
+        <input type="text" name="user_input" placeholder="4651918901314394624" required> &nbsp
+        <button type="submit" class="btn btn-outline-primary">Search</button>
+    </form>
+
+  </div>
+  <div class="col-md-4" style="
+    padding:0px;
+    text-align:left;
+    vertical-align: middle;">
+    <div style="padding-block:10px"><em>(Try BGEM J052319-702403)</em></div>
+    <div style="padding-block:10px"><em>(Try AT2025ajq)</em></div>
+    <div style="padding-block:10px"><em>(Try 4651918901314394624)</em></div>
+  </div>
+</div>
 
 <hr>
 
