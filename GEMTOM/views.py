@@ -3074,6 +3074,85 @@ def search_GAIA_ID(request):
         return render(request, "transient/index_multiGaia.html", context)
 
 
+def search_BGEM_RA_Dec(request):
+    '''
+    Redirects to a transient page based on a BlackGEM RA/Dec, or if there are multiple, returns several options.
+    '''
+    bg = authenticate_blackgem()
+
+    ra      = request.GET.get('ra')
+    dec     = request.GET.get('dec')
+    radius  = request.GET.get('radius')
+
+    success = True
+    message = []
+    try:
+        ra      = float(ra)
+    except:
+        success = False
+        message.append("RA cannot be interpreted as a float.")
+
+    try:
+        dec     = float(dec)
+    except:
+        success = False
+        message.append("Dec cannot be interpreted as a float.")
+
+    try:
+        radius  = float(radius)
+    except:
+        success = False
+        message.append("Radius cannot be interpreted as a float.")
+
+    if success:
+        if   (ra < 0) or (ra > 360):   success = False;    message.append("RA outside of 0 < RA < 360 degrees.")
+        if (dec < -90) or (dec > 90):  success = False;    message.append("Dec outside of -90 < Dec < 90 degrees.")
+        if (radius < 0) or (radius > 1000):  success = False;    message.append("Radius outside of 0 < radius < 1000 arcseconds.")
+
+
+    if not success:
+        context = {
+                "ra" : ra,
+                "dec" : dec,
+                "radius" : radius,
+                "message" : message,
+                "success" : False
+                }
+        return render(request, "transient/index_noRadec.html", context)
+
+    df = transient_cone_search(ra, dec, radius)
+
+    if len(df) == 0:
+        context = {
+                "ra" : ra,
+                "dec" : dec,
+                "radius" : radius,
+                "success" : True
+                }
+        return render(request, "transient/index_noRadec.html", context)
+    elif len(df) == 1:
+        return redirect(f'/transients/{df.id[0]}')
+    elif len(df) > 1:
+        print(df.columns)
+        df_lists = zip(
+                    list(df.id),
+                    list(df.ra_deg),
+                    list(df.dec_deg),
+                    list(df.datapoints),
+                    list(df.distance_arcsec),
+        )
+
+        context = {
+            "ra" : ra,
+            "dec" : dec,
+            "radius" : radius,
+            "success" : True,
+            "df" : df_lists
+        }
+
+        return render(request, "transient/index_multiRadec.html", context)
+
+
 
 
     # return df
@@ -3908,93 +3987,93 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
 
 
 
-    app = DjangoDash('ConeSearchTable')
-
-    style_dict = {
-      "font-size": "16px",
-      "margin-right": "10px",
-      'width': '200px',
-      'height': '30px',
-      # 'scale':'2'
-    }
-
-    button_style_dict = {
-        "font-size": "16px",
-        "margin-right": "10px",
-        "padding": "7px 24px",
-        # 'border-radius': '5px',
-        'color':'#027bff',
-        'background-color': '#ffffff',
-        'border': '2px solid #027bff',
-        'border-radius': '5px',
-        'cursor': 'pointer',
-    }
-
-    app.layout = html.Div([
-        html.Div([
-            # html.A("Link to external site", href='https://plot.ly', target="_blank"),
-            dcc.Input(id='ra-input',        type='number', min=0, max=360,  placeholder=' RA (deg)',        style=style_dict),
-            dcc.Input(id='dec-input',       type='number', min=-90, max=90,   placeholder=' Dec (deg)',       style=style_dict),
-            dcc.Input(id='radius-input',    type='number', min=0, max=600,  placeholder=' Radius (arcseconds)',    style=style_dict),
-            html.Button('Search', id='submit-button', n_clicks=0, style=button_style_dict),
-            # html.Button('Search', id='submit-button', n_clicks=0, style={"font-size": "16px","margin-right": "10px",})
-        ], style={'margin-bottom': '20px', "text-align":"center"}),
-        html.Div(id='results-container', children=[]),
-        html.Div(id='redirect-trigger', style={'display': 'none'})
-    ])
-
-    # Define the callback to update the table based on input coordinates
-    @app.callback(
-        Output('results-container', 'children'),
-        Input('submit-button', 'n_clicks'),
-        State('ra-input', 'value'),
-        State('dec-input', 'value'),
-        State('radius-input', 'value'),
-        prevent_initial_call=False
-    )
-    def update_results(n_clicks, ra, dec, radius):
-        print(ra, dec, radius)
-
-        # tns_object_name = "SN2024zmm"
-        # tns_message, tns_bgem_id = get_bgem_id_from_tns(tns_object_name)
-        # print(tns_message)
-        # print(tns_bgem_id)
-
-        if ra is not None and dec is not None:
-            df = transient_cone_search(ra, dec, radius)
-            if len(df) == 0:
-                return html.Div([
-                            html.P("RA: " +str(ra)),
-                            html.P("Dec: " +str(dec)),
-                            html.P("Radius: " +str(radius)),
-                            html.Em("No targets found"),
-                        ], style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif"}
-                    )
-            else:
-                df['id'] = df['id'].apply(lambda x: f'[{x}](/transients/{x})')
-                # df['id'] = df['id'].apply(lambda x: f'<a href="/transients/{x}" target="_blank">{x}</a>)')
-                message = html.Div([html.P(html.Em("Ctrl/Cmd-click on links to open the transient in a new tab"))], style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif"})
-                table = dag.AgGrid(
-                    id='results-table',
-                    columnDefs=[
-                        {'headerName': 'ID', 'field': 'id', 'cellRenderer': 'markdown'},
-                        # {'headerName': 'ID', 'field': 'id', 'cellRenderer': 'htmlCellRenderer'},
-                        # {'headerName': 'ID', 'field': 'id'},
-                        {'headerName': 'Datapoints', 'field': 'datapoints'},
-                        {'headerName': 'RA', 'field': 'ra_deg'},
-                        {'headerName': 'Dec', 'field': 'dec_deg'},
-                        {'headerName': 'Dist (")', 'field': 'distance_arcsec'},
-                    ],
-                    rowData=df.to_dict('records'),
-                    dashGridOptions={"rowSelection": "single"},
-                    style={'height': '200px', 'width': '100%'},
-                    className='ag-theme-balham'  # Add a theme for better appearance
-                )
-                return message, table
-        else:
-            message = html.Div([html.P(html.Em("Enter co-ordinates to search."))], style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif", "color":"grey"})
-
-            return message
+    # app = DjangoDash('ConeSearchTable')
+    #
+    # style_dict = {
+    #   "font-size": "16px",
+    #   "margin-right": "10px",
+    #   'width': '200px',
+    #   'height': '30px',
+    #   # 'scale':'2'
+    # }
+    #
+    # button_style_dict = {
+    #     "font-size": "16px",
+    #     "margin-right": "10px",
+    #     "padding": "7px 24px",
+    #     # 'border-radius': '5px',
+    #     'color':'#027bff',
+    #     'background-color': '#ffffff',
+    #     'border': '2px solid #027bff',
+    #     'border-radius': '5px',
+    #     'cursor': 'pointer',
+    # }
+    #
+    # app.layout = html.Div([
+    #     html.Div([
+    #         # html.A("Link to external site", href='https://plot.ly', target="_blank"),
+    #         dcc.Input(id='ra-input',        type='number', min=0, max=360,  placeholder=' RA (deg)',        style=style_dict),
+    #         dcc.Input(id='dec-input',       type='number', min=-90, max=90,   placeholder=' Dec (deg)',       style=style_dict),
+    #         dcc.Input(id='radius-input',    type='number', min=0, max=600,  placeholder=' Radius (arcseconds)',    style=style_dict),
+    #         html.Button('Search', id='submit-button', n_clicks=0, style=button_style_dict),
+    #         # html.Button('Search', id='submit-button', n_clicks=0, style={"font-size": "16px","margin-right": "10px",})
+    #     ], style={'margin-bottom': '20px', "text-align":"center"}),
+    #     html.Div(id='results-container', children=[]),
+    #     html.Div(id='redirect-trigger', style={'display': 'none'})
+    # ])
+    #
+    # # Define the callback to update the table based on input coordinates
+    # @app.callback(
+    #     Output('results-container', 'children'),
+    #     Input('submit-button', 'n_clicks'),
+    #     State('ra-input', 'value'),
+    #     State('dec-input', 'value'),
+    #     State('radius-input', 'value'),
+    #     prevent_initial_call=False
+    # )
+    # def update_results(n_clicks, ra, dec, radius):
+    #     print(ra, dec, radius)
+    #
+    #     # tns_object_name = "SN2024zmm"
+    #     # tns_message, tns_bgem_id = get_bgem_id_from_tns(tns_object_name)
+    #     # print(tns_message)
+    #     # print(tns_bgem_id)
+    #
+    #     if ra is not None and dec is not None:
+    #         df = transient_cone_search(ra, dec, radius)
+    #         if len(df) == 0:
+    #             return html.Div([
+    #                         html.P("RA: " +str(ra)),
+    #                         html.P("Dec: " +str(dec)),
+    #                         html.P("Radius: " +str(radius)),
+    #                         html.Em("No targets found"),
+    #                     ], style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif"}
+    #                 )
+    #         else:
+    #             df['id'] = df['id'].apply(lambda x: f'[{x}](/transients/{x})')
+    #             # df['id'] = df['id'].apply(lambda x: f'<a href="/transients/{x}" target="_blank">{x}</a>)')
+    #             message = html.Div([html.P(html.Em("Ctrl/Cmd-click on links to open the transient in a new tab"))], style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif"})
+    #             table = dag.AgGrid(
+    #                 id='results-table',
+    #                 columnDefs=[
+    #                     {'headerName': 'ID', 'field': 'id', 'cellRenderer': 'markdown'},
+    #                     # {'headerName': 'ID', 'field': 'id', 'cellRenderer': 'htmlCellRenderer'},
+    #                     # {'headerName': 'ID', 'field': 'id'},
+    #                     {'headerName': 'Datapoints', 'field': 'datapoints'},
+    #                     {'headerName': 'RA', 'field': 'ra_deg'},
+    #                     {'headerName': 'Dec', 'field': 'dec_deg'},
+    #                     {'headerName': 'Dist (")', 'field': 'distance_arcsec'},
+    #                 ],
+    #                 rowData=df.to_dict('records'),
+    #                 dashGridOptions={"rowSelection": "single"},
+    #                 style={'height': '200px', 'width': '100%'},
+    #                 className='ag-theme-balham'  # Add a theme for better appearance
+    #             )
+    #             return message, table
+    #     else:
+    #         message = html.Div([html.P(html.Em("Enter co-ordinates to search."))], style={"text-align":"center", "font-size": "18px", "font-family":"sans-serif", "color":"grey"})
+    #
+    #         return message
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

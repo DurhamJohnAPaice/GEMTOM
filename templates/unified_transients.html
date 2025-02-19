@@ -128,14 +128,18 @@ Scroll down to see all recent transients (from the past 30 days).
   </div>
 </div>
 
+
 <hr>
 
-<h5>Coordinate Search</h5>
+<h5>Cone Search</h5>
 <p><em>Try: 186.2724, 12.8787, 60</em></p>
 
-<div class="dash-container">
-    {% plotly_app name="ConeSearchTable" ratio=0.3 %}
-</div>
+<form method="get" action="{% url 'search_BGEM_RA_Dec' %}">
+    <input type="text" name="ra" placeholder="RA (Deg)" required> &nbsp
+    <input type="text" name="dec" placeholder="Dec (Deg)" required> &nbsp
+    <input type="text" name="radius" placeholder="Radius (arcsecond)" required> &nbsp
+    <button type="submit" class="btn btn-outline-primary">Search</button>
+</form>
 
 <hr>
 

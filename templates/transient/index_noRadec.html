@@ -1,0 +1,39 @@
+{% extends 'tom_common/base.html' %}
+{% block content %}
+<!-- --------------------------- -->
+
+<head>
+<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-grid.css">
+<link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-theme-balham.css">
+</head>
+
+<div align="center">
+<!-- <h3>{{ iauname }}</h3> -->
+{% if success %}
+    <br>
+    <h5>No sources found matching to:<br></h5>
+    <h3>RA: {{ ra }}; &nbsp Dec: {{ dec }}<br></h3>
+    <h5>within {{ radius }} arcseconds.</h5>
+    <br>
+{% else %}
+    <br>
+    <h5>One or more of your parameters are not valid:<br><br></h5>
+        <h3>RA: {{ ra }}<br></h3>
+        <h3>Dec: {{ dec }}<br></h3>
+        <h3>Radius: {{ radius }}<br></h3>
+    <br>
+    {% for this_message in message %}
+        <h5><span style="color: red">{{ this_message }}</span></h5>
+    {% endfor %}
+    <h5>Please re-check and try again.</h5>
+{% endif %}
+
+
+<!-- Please make sure you format the name correctly. It should match this format:<br>
+BGEM 123456-789012 -->
+
+<!-- --------------------------- -->
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'tom_common/base.html' %}
+{% block content %}
+<!-- --------------------------- -->
+
+<head>
+<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-grid.css">
+<link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-theme-balham.css">
+</head>
+
+<div align="center">
+<h3>RA: {{ ra }};&nbsp&nbsp&nbspDec: {{ dec }}</h3>
+<br>
+Results for all sources within {{ radius }} arcseconds:
+<br>
+<br>
+
+
+
+<div class="table_container" style="text-align:center;">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>RA</th>
+                <th>Dec</th>
+                <th>Datapoints</th>
+                <th>Distance (Arcseconds)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for id_list, ra_list, dec_list, datapoints, dist in df%}
+                <tr style="color: black;">
+                    <td><a href="/transients/{{ id_list }}">{{ id_list }}</a> </td>
+                    <td>{{ ra_list }}</td>
+                    <td>{{ dec_list }}</td>
+                    <td>{{ datapoints }}</td>
+                    <td>{{ dist }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+<!-- --------------------------- -->
+{% endblock %}
