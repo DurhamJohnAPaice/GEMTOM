@@ -2925,304 +2925,6 @@ def search_TNS_ID(request):
         return render(request, "transient/index_noTNS.html", context)
 
 
-def search_fuzzy_iauname(request):
-    '''
-    Redirects to a transient page based on an IAU name. Search is fuzzy, and can return several options.
-    '''
-    bg = authenticate_blackgem()
-
-    iauname = request.GET.get('user_input')
-
-    iauname_edited = iauname
-    iauname_edited = iauname_edited.replace(" -", "-")
-    iauname_edited = iauname_edited.replace(" +", "+")
-
-    iauname = iauname.replace("-", " -")
-    iauname = iauname.replace("+", " +")
-    iauname = iauname.replace("  ", " ")
-    iauname = iauname.replace("BGEMJ", "BGEM J")
-    iauname_split = re.split('_| ', iauname)
-    if len(iauname_split) == 1:
-        context = {"iauname" : iauname_edited}
-        return render(request, "transient/index_noIAU.html", context)
-
-    if iauname_split[0][0] == "B": iauname_split = iauname_split[1:]
-
-    if len(iauname_split) == 1:
-        context = {"iauname" : iauname_edited}
-        return render(request, "transient/index_noIAU.html", context)
-
-    if (len(iauname_split[0]) < 4) or (len(iauname_split[1]) < 4):
-        context = {"iauname" : iauname_edited}
-        return render(request, "transient/index_noIAU.html", context)
-
-    qu = """\
-    SELECT id
-          ,iau_name
-          ,ra_deg
-          ,dec_deg
-          ,datapoints
-      FROM runcat
-
-    """
-    qu = qu + "WHERE iau_name LIKE '%" + iauname_split[0] + "%'\n"
-    qu = qu + "  AND iau_name LIKE '%" + iauname_split[1] + "%'\n"
-
-    # query = qu % (params)
-
-    # Call the run_query function that can execute any sql query
-    l_results = bg.run_query(qu)
-
-    # print(l_results)
-
-    df = pd.DataFrame(l_results, columns=['id', 'iau_name', 'ra', 'dec', 'datapoints'])
-
-
-    if len(df) == 1:
-        return redirect(f'/transients/{df.id[0]}')
-
-    elif len(df) > 1:
-        df_lists = zip(list(df.id),
-                    list(df.iau_name),
-                    list(df.ra),
-                    list(df.dec),
-                    list(df.datapoints)
-        )
-
-        context = {
-            "iauname" : iauname_edited,
-            "df" : df_lists
-        }
-
-        return render(request, "transient/index_multiIAU.html", context)
-
-    else:
-        context = {"iauname" : iauname_edited}
-        return render(request, "transient/index_noIAU.html", context)
-
-
-    return df
-
-
-def search_GAIA_ID(request):
-    '''
-    Redirects to a transient page based on a Gaia ID, or if there are multiple, returns several options.
-    '''
-    bg = authenticate_blackgem()
-
-    gaia_id = request.GET.get('user_input')
-
-    ## TEST
-    # coord = SkyCoord(ra=80.82952060687916, dec=-70.40108318595331, unit=(u.degree, u.degree), frame='icrs')
-    # j = Gaia.cone_search_async(coord, radius=u.Quantity(0.01, u.deg))
-    # r = j.get_results()
-    ## TEST
-
-    ## Step 1: Find RA, Dec of Gaia Source
-    # gaia_id = '6636090334814214528'
-
-    if gaia_id[:4] != "Gaia": gaia_id = "Gaia DR3 " + gaia_id
-
-    ## Get RA/Dec from GAIA Designation
-    job = Gaia.launch_job("select top 10 "
-                      "designation,ra,dec "
-                      "from gaiadr3.gaia_source "
-                      "where designation = '" + gaia_id + "' "
-                      "order by source_id ")
-
-    if len(job.get_results()) == 0:
-        context = {
-                "gaia_id" : gaia_id,
-                "success" : False
-                }
-        return render(request, "transient/index_noGaia.html", context)
-
-
-    ra = job.get_results()["ra"].data.data[0]
-    dec = job.get_results()["dec"].data.data[0]
-
-    df = transient_cone_search(ra, dec, 10)
-
-    if len(df) == 0:
-        context = {
-                "gaia_id" : gaia_id,
-                "ra" : ra,
-                "dec" : dec,
-                "success" : True
-                }
-        return render(request, "transient/index_noGaia.html", context)
-    elif len(df) == 1:
-        return redirect(f'/transients/{df.id[0]}')
-    elif len(df) > 1:
-        print(df.columns)
-        df_lists = zip(
-                    list(df.id),
-                    list(df.ra_deg),
-                    list(df.dec_deg),
-                    list(df.datapoints),
-                    list(df.distance_arcsec),
-        )
-
-        context = {
-            "gaia_id" : gaia_id,
-            "ra" : ra,
-            "dec" : dec,
-            "success" : True,
-            "df" : df_lists
-        }
-
-        return render(request, "transient/index_multiGaia.html", context)
-
-
-def search_BGEM_RA_Dec(request):
-    '''
-    Redirects to a transient page based on a BlackGEM RA/Dec, or if there are multiple, returns several options.
-    '''
-    bg = authenticate_blackgem()
-
-    ra      = request.GET.get('ra')
-    dec     = request.GET.get('dec')
-    radius  = request.GET.get('radius')
-
-    success = True
-    message = []
-    try:
-        ra      = float(ra)
-    except:
-        success = False
-        message.append("RA cannot be interpreted as a float.")
-
-    try:
-        dec     = float(dec)
-    except:
-        success = False
-        message.append("Dec cannot be interpreted as a float.")
-
-    try:
-        radius  = float(radius)
-    except:
-        success = False
-        message.append("Radius cannot be interpreted as a float.")
-
-    if success:
-        if   (ra < 0) or (ra > 360):   success = False;    message.append("RA outside of 0 < RA < 360 degrees.")
-        if (dec < -90) or (dec > 90):  success = False;    message.append("Dec outside of -90 < Dec < 90 degrees.")
-        if (radius < 0) or (radius > 1000):  success = False;    message.append("Radius outside of 0 < radius < 1000 arcseconds.")
-
-
-    if not success:
-        context = {
-                "ra" : ra,
-                "dec" : dec,
-                "radius" : radius,
-                "message" : message,
-                "success" : False
-                }
-        return render(request, "transient/index_noRadec.html", context)
-
-    df = transient_cone_search(ra, dec, radius)
-
-    if len(df) == 0:
-        context = {
-                "ra" : ra,
-                "dec" : dec,
-                "radius" : radius,
-                "success" : True
-                }
-        return render(request, "transient/index_noRadec.html", context)
-    elif len(df) == 1:
-        return redirect(f'/transients/{df.id[0]}')
-    elif len(df) > 1:
-        print(df.columns)
-        df_lists = zip(
-                    list(df.id),
-                    list(df.ra_deg),
-                    list(df.dec_deg),
-                    list(df.datapoints),
-                    list(df.distance_arcsec),
-        )
-
-        context = {
-            "ra" : ra,
-            "dec" : dec,
-            "radius" : radius,
-            "success" : True,
-            "df" : df_lists
-        }
-
-        return render(request, "transient/index_multiRadec.html", context)
-
-
-
-
-    # return df
-
-    ## Step 2: Search for BlackGEM sources using RA/Dec:
-
-
-
-    # if len(iauname_split) == 1:
-    #     context = {"iauname" : iauname_edited}
-    #     return render(request, "transient/index_noIAU.html", context)
-    #
-    # if iauname_split[0][0] == "B": iauname_split = iauname_split[1:]
-    #
-    # if len(iauname_split) == 1:
-    #     context = {"iauname" : iauname_edited}
-    #     return render(request, "transient/index_noIAU.html", context)
-    #
-    # if (len(iauname_split[0]) < 4) or (len(iauname_split[1]) < 4):
-    #     context = {"iauname" : iauname_edited}
-    #     return render(request, "transient/index_noIAU.html", context)
-    #
-    # qu = """\
-    # SELECT id
-    #       ,iau_name
-    #       ,ra_deg
-    #       ,dec_deg
-    #       ,datapoints
-    #   FROM runcat
-    #
-    # """
-    # qu = qu + "WHERE iau_name LIKE '%" + iauname_split[0] + "%'\n"
-    # qu = qu + "  AND iau_name LIKE '%" + iauname_split[1] + "%'\n"
-    #
-    # # query = qu % (params)
-    #
-    # # Call the run_query function that can execute any sql query
-    # l_results = bg.run_query(qu)
-    #
-    # # print(l_results)
-    #
-    # df = pd.DataFrame(l_results, columns=['id', 'iau_name', 'ra', 'dec', 'datapoints'])
-    #
-    #
-    # if len(df) == 1:
-    #     return redirect(f'/transients/{df.id[0]}')
-    #
-    # elif len(df) > 1:
-    #     df_lists = zip(list(df.id),
-    #                 list(df.iau_name),
-    #                 list(df.ra),
-    #                 list(df.dec),
-    #                 list(df.datapoints)
-    #     )
-    #
-    #     context = {
-    #         "iauname" : iauname_edited,
-    #         "df" : df_lists
-    #     }
-    #
-    #     return render(request, "transient/index_multiIAU.html", context)
-    #
-    # else:
-    #     context = {"iauname" : iauname_edited}
-    #     return render(request, "transient/index_noIAU.html", context)
-    #
-    #
-    return df
-
-
 def get_bgem_id_from_tns(tns_object_name):
     tns_object_data = get_ra_dec_from_tns(tns_object_name)
     print(tns_object_data)
@@ -3908,6 +3610,363 @@ def get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve = False, tns_ra=Fal
     print("t6->t7:", t7-t6)
 
     return file_name
+
+
+def search_fuzzy_iauname(request):
+    '''
+    Redirects to a transient page based on an IAU name. Search is fuzzy, and can return several options.
+    '''
+    bg = authenticate_blackgem()
+
+    iauname = request.GET.get('user_input')
+
+    iauname_edited = iauname
+    iauname_edited = iauname_edited.replace(" -", "-")
+    iauname_edited = iauname_edited.replace(" +", "+")
+
+    iauname = iauname.replace("-", " -")
+    iauname = iauname.replace("+", " +")
+    iauname = iauname.replace("  ", " ")
+    iauname = iauname.replace("BGEMJ", "BGEM J")
+    iauname_split = re.split('_| ', iauname)
+    if len(iauname_split) == 1:
+        context = {"iauname" : iauname_edited}
+        return render(request, "transient/index_noIAU.html", context)
+
+    if iauname_split[0][0] == "B": iauname_split = iauname_split[1:]
+
+    if len(iauname_split) == 1:
+        context = {"iauname" : iauname_edited}
+        return render(request, "transient/index_noIAU.html", context)
+
+    if (len(iauname_split[0]) < 4) or (len(iauname_split[1]) < 4):
+        context = {"iauname" : iauname_edited}
+        return render(request, "transient/index_noIAU.html", context)
+
+    qu = """\
+    SELECT id
+          ,iau_name
+          ,ra_deg
+          ,dec_deg
+          ,datapoints
+      FROM runcat
+
+    """
+    qu = qu + "WHERE iau_name LIKE '%" + iauname_split[0] + "%'\n"
+    qu = qu + "  AND iau_name LIKE '%" + iauname_split[1] + "%'\n"
+
+    # query = qu % (params)
+
+    # Call the run_query function that can execute any sql query
+    l_results = bg.run_query(qu)
+
+    # print(l_results)
+
+    df = pd.DataFrame(l_results, columns=['id', 'iau_name', 'ra', 'dec', 'datapoints'])
+
+
+    if len(df) == 1:
+        return redirect(f'/transients/{df.id[0]}')
+
+    elif len(df) > 1:
+        df_lists = zip(list(df.id),
+                    list(df.iau_name),
+                    list(df.ra),
+                    list(df.dec),
+                    list(df.datapoints)
+        )
+
+        context = {
+            "iauname" : iauname_edited,
+            "df" : df_lists
+        }
+
+        return render(request, "transient/index_multiIAU.html", context)
+
+    else:
+        context = {"iauname" : iauname_edited}
+        return render(request, "transient/index_noIAU.html", context)
+
+
+    return df
+
+
+def search_GAIA_ID(request):
+    '''
+    Redirects to a transient page based on a Gaia ID, or if there are multiple, returns several options.
+    '''
+    bg = authenticate_blackgem()
+
+    gaia_id = request.GET.get('user_input')
+
+    if gaia_id[:4] != "Gaia": gaia_id = "Gaia DR3 " + gaia_id
+
+    ## Get RA/Dec from GAIA Designation
+    job = Gaia.launch_job("select top 10 "
+                      "designation,ra,dec "
+                      "from gaiadr3.gaia_source "
+                      "where designation = '" + gaia_id + "' "
+                      "order by source_id ")
+
+    if len(job.get_results()) == 0:
+        context = {
+                "gaia_id" : gaia_id,
+                "success" : False
+                }
+        return render(request, "transient/index_noGaia.html", context)
+
+
+    ra = job.get_results()["ra"].data.data[0]
+    dec = job.get_results()["dec"].data.data[0]
+
+    df = transient_cone_search(ra, dec, 10)
+
+    if len(df) == 0:
+        context = {
+                "gaia_id" : gaia_id,
+                "ra" : ra,
+                "dec" : dec,
+                "success" : True
+                }
+        return render(request, "transient/index_noGaia.html", context)
+    elif len(df) == 1:
+        return redirect(f'/transients/{df.id[0]}')
+    elif len(df) > 1:
+        print(df.columns)
+        df_lists = zip(
+                    list(df.id),
+                    list(df.ra_deg),
+                    list(df.dec_deg),
+                    list(df.datapoints),
+                    list(df.distance_arcsec),
+        )
+
+        context = {
+            "gaia_id" : gaia_id,
+            "ra" : ra,
+            "dec" : dec,
+            "success" : True,
+            "df" : df_lists
+        }
+
+        return render(request, "transient/index_multiGaia.html", context)
+
+
+def ra_dec_checker(ra, dec):
+
+    success = True
+    message = []
+
+    try:
+        ra      = float(ra)
+    except:
+        success = False
+        message.append("RA cannot be interpreted as a float.")
+
+    try:
+        dec     = float(dec)
+    except:
+        success = False
+        message.append("Dec cannot be interpreted as a float.")
+
+    if success:
+        if   (ra < 0) or (ra > 360):   success = False;    message.append("RA outside of 0 < RA < 360 degrees.")
+        if (dec < -90) or (dec > 90):  success = False;    message.append("Dec outside of -90 < Dec < 90 degrees.")
+
+    return success, message
+
+
+def search_BGEM_RA_Dec(request):
+    '''
+    Redirects to a transient page based on a BlackGEM RA/Dec, or if there are multiple, returns several options.
+    '''
+    bg = authenticate_blackgem()
+
+    ra      = request.GET.get('ra')
+    dec     = request.GET.get('dec')
+    radius  = request.GET.get('radius')
+
+    success, message = ra_dec_checker(ra, dec)
+
+    try:
+        radius  = float(radius)
+        if (radius < 0) or (radius > 1000):  success = False;    message.append("Radius outside of 0 < radius < 1000 arcseconds.")
+    except:
+        success = False
+        message.append("Radius cannot be interpreted as a float.")
+
+
+
+    if not success:
+        context = {
+                "ra" : ra,
+                "dec" : dec,
+                "radius" : radius,
+                "message" : message,
+                "success" : False
+                }
+        return render(request, "transient/index_noRadec.html", context)
+
+    ## Find the last time this RA/Dec was searched
+    skytile_message = search_skytiles_from_RA_Dec(ra,dec)
+
+    df = transient_cone_search(ra, dec, radius)
+
+    if len(df) == 0:
+        context = {
+                "ra" : ra,
+                "dec" : dec,
+                "radius" : radius,
+                "skytile_message" : skytile_message,
+                "success" : True
+                }
+        return render(request, "transient/index_noRadec.html", context)
+    elif len(df) == 1:
+        return redirect(f'/transients/{df.id[0]}')
+    elif len(df) > 1:
+        print(df.columns)
+        df_lists = zip(
+                    list(df.id),
+                    list(df.ra_deg),
+                    list(df.dec_deg),
+                    list(df.datapoints),
+                    list(df.distance_arcsec),
+        )
+
+        context = {
+            "ra" : ra,
+            "dec" : dec,
+            "radius" : radius,
+            "skytile_message" : skytile_message,
+            "success" : True,
+            "df" : df_lists
+        }
+
+        return render(request, "transient/index_multiRadec.html", context)
+
+    return df
+
+
+def search_skytiles_from_RA_Dec(ra,dec):
+    '''
+    From an RA and Dec, find any fields it exists in.
+    '''
+
+    bg = authenticate_blackgem()
+    tc = TransientsCatalog(bg)
+
+    l_columns, l_results = tc.nearest_skytiles(ra, dec, 1.35*1.41)
+    df_nearest_fields = pd.DataFrame(l_results, columns=l_columns)
+
+    if len(df_nearest_fields) == 0:
+        message = ["RA/Dec is not in any BlackGEM fields."],
+        return message
+
+    df_nearest_fields["status"] = "Green"
+    df_nearest_fields["status"][df_nearest_fields["distance_deg"] > 1.35] = "Yellow"
+
+    last_observations = [tc.skytile_observing_times(i) for i in df_nearest_fields['field_id']]
+    df_nearest_fields["num"] = [len(i[1]) for i in last_observations]
+    df_nearest_fields["num"] = [len(i[1]) for i in last_observations]
+
+    df_observations = pd.DataFrame(last_observations[0][1], columns = list(last_observations[0][0]))
+    df_observations["field_id"] = df_nearest_fields["field_id"].iloc[0]
+    df_observations["status"]   = df_nearest_fields["status"].iloc[0]
+    df_observations["num"]      = df_nearest_fields["num"].iloc[0]
+
+    for i in range(1, len(last_observations)):
+        df_new_observations = pd.DataFrame(last_observations[i][1], columns = list(last_observations[i][0]))
+        df_new_observations["field_id"] = df_nearest_fields["field_id"].iloc[i]
+        df_new_observations["status"]   = df_nearest_fields["status"].iloc[i]
+        df_new_observations["num"]      = df_nearest_fields["num"].iloc[i]
+        df_observations = pd.concat([df_observations, df_new_observations]).reset_index(drop=True)
+
+    df_observations = df_observations.sort_values(by=['"mjd-obs"'], ascending=False).reset_index(drop=True)
+
+    if len(df_observations) == 0:
+        message = ["RA/Dec is in the following BlackGEM fields:"]
+        message.append(list(df_nearest_fields["field_id"]))
+        message.append("but it has not yet been observed.")
+        return message
+
+    if df_observations['status'].iloc[0] == "Green":
+        message = ["RA/Dec was last observed on " + str(df_observations['"date-obs"'].iloc[0])[:-7]]
+
+    else:
+        message = ["RA/Dec may have been observed on " + str(df_observations['"date-obs"'].iloc[0])[:-7] + "; it may be outside the field."]
+
+        days_ago = (datetime.today()-df_observations['"date-obs"'].iloc[0]).days + 1
+        if days_ago == 1: message.append("(Last night!)")
+        else: message.append("(That was " + str(days_ago) + " nights ago.)")
+
+        message.append("")
+
+        df_confirmed_observations = df_observations[df_observations["status"] == "Green"].reset_index(drop=True)
+        message.append("RA/Dec was last definitely observed on " + str(df_confirmed_observations['"date-obs"'].iloc[0])[:-7])
+
+        days_ago = (datetime.today()-df_confirmed_observations['"date-obs"'].iloc[0]).days + 1
+        if days_ago == 1: message.append("(That was last night!)")
+        else: message.append("(That was " + str(days_ago) + " nights ago.)")
+
+    return message
+
+
+def search_skytiles_from_RA_Dec_orig(request):
+    '''
+    From an RA and Dec, find any fields it exists in.
+    '''
+    bg = authenticate_blackgem()
+
+    tc = TransientsCatalog(bg)
+
+    ra      = request.GET.get('ra')
+    dec     = request.GET.get('dec')
+
+    ## Check RA/Dec:
+    success, message = ra_dec_checker(ra, dec)
+
+    if not success:
+        context = {
+                "ra" : ra,
+                "dec" : dec,
+                "message" : message,
+                "success" : False
+        }
+        return render(request, "transient/index_Skytile.html", context)
+
+
+    skytile_message = search_skytiles_from_RA_Dec(ra,dec)
+
+    df = transient_cone_search(ra, dec, 60)
+
+    if len(df) == 0:
+        context = {
+                "ra" : ra,
+                "dec" : dec,
+                "message" : skytile_message,
+                "success" : True,
+                "sources" : False,
+                }
+
+    else:
+        df_lists = zip(
+                    list(df.id),
+                    list(df.ra_deg),
+                    list(df.dec_deg),
+                    list(df.datapoints),
+                    list(df.distance_arcsec),
+        )
+
+        context = {
+            "ra" : ra,
+            "dec" : dec,
+            "message" : skytile_message,
+            "success" : True,
+            "sources" : True,
+            "df" : df_lists,
+        }
+
+    return render(request, "transient/index_Skytile.html", context)
 
 def check_blackgem_recent_transients(recent_transients):
     dates = list(recent_transients.last_obs)

@@ -17,6 +17,9 @@
     <h5>No sources found matching to:<br></h5>
     <h3>RA: {{ ra }}; &nbsp Dec: {{ dec }}<br></h3>
     <h5>within {{ radius }} arcseconds.</h5>
+    {% for this_message in skytile_message %}
+        <h5><span>{{ this_message }}</span></h5>
+    {% endfor %}
     <br>
 {% else %}
     <br>

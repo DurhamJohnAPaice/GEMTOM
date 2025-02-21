@@ -143,6 +143,16 @@ Scroll down to see all recent transients (from the past 30 days).
 
 <hr>
 
+<!-- <h5>When was my RA/Dec last observed?</h5> -->
+<form method="get" action="{% url 'search_skytiles_from_RA_Dec_orig' %}">
+    <label><h5>When was my RA/Dec last observed?&nbsp&nbsp&nbsp</h5></label>
+    <input type="text" name="ra" placeholder="RA (Deg)" required> &nbsp
+    <input type="text" name="dec" placeholder="Dec (Deg)" required> &nbsp
+    <button type="submit" class="btn btn-outline-primary">Search</button>
+</form>
+
+<hr>
+
 <head>
     <title>CSV Data Grid</title>
     <link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-grid.css">

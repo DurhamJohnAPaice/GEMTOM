@@ -13,6 +13,9 @@
 <div align="center">
 <h3>RA: {{ ra }};&nbsp&nbsp&nbspDec: {{ dec }}</h3>
 <br>
+{% for this_message in skytile_message %}
+    <h5><span>{{ this_message }}</span></h5>
+{% endfor %}
 Results for all sources within {{ radius }} arcseconds:
 <br>
 <br>
