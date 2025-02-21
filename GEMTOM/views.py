@@ -3891,6 +3891,9 @@ def search_skytiles_from_RA_Dec(ra,dec):
 
     if df_observations['status'].iloc[0] == "Green":
         message = ["RA/Dec was last observed on " + str(df_observations['"date-obs"'].iloc[0])[:-7]]
+        days_ago = (datetime.today()-df_observations['"date-obs"'].iloc[0]).days + 1
+        if days_ago == 1: message.append("(Last night!)")
+        else: message.append("(That was " + str(days_ago) + " nights ago.)")
 
     else:
         message = ["RA/Dec may have been observed on " + str(df_observations['"date-obs"'].iloc[0])[:-7] + "; it may be outside the field."]
