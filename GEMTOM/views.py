@@ -3859,7 +3859,7 @@ def search_skytiles_from_RA_Dec(ra,dec):
     df_nearest_fields = pd.DataFrame(l_results, columns=l_columns)
 
     if len(df_nearest_fields) == 0:
-        message = ["RA/Dec is not in any BlackGEM fields."],
+        message = ["RA/Dec is not in any BlackGEM fields."]
         return message
 
     df_nearest_fields["status"] = "Green"
