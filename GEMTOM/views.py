@@ -2642,7 +2642,7 @@ def get_recent_blackgem_transients(days_since_last_update):
         ## Round values for displaying
         df['ra_sml']        = round(df['ra'],4)
         df['dec_sml']       = round(df['dec'],4)
-        df['snr_zogy_sml']  = round(df['snr_zogy'],1)
+        df['snr_zogy_sml']  = round(df['snr'],1)
         # df['iauname_short'] = df['iauname'].str[5:]
         df['q_min_sml']     = round(df['q_min'],1)
         df['u_min_sml']     = round(df['u_min'],1)
@@ -2653,6 +2653,9 @@ def get_recent_blackgem_transients(days_since_last_update):
         df['q_dif']         = round(df['q_max']-df['q_min'],2)
         df['u_dif']         = round(df['u_max']-df['u_min'],2)
         df['i_dif']         = round(df['i_max']-df['i_min'],2)
+
+        # print("\n\n\nUPDATED\n\n\n")
+        # print(df['snr_zogy_sml'])
 
 
         df.to_csv("./data/BlackGEM_Transients_Last30Days.csv", index=False)
@@ -4199,7 +4202,7 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
                 # {'headerName': 'IAU Name', 'field': 'iauname_short'},
                 {'headerName': 'RA', 'field': 'ra_sml'},
                 {'headerName': 'Dec', 'field': 'dec_sml'},
-                {'headerName': '#Datapoints', 'field': 'datapoints'},
+                {'headerName': 'Datapoints', 'field': 'n_datapoints',   'minWidth': 105, 'maxWidth': 105},
                 {'headerName': 'S/N', 'field': 'snr_zogy_sml'},
                 {'headerName': 'q min', 'field': 'q_min_sml',   'minWidth': 75, 'maxWidth': 75},
                 {'headerName': 'q dif', 'field': 'q_dif',       'minWidth': 75, 'maxWidth': 75},
@@ -4249,7 +4252,7 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
         if row_data:
             return html.Div([
                 html.P("Object " + str(row_data["runcat_id"]), style={'font-size':'20px'}),
-                html.P(str(row_data["iauname"]), style={'font-size':'17px'}),
+                # html.P(str(row_data["iauname"]), style={'font-size':'17px'}),
                 html.P("RA: " + str(row_data["ra"]) + ", Dec: " + str(row_data["dec"]), style={'font-size':'17px'}),
                 ], style={'font-family': 'Arial', 'text-align': 'center'}
             )
@@ -4331,7 +4334,7 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
             ## q mag
             table_2 = dash_table.DataTable(
                 data=[row_data],
-                columns=[[{'name': k, 'id': k} for k in row_data.keys() if k in ['q_min', 'q_max', 'q_xtrsrc', 'q_rb', 'q_fwhm', 'q_dif']][i] for i in [1,2,0,3,4,5]],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['q_min', 'q_max', 'q_xtrsrc', 'q_rb', 'q_fwhm', 'q_dif']],#[i] for i in [0,1,2]],
                 style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
             )
             ## u mag
@@ -4350,15 +4353,20 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
             ## Extra 1
             table_5 = dash_table.DataTable(
                 data=[row_data],
-                columns=[{'name': k, 'id': k} for k in row_data.keys()][23:29],
+                columns=[{'name': k, 'id': k} for k in row_data.keys() if k in ['q_dif', 'u_dif', 'i_dif']],
                 style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
             )
-            ## Extra 2
-            table_6 = dash_table.DataTable(
-                data=[row_data],
-                columns=[{'name': k, 'id': k} for k in row_data.keys()][30:36],
-                style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
-            )
+            # table_5 = dash_table.DataTable(
+            #     data=[row_data],
+            #     columns=[{'name': k, 'id': k} for k in row_data.keys()][23:29],
+            #     style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            # )
+            # ## Extra 2
+            # table_6 = dash_table.DataTable(
+            #     data=[row_data],
+            #     columns=[{'name': k, 'id': k} for k in row_data.keys()][30:36],
+            #     style_table={'margin': 'auto'}, style_cell={'textAlign': 'center', 'padding': '5px'}, style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
+            # )
 
             return html.Div(
                     [
@@ -4382,7 +4390,7 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
                     })),
                     html.P(id='button-click-message')  # Div to display the message when button is clicked
                     ] +
-                [table_1] + [table_2] + [table_3] + [table_4] + [table_5] + [table_6],
+                [table_1] + [table_2] + [table_3] + [table_4] + [table_5],# + [table_6],
                 style={'font-family': 'Arial', 'text-align': 'center'})
 
         return
