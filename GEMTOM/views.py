@@ -6505,7 +6505,7 @@ def submit_observation(request):
         else:
             submitter = "Unknown"
 
-        df_nearest_targets = transient_cone_search(ra, dec, radius=100)
+        df_nearest_targets = transient_cone_search(ra, dec, radius=10)
         if len(df_nearest_targets) > 0:
             nearest_id = str(int(df_nearest_targets["id"][0]))
         else:
