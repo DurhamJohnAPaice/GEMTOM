@@ -6144,7 +6144,7 @@ observatory_list = [
 
 def plot_altitude_graph(name, target_ra, target_dec, night):
 
-    output_dir = "./Data/AltitudeGraphs"
+    output_dir = "./data/AltitudeGraphs/"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -6559,9 +6559,7 @@ def submit_observation(request):
 
         ## Plot altitude graph
         altitude_path = "./data/AltitudeGraphs/AltitudePlot_" + ra + "_" + dec + "_" + night + ".png"
-        if not os.path.exists("./data/AltitudeGraphs/"):
-            os.makedirs("./data/AltitudeGraphs/")
-            
+
         if not os.path.exists(altitude_path):
             plot_altitude_graph(name, ra, dec, night)
         else:
