@@ -4,7 +4,7 @@
 import os
 import sys
 import pandas as pd
-from astropy.coordinates import SkyCoord, Galactocentric
+from astropy.coordinates import SkyCoord, Galactocentric, EarthLocation, AltAz, get_sun, get_moon
 from astropy import units as u
 import plotly.express as px
 import dash
@@ -3414,11 +3414,15 @@ def BGEM_ID_View(request, bgem_id):
     # def obs_dash_view(request):
     #     return render(request, 'transient/index.html')
 
+    dec_str = str(dec)
+    if dec_str[0] != '-':
+        dec_str = '+' + dec_str
+
     context = {
         "bgem_id"           : bgem_id,
         "iau_name"          : iau_name,
         "ra"                : ra,
-        "dec"               : dec,
+        "dec"               : dec_str,
         "dataframe"         : df_bgem_lightcurve,
         "columns"           : df_bgem_lightcurve.columns,
         "location_on_sky"   : location_on_sky,
@@ -3427,7 +3431,7 @@ def BGEM_ID_View(request, bgem_id):
         "tns_flag_prefix"   : tns_flag_prefix,
         "tns_flag_name"     : tns_flag_name,
         "tns_flag_sep"      : tns_flag_sep,
-        "tns_flag_bgem" : tns_flag_bgem,
+        "tns_flag_bgem"     : tns_flag_bgem,
         "tns_data"          : tns_data,
         "tns_text"          : tns_text,
         "tns_list"          : tns_list,
@@ -3893,14 +3897,14 @@ def search_skytiles_from_RA_Dec(ra,dec):
         message = ["RA/Dec was last observed on " + str(df_observations['"date-obs"'].iloc[0])[:-7]]
         days_ago = (datetime.today()-df_observations['"date-obs"'].iloc[0]).days + 1
         if days_ago == 1: message.append("(Last night!)")
-        else: message.append("(That was " + str(days_ago) + " nights ago.)")
+        else: message.append("(That was " + str(days_ago) + " nights ago)")
 
     else:
         message = ["RA/Dec may have been observed on " + str(df_observations['"date-obs"'].iloc[0])[:-7] + "; it may be outside the field."]
 
         days_ago = (datetime.today()-df_observations['"date-obs"'].iloc[0]).days + 1
         if days_ago == 1: message.append("(Last night!)")
-        else: message.append("(That was " + str(days_ago) + " nights ago.)")
+        else: message.append("(That was " + str(days_ago) + " nights ago)")
 
         message.append("")
 
@@ -3909,7 +3913,7 @@ def search_skytiles_from_RA_Dec(ra,dec):
 
         days_ago = (datetime.today()-df_confirmed_observations['"date-obs"'].iloc[0]).days + 1
         if days_ago == 1: message.append("(That was last night!)")
-        else: message.append("(That was " + str(days_ago) + " nights ago.)")
+        else: message.append("(That was " + str(days_ago) + " nights ago)")
 
     return message
 
@@ -6052,6 +6056,652 @@ def UpdateBlackGEMFunc(target_name, target_id, target_blackgemid):
                 'Error while fetching BlackGEM data; ' + str(iffe2)
             )
 
+
+
+## =============================================================================
+## -------------------- Functions for the Observation Night --------------------
+
+from .models import Observation
+from .forms import ObservationForm
+
+## Observatories:
+observatory_list = [
+    "Roque de los Muchachos Observatory (La Palma, Spain)",
+    "Teide Observatory (Tenerife, Spain)",
+    "Georgian National Astrophysical Observatory (Abastumani, Georgia)",
+    "Abruzzo Astronomical Observatory - TNT (INAF-OA Abruzzo, Italy)",
+    "Apache Point Observatory (New Mexico, USA)",
+    "Aras de los Olmos Observatory (Spain)",
+    "Asiago Astrophysical Observatory (Italy)",
+    "Assy-Turgen Observatory (Kazakhstan)",
+    "Bohyunsan Optical Astronomy Observatory (Korea)",
+    "Brorfelde Observatory (Denmark)",
+    "Byurakan Observatory (Armenia)",
+    "Calar Alto Observatory (Almeria, Spain)",
+    "Campo Imperatore Observatory (INAF-OA Abruzzo, Italy)",
+    "Cerro Pachon Observatory (Chile)",
+    "Cerro Paranal Observatory (Chile)",
+    "Cerro Tololo Observatory (Chile)",
+    "Dominion Astrophysical Observatory (Canada)",
+    "El Leoncito Observatory (Argentina)",
+    "Fred Lawrence Whipple Observatory (Arizona, USA)",
+    "Guillermo Haro Astrophysical Observatory (Sonora, Mexico)",
+    "Haute-Provence Observatory (France)",
+    "Helmos Observatory (Greece)",
+    "Iranian National Observatory, Mt. Gargash (Iran)",
+    "Javalambre Astronomical Observatory (Teruel, Spain)",
+    "Kitt Peak Observatory (Arizona, USA)",
+    "Kryoneri Observatory (Greece)",
+    "La Luz Observatory (Mexico)",
+    "La Silla Observatory (Chile)",
+    "Large Millimeter Telescope (Mexico)",
+    "Las Campanas Observatory (Chile)",
+    "Lick Observatory (California, USA)",
+    "Lijiang Observatory (China)",
+    "Loiano Observatory (Italy)",
+    "Lulin Observatory (Taiwan)",
+    "Mauna Kea Observatory (Hawaii, USA)",
+    "McDonald Observatory (Texas, USA)",
+    "Montsec Astronomical Observatory (Lleida, Spain)",
+    "Mount Graham International Observatory (Arizona, USA)",
+    "Mount John Observatory (Tekapo, New Zeland)",
+    "Mount Kent Observatory (Queensland, Australia)",
+    "Mount Lemon Optical Astronomy Observatory (Arizona, USA)",
+    "Nanshan Station, Xinjiang Astronomical Observatory (China)",
+    "National Astronomical Observatory Rozhen (Bulgaria)",
+    "Observatoire de la Cote dAzur (France)",
+    "Ondrejov Observatory",
+    "Palomar Observatory (California, USA)",
+    "Pearl Station (Canada)",
+    "Pico dos Dias Observatory (Brazil)",
+    "Pine Mountain Observatory (USA)",
+    "Piszkesteto Observatory (Hungary)",
+    "San Pedro Martir Observatory (Mexico)",
+    "Santa Martina Observatory (Chile)",
+    "Seimei Telescope (Japan)",
+    "Sertao de Itaparica Observatory (Brazil)",
+    "Siding Spring Observatory (Australia)",
+    "Astronomical Observatory of the University of Siena (Italy)",
+    "Serra La Nave Observatory (INAF - OA Catania, Italy)",
+    "Sierra Nevada Observatory (Granada, Spain)",
+    "Skinakas Observatory (Crete, Greece)",
+    "Sobaeksan Optical Astronomy Observatory (Korea)",
+    "Special Astrophysical Observatory (Russia)",
+    "Sutherland Observatory (South Africa)",
+    "Tian Shan Observatory (Kazakhstan)",
+    "Thai National Observatory, NARI (Thailand)",
+    "Thueringer Landessternwarte Tautenburg (Germany)",
+    "Tubitak National Observatory (Turkey)",
+    "Vidojevica Astronomical Station (Serbia)",
+    "Virgin Island Robotic Telescope (US Virgin Islands)",
+    "Wendelstein Observatory (Germany)",
+    "Wise Observatory (Israel)",
+    "Xinglong Observatory (China)",
+    "Zimmerwald Observatory (Bern, Switzerland)",
+]
+
+
+
+def plot_altitude_graph(name, target_ra, target_dec, night):
+
+    output_dir = "./Data/AltitudeGraphs"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    ## ===== Find the times of the night =====
+    today_time    = Time(night)+1                                                            ## Set Time
+
+    now_time    = Time(datetime.utcnow(), scale='utc')                                        ## Find current time
+
+    location_name = 'roque de los muchachos'
+    location    = EarthLocation.of_site(location_name)                                            ## Set Location
+
+    sunset        = Observer.at_site(location_name).sun_set_time(today_time, which="previous")    ## Find Sunset
+    sunrise        = Observer.at_site(location_name).sun_rise_time(today_time, which="next")        ## Find Sunrise
+
+
+    ## Define the location
+    # location = EarthLocation(lat=-29.25738889*u.deg, lon=-70.73791667*u.deg, height=2200*u.m)
+    observer = Observer(location=location, timezone='UTC')
+
+    # Evening twilight times
+    civil_twilight_evening          = observer.twilight_evening_civil(          today_time+0.1, which='previous')
+    nautical_twilight_evening       = observer.twilight_evening_nautical(       today_time+0.1, which='previous')
+    astronomical_twilight_evening   = observer.twilight_evening_astronomical(   today_time+0.1, which='previous')
+
+    # Morning twilight times
+    civil_twilight_morning = observer.twilight_morning_civil(today_time, which='next')
+    nautical_twilight_morning = observer.twilight_morning_nautical(today_time, which='next')
+    astronomical_twilight_morning = observer.twilight_morning_astronomical(today_time, which='next')
+
+
+
+    print("Sunset at:  {0.iso}".format(sunset))
+    print("Sunrise at: {0.iso}".format(sunrise))
+    print("")
+    print("")
+
+    ## -- Find each hour section --
+    ## Shorten the dates for easy dividing...
+    sunset_short    = sunset.jd  - 2459000
+    sunrise_short   = sunrise.jd - 2459000
+
+    ## Find the nearest top of the hour to sunset and sunrise
+    sunset_nearest_hour     = (1/24) * round(sunset_short/(1/24))  + 2459000 + (1/24)   ## We often lose the first hour, so don't schedule it
+    sunrise_nearest_hour    = (1/24) * round(sunrise_short/(1/24)) + 2459000
+
+
+    print("Plotting altitude graph...")
+
+    # utcoffset        = -5*u.hour
+    midnight        = today_time
+    now_time_rel    = (now_time.mjd - today_time.mjd)*24
+    sunset_rel      = (sunset.mjd - today_time.mjd)*24
+    sunrise_rel     = (sunrise.mjd - today_time.mjd)*24
+    delta_midnight    = np.linspace(-12, 12, 1000)*u.hour
+    delta_midnight2    = np.linspace(-12, 12, 1000)
+
+    ## Get the sun position
+    print("Getting Sun position...")
+
+    times            = midnight+delta_midnight
+    frame            = AltAz(obstime=times, location=location)
+    sunaltazs        = get_sun(times).transform_to(frame)
+
+    ## Get the moon position
+    print("Getting Moon position...")
+    moon            = get_moon(times)
+    moonaltazs         = moon.transform_to(frame)
+
+    ## Get the positions of our taargets
+    print("Getting Target positions...")
+    target_coords = SkyCoord(target_ra, target_dec, unit=(u.deg), frame='icrs')
+    target_altazs = target_coords.transform_to(frame)
+
+    ## Find sunrise and sunset
+    sunset_hour     = (today_time.mjd-sunset.mjd)*24
+    sunrise_hour    = (sunrise.mjd-today_time.mjd)*24
+
+    civ_twilight_sunset = (civil_twilight_evening.mjd-today_time.mjd)*24
+    nau_twilight_sunset = (nautical_twilight_evening.mjd-today_time.mjd)*24
+    ast_twilight_sunset = (astronomical_twilight_evening.mjd-today_time.mjd)*24
+
+    civ_twilight_sunrise = (civil_twilight_morning.mjd-today_time.mjd)*24
+    nau_twilight_sunrise = (nautical_twilight_morning.mjd-today_time.mjd)*24
+    ast_twilight_sunrise = (astronomical_twilight_morning.mjd-today_time.mjd)*24
+
+
+    moon_distance = target_altazs.separation(moonaltazs)
+
+    moon_dist_x = delta_midnight[0::50]
+    moon_dist_y = moonaltazs.alt[0::50]
+    moon_dist_t = moon_distance [0::50]
+
+
+    ## ----- Plot! -----
+    fig = plt.figure(figsize=(8, 8))
+
+    xlimits = [-np.ceil(sunset_hour), np.ceil(sunrise_hour)]
+    # xlimits = [-np.ceil(sunset_rel), np.ceil(sunrise_rel)]
+    # xlimits = [sunset_rel-1, sunrise_rel+1]
+
+    plt.title(str(name) + "\nLocation: NOT     RA: " + str(target_ra) + "  Dec: " + str(target_dec) + "     Night of " + night)
+
+    ax = plt.gca()
+    plt.plot(delta_midnight, moonaltazs.alt, color=[0.75]*3, ls='--', zorder=7, label='Moon')
+    # plt.text(moon_dist_x.value, moon_dist_y.value, moon_dist_t.value)
+    for x, y, text in zip(moon_dist_x.value, moon_dist_y.value, moon_dist_t.value):
+        if (x > xlimits[0]) and (y > 0) and (x < xlimits[1]):
+            plt.text(x, y, "%.0f°"%text, ha="center", va="center", backgroundcolor="white", zorder=7)
+
+    colour            = "darkviolet"
+
+    ## Plot the full altitude plot
+    plt.plot(delta_midnight, target_altazs.alt, lw=2, ls="-", color=colour, zorder=18, label='Target')
+
+    # ## Plot when it's right now!
+    # plt.vlines(now_time_rel, 0, 90, linestyle="--", linewidth=1, zorder=9, color="r")
+
+    plt.vlines(sunset_rel,           0, 90, linestyle="-",  linewidth=2, zorder=5, color="k")
+    plt.vlines(civ_twilight_sunset,  0, 90, linestyle="--", linewidth=2, zorder=5, color="grey")
+    plt.vlines(nau_twilight_sunset,  0, 90, linestyle="--", linewidth=1, zorder=5, color="grey")
+    plt.vlines(ast_twilight_sunset,  0, 90, linestyle=":",  linewidth=1, zorder=5, color="grey")
+    plt.vlines(ast_twilight_sunrise, 0, 90, linestyle=":",  linewidth=1, zorder=5, color="grey")
+    plt.vlines(nau_twilight_sunrise, 0, 90, linestyle="--", linewidth=1, zorder=5, color="grey")
+    plt.vlines(civ_twilight_sunrise, 0, 90, linestyle="--", linewidth=2, zorder=5, color="grey")
+    plt.vlines(sunrise_rel,          0, 90, linestyle="-",  linewidth=2, zorder=5, color="k")
+
+    plt.text(sunset_rel,           20, "Sunset",                rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+    plt.text(civ_twilight_sunset,  20, "Civil Twilight",        rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+    plt.text(nau_twilight_sunset,  20, "Nautical Twilight",     rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+    plt.text(ast_twilight_sunset,  20, "Astronomical Twilight", rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+    plt.text(ast_twilight_sunrise, 20, "Astronomical Twilight", rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+    plt.text(nau_twilight_sunrise, 20, "Nautical Twilight",     rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+    plt.text(civ_twilight_sunrise, 20, "Civil Twilight",        rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+    plt.text(sunrise_rel,          20, "Sunrise",               rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+
+
+    ## Various legends and axes properties
+    plt.legend(loc='lower center', ncol=3, shadow=True).set_zorder(15)
+    plt.xlim(xlimits)
+    plt.xticks(np.arange(xlimits[0], xlimits[1], 1))
+    plt.grid(linestyle=":", zorder=5)
+    plt.ylim(0, 90)
+    plt.xlabel('Hours from UTC Midnight')
+    plt.ylabel('Altitude [deg]')
+
+    savename = output_dir + "/AltitudePlot_" + str(float(target_ra))[:10] + "_" + str(float(target_dec))[:10] + "_" + night + ".png"
+    plt.savefig(savename, bbox_inches='tight')
+
+    print("Plotted.")
+
+
+
+
+
+class ObservationNightView(TemplateView):
+    template_name = 'observations.html'
+
+    def observation_form_view(self, request):
+        form = ObservationForm(request.POST or None)
+
+        print(form)
+
+        if request.method == "POST" and form.is_valid():
+
+
+            return redirect('observations')  # Redirect to refresh the form after submission
+
+        return render(request, 'observations.html', {'form': form})
+
+
+    def get_context_data(self, **kwargs):
+        return {'targets': Target.objects.all()}
+
+
+    def post(self, request, **kwargs):
+        source_ra  = float(request.POST['num1'])
+        source_dec = float(request.POST['num2'])
+
+        print("-- ZTF: Looking for target...", end="\r")
+        lcq = lightcurve.LCQuery.from_position(source_ra, source_dec, 5)
+        ZTF_data_full = pd.DataFrame(lcq.data)
+        ZTF_data = pd.DataFrame({'JD' : lcq.data.mjd, 'Magnitude' : lcq.data.mag, 'Magnitude_Error' : lcq.data.magerr})
+
+        if len(ZTF_data) == 0:
+            raise Exception("-- ZTF: Target not found. Try AAVSO instead?")
+
+        print("-- ZTF: Looking for target... target found.")
+        print(lcq.__dict__)
+
+        df = ZTF_data # replace with your own data source
+
+        fig = px.scatter(df, x='JD', y='Magnitude')
+        fig.update_layout(
+            yaxis = dict(autorange="reversed")
+        )
+        return HttpResponse("Closest target within 5 arcseconds:" + fig.to_html() + ZTF_data_full.to_html())
+
+
+@login_required
+def set_observed(request):
+    '''
+    Rates a target as observed or not
+    '''
+
+    print("\n\n\nFull Request:")
+    print(request.POST)
+    print("\n\n\n")
+
+    num = request.POST.get('Num')
+    night = request.POST.get('Night')
+    if len(num) > 0: num = np.int64(num)
+
+    observed_new = request.POST.get('observed_new')
+
+    data_file = "./data/planned_observations_data.csv"
+    obs_data = pd.read_csv(data_file)
+
+    print("Night:", night)
+
+    print(type(obs_data['num'][0]))
+    # print(type(int(num)))
+    print(obs_data['num'][0])
+    print(num)
+    print(obs_data['num'][0] == num)
+
+    index = obs_data.index[obs_data['num'] == num]
+    obs_data.loc[index,"observed"] = observed_new
+
+    obs_data.to_csv(data_file, index=False)
+
+    ## Are we looking at a certain night?
+    if night:
+        return redirect('/Observations/?show_night=' + night)
+    else:
+        return redirect('/Observations/')
+
+@login_required
+def delete_observation(request):
+    '''
+    Deletes observation
+    '''
+
+    num = request.POST.get('Num')
+    night = request.POST.get('Night')
+    if len(num) > 0: num = np.int64(num)
+
+    data_file = "./data/planned_observations_data.csv"
+    obs_data = pd.read_csv(data_file)
+
+    index = obs_data.index[obs_data['num'] == num]
+
+    obs_data = obs_data.drop(index)
+
+    obs_data.to_csv(data_file, index=False)
+
+    ## Are we looking at a certain night?
+    if night:
+        return redirect('/Observations/?show_night=' + night)
+    else:
+        return redirect('/Observations/')
+
+
+def df_to_lists(obs_data):
+
+    df_lists = zip(
+                list(obs_data.id.astype(int)),
+                list(obs_data.name),
+                list(obs_data.num),
+                list(obs_data.ra),
+                list(obs_data.dec),
+                list(obs_data.notes),
+                list(obs_data.night),
+                list(obs_data.priority),
+                list(obs_data.submitter),
+                list(obs_data.observed),
+                list(obs_data.gemtom_id),
+                list("./data/AltitudeGraphs/AltitudePlot_" + obs_data["ra"].astype(str) + "_" + obs_data["dec"].astype(str) + "_" + obs_data["night"].astype(str) + ".png"),
+
+    )
+
+    return df_lists
+
+@login_required
+def submit_observation(request):
+
+    ## Get Initial Data
+    data_file = "./data/planned_observations_data.csv"
+
+    if os.path.exists(data_file):
+        obs_data = pd.read_csv(data_file)
+
+        df_lists = df_to_lists(obs_data)
+
+        nights = obs_data.night
+        nights = pd.concat([pd.Series(["All"]), nights])
+        nights = nights.drop_duplicates()
+        print(nights)
+
+    else:
+        df_lists = []
+        nights = []
+
+
+    # print(nights.drop_duplicates())
+
+    context = {
+            "df"    : df_lists,
+            "message" : [""],
+            "nights" : nights
+    }
+
+    ## Handle selecting a single night
+    if 'show_night' in request.GET:
+        print("Request: Show Night")
+        show_night = request.GET.get('show_night')
+
+        if show_night == "All": obs_data = pd.read_csv(data_file)
+        else:                   obs_data = obs_data[obs_data["night"]==show_night]
+
+        # print("obs_data:")
+        # print(obs_data)
+
+        df_lists = df_to_lists(obs_data)
+
+        context = {
+                "df"    : df_lists,
+                "message" : [""],
+                "nights" : nights,
+                "show_night" : show_night,
+        }
+
+        return render(request, "observations.html", context)
+        # return redirect('/Observations/')
+
+
+    elif 'ra' in request.GET:
+        print("Request: Submit New Target")
+
+        # Get the data from the form
+        name        = request.GET.get('name')
+        ra          = request.GET.get('ra')
+        dec         = request.GET.get('dec')
+        notes       = request.GET.get('notes')
+        night       = request.GET.get('night')
+        priority    = request.GET.get('priority')
+        submitter   = request.GET.get('submitter')
+        gemtom_id   = int(request.GET.get('gemtom_id'))
+
+        success, message  = ra_dec_checker(ra, dec)
+        if not success:
+            context["message"] = message
+            print(message)
+            return render(request, "observations.html", context)
+
+        if submitter:
+            if len(submitter) <= 1:
+                submitter = "Unknown"
+        else:
+            submitter = "Unknown"
+
+        df_nearest_targets = transient_cone_search(ra, dec, radius=100)
+        if len(df_nearest_targets) > 0:
+            nearest_id = str(int(df_nearest_targets["id"][0]))
+        else:
+            nearest_id = 0
+        print(nearest_id)
+        # 186.2724, 12.8787, 60
+
+        if os.path.exists(data_file):
+            if len(obs_data.num) > 0:   new_num = max(obs_data.num)+1
+            else:                       new_num = 1
+        else:
+            new_num = 1
+
+        if name:
+            if len(name) == 0:
+                if nearest_id:  name = nearest_id
+                else:           name = "Source #" + new_num
+        else:
+            if nearest_id:  name = nearest_id
+            else:           name = "Source #" + new_num
+
+        new_output = pd.DataFrame({
+            'id'        : nearest_id,
+            'name'      : name,
+            'num'       : [new_num],
+            'ra'        : [str(float(ra))[:10]],
+            'dec'       : [str(float(dec))[:10]],
+            'notes'     : [notes],
+            'night'     : [night],
+            'priority'  : [priority],
+            'submitter' : [submitter],
+            'gemtom_id' : [gemtom_id],
+            'observed'  : [False],
+        })
+
+        if os.path.exists(data_file):
+            output = pd.read_csv(data_file)
+            full_output = pd.concat([output,new_output]).reset_index(drop=True)
+            full_output = full_output.sort_values(by=["night"])
+
+            full_output.to_csv(data_file, index=False)
+
+        else:
+            new_output.to_csv(data_file, index=False)
+
+        obs_data = pd.read_csv(data_file)
+        # print(obs_data.columns)
+        # for col in obs_data.columns:
+        #     print(obs_data[col])
+
+
+        ## Plot altitude graph
+        altitude_path = "./data/AltitudeGraphs/AltitudePlot_" + ra + "_" + dec + "_" + night + ".png"
+        if not os.path.exists(altitude_path):
+            plot_altitude_graph(name, ra, dec, night)
+        else:
+            print("Altitude Plot already exists.")
+
+
+        df_lists = df_to_lists(obs_data)
+
+        context = {
+                "df"    : df_lists,
+                "nights" : nights,
+        }
+
+
+        # return render(request, "observations.html", context)
+        return redirect('/Observations/')
+
+    else:
+        print("No Request submitted.")
+        return render(request, "observations.html", context)
+
+
+
+
+
+
+
+# class observation_view(TemplateView):
+#     template_name = 'observations.html'
+#     # if this is a POST request we need to process the form data
+#
+#     def get_context_data(self, **kwargs):
+#
+#         data_file = "./data/planned_observations_data.csv"
+#
+#         if os.path.exists(data_file):
+#
+#             obs_data = pd.read_csv(data_file)
+#
+#             obs_data = obs_data.sort_values(by=["night"])
+#
+#             print(obs_data)
+#
+#             df_lists = zip(
+#                         list(obs_data.ra),
+#                         list(obs_data.dec),
+#                         list(obs_data.notes),
+#                         list(obs_data.night),
+#             )
+#
+#             nights = obs_data.night
+#
+#
+#             context = {
+#                     "df"    : df_lists,
+#                     # "RA"    : obs_data["ra"],
+#                     # "Dec"   : obs_data["dec"],
+#                     # "Notes" : obs_data["notes"],
+#                     # "Night" : obs_data["night"]
+#                     "nights" : nights
+#
+#                     }
+#
+#             return context
+
+
+    # return render(request, "observations.html", {"form": form})
+
+
+
+
+
+# def observation_view(request):
+#     # if this is a POST request we need to process the form data
+#     if request.method == "POST":
+#         # create a form instance and populate it with data from the request:
+#         form = ObservationForm(request.POST)
+#         # check whether it's valid:
+#         if form.is_valid():
+#
+#             # Get the data from the form
+#             ra      = form.cleaned_data['RA']
+#             dec     = form.cleaned_data['dec']
+#             notes   = form.cleaned_data['notes']
+#             night   = form.cleaned_data['night']
+#
+#             ## Standardise the band data:
+#
+#             print(ra)
+#             print(dec)
+#             print(notes)
+#             print(night)
+#
+#             fileOut = "./data/planned_observations_data.csv"
+#
+#             new_output = pd.DataFrame({
+#                 'ra'      : [ra],
+#                 'dec'     : [dec],
+#                 'notes'   : [notes],
+#                 'night'    : [night],
+#             })
+#
+#             if os.path.exists(fileOut):
+#                 output = pd.read_csv(fileOut)
+#                 full_output = pd.concat([output,new_output]).reset_index(drop=True)
+#                 full_output.to_csv(fileOut, index=False)
+#
+#             else:
+#                 new_output.to_csv(fileOut, index=False)
+#
+#             obs_data = pd.read_csv(data_file)
+#             context = {
+#                     "RA"    : obs_data["ra"],
+#                     "Dec"   : obs_data["dec"],
+#                     "Notes" : obs_data["notes"],
+#                     "Night" : obs_data["night"]
+#                     }
+#
+#             return HttpResponseRedirect("/Observations/", context)
+#
+#     # if a GET (or any other method) we'll create a blank form
+#     else:
+#         form = ObservationForm()
+#
+#     def get_context_data(**kwargs):
+#
+#         data_file = "./data/planned_observations_data.csv"
+#
+#         if os.path.exists(data_file):
+#
+#             obs_data = pd.read_csv(data_file)
+#
+#             context = {
+#                     "RA"    : obs_data["ra"],
+#                     "Dec"   : obs_data["dec"],
+#                     "Notes" : obs_data["notes"],
+#                     "Night" : obs_data["night"]
+#                     }
+#
+#             return render(request, "Observations.html", context)
+#
+#
+#     return render(request, "observations.html", {"form": form})
 
 #
 # class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):

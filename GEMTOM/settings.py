@@ -38,6 +38,7 @@ CSRF_TRUSTED_ORIGINS = ['https://gemtom.blackgem.org']
 TOM_NAME = 'GEMTOM'
 
 INSTALLED_APPS = [
+    'GEMTOM.apps.GEMTOMConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

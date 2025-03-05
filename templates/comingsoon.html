@@ -36,6 +36,14 @@ A list of the main features that have been requested and I intend to work on.
         </ul>
     <br>
 
+        <h5>Observation Tracker</h5>
+        <ul>
+            <li>Include cutouts of each field</li>
+            <li>Include a way to edit targets</li>
+            <li>Automatically remove targets once in the past (but maybe keep in database?)</li>
+        </ul>
+    <br>
+
 
         <h5>Orphaned Transients</h5>
         <ul>
@@ -56,8 +64,10 @@ A list of the main features that have been requested and I intend to work on.
 
         <h5>Miscellaneous Features and Bugfixes:</h5>
         <ul>
-            <li>Create a way to search an RA and Dec, and find the last time / all the times those coordinates have been observed.</li>
+            <li>Meta: Connect GEMTOM to the Full Source Database (when it has the full source data)</li>
+            <li>Transients: Submit multiple TNS/Gaia/RA Decs to be searched</li>
             <li>Transients: Interpret HMS as well as Deg.</li>
+            <li>Transients: Currently, SIMBAD/Vizier searches use the transient's native RA/Dec. Change this so it uses the mean/median RA/Dec.</li>
             <li>Transients: Lookup and add a link to a transient's Portal entry</li>
             <li>Transients: Make a cutout from the Aladin skyview and overlay the detection locations onto it.</li>
             <li>Transients: Fix the error where the circle in the Aladin skyview desyncs if you zoom.</li>
@@ -88,7 +98,8 @@ A list of the main features that have been requested and I intend to work on.
             <li>When a source is uploaded, look for a DES source in a certain radius.</li>
             <li>Find a way to have certain parts of pages load after the page itself,
                 e.g. TNS queries, lightcurves, etc., to speed up loading; similar to the Transients page.</li>
-            <li>Lightcurves: Click on datum to go to detection of that datum</li>
+                <li>Lightcurves: Click on datum to go to detection of that datum</li>
+            <li>Set up some kind of spreadsheet/observing list capability, so that on a given night, we can see what we should observe.</li>
             <!-- <li></li>
             <li></li>
             <li></li> -->
@@ -107,6 +118,31 @@ A list of the main features that have been requested and I intend to work on.
 <hr>
 <br>
 <h3>Version Changelogs</h3>
+<br>
+<div style="color:lightgrey">---------------------------------------</div>
+<h4>GEMTOM v0.2 Changelog</h4>
+<br>
+<ul>
+    <h5>New Features</h5>
+    <ul>
+        <li><h6>Observation Tracker!</h6></li>
+        <ul>
+            <li>You can now access the Observations tab, which tracks all targets submitted for an observation!</li>
+            <li>These can be added from the Observations page itself, or from a Target's page under the 'Overview' tab.</li>
+            <li>Each observation auto-generates an altitude plot for the night selected. While this feature is in beta, this is just for the NOT (La Palma).</li>
+            <li>You can delete targets with the red '✗' button.</li>
+        </ul>
+    </ul>
+    <br>
+    <ul>
+
+    <h5>Bugfixes</h5>
+    <ul>
+        <li>Targets/Transients: Solved ALADIN searches failing if the target had a positive declination</li>
+        <li>Observation Tracker: Solved the page resetting to 'all' observations (from just those of a set date) each time a target is marked as observed/unobserved</li>
+    </ul>
+    </ul>
+</ul>
 <br>
 <div style="color:lightgrey">---------------------------------------</div>
 <h4>GEMTOM v0.1.3 Changelog</h4>
@@ -129,8 +165,9 @@ A list of the main features that have been requested and I intend to work on.
             <li>The Transients page now lets you search by TNS. The nearest target within 100 arcseconds is returned.<br>
                 If present, you're redirected automatically to the nearest target within 2 arcseconds.</li>
             <li>You can also search by IAU Name (BGEM JXXX-XXX). This is a fuzzy search, which will return all objects roughly matching your query. If multiple targets match, a list will be returned.</li>
-            <li>Finally, you can also search by Gaia DR3 Designation. If multiple targets match, a list will be returned, with their distances.</li>
+            <li>You can also search by Gaia DR3 Designation. If multiple targets match, a list will be returned, with their distances.</li>
             <li>Additionally, the Coordinate search has been edited to work like these alternative search methods, which avoids some bugs in the old method.</li>
+            <li>Finally, you can now search for an RA and Dec, and find the last time those coordinates have been observed.</li>
         </ul>
         <br>
         <li><h6>Miscellaneous features</h6></li>

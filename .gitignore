@@ -15,6 +15,8 @@ db.sqlite3
 /data/*.jpg
 /data/*.png
 /data/.DS_Store
+/data/planned_observations_data.csv
+/data/AltitudeGraphs/*
 
 ## ====== Default Ignores below this point ======
 

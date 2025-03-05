@@ -79,6 +79,13 @@ urlpatterns = [
     path('download_lightcurve/', download_lightcurve, name='download_lightcurve'),
     path('download_possible_CVs/', download_possible_CVs, name='download_possible_CVs'),
 
+    # path('Observations/', ObservationNightView.as_view(), name='Observations'),
+    # path('submit_observation/', submit_observation, name='submit_observation'),
+    # path('Observations/', observation_view.as_view(), name='Observations'),
+    path('set_observed/', set_observed, name='set_observed'),
+    path('delete_observation/', delete_observation, name='delete_observation'),
+    path('Observations/', submit_observation, name='Observations'),
+
     # path('ToOs/', too_view, name='ToOs'),
     # path('upload/', UploadView.as_view(), name='upload'),
 ]

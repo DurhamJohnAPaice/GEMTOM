@@ -3,6 +3,7 @@ from django import forms
 from django.core.validators import RegexValidator
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from .models import Observation
 
 # class DocumentForm(forms.ModelForm):
 #     class Meta:
@@ -29,3 +30,12 @@ class RegistrationForm(UserCreationForm):
     class Meta:
         model = User
         fields = ['username', 'email', 'first_name', 'last_name', 'password1', 'password2']
+
+
+class ObservationForm(forms.ModelForm):
+    class Meta:
+        model = Observation
+        fields = ['RA', 'dec', 'notes', 'night']
+        widgets = {
+            'night': forms.DateInput(attrs={'type': 'date'}),
+        }
