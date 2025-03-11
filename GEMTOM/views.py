@@ -656,12 +656,15 @@ class ToOView(TemplateView):
             location    = form.cleaned_data['location']
             submitter   = request.POST.get('submitter')
 
-            telescope_lon = coords.EarthLocation.of_site(location).geodetic.lon
-            telescope_lat = coords.EarthLocation.of_site(location).geodetic.lat
+            try:
+                telescope_lon = coords.EarthLocation.of_site(location).geodetic.lon
+                telescope_lat = coords.EarthLocation.of_site(location).geodetic.lat
 
-            print("Telescope:", telescope)
-            print("Location:", location)
-            print("Lon:", telescope_lon, " Lat:", telescope_lat)
+                print("Telescope:", telescope)
+                print("Location:", location)
+                print("Lon:", telescope_lon, " Lat:", telescope_lat)
+            except:
+                print("Telescope location not recognised.")
 
 
             band = "/".join(band)

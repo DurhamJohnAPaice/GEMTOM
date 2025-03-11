@@ -40,7 +40,8 @@ band_choices = [
 ]
 
 ## Deal with Locations
-list_of_locations = zip(coords.EarthLocation.get_site_names()[:-63], coords.EarthLocation.get_site_names()[:-63])
+list_of_locations = zip(["Other"]+coords.EarthLocation.get_site_names()[:-63], ["Other"]+coords.EarthLocation.get_site_names()[:-63])
+# list_of_locations = {**{("(Other)", "(Other)")}, **list_of_locations}
 
 class ToOForm(forms.Form):
     PI          = forms.CharField(max_length=100, label='PI',         widget=forms.TextInput(attrs={'placeholder': 'Name',           'style': 'width: 300px;', 'class': 'form-control'}))
