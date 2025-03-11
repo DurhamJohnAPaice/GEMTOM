@@ -74,7 +74,7 @@ urlpatterns = [
 
     path('comingsoon/', ComingSoonView.as_view(), name='comingsoon'),
 
-    path('ToOs/', ToOView.as_view(), name='ToOs'),
+    path('telescope_time/', ToOView.as_view(), name='telescope_time'),
     path('delete_telescopetime/', delete_telescopetime, name='delete_telescopetime'),
 
     path('download_lightcurve/', download_lightcurve, name='download_lightcurve'),

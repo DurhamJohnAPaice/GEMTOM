@@ -522,7 +522,7 @@ def delete_telescopetime(request):
 
     ToO_data.to_csv(ToO_filename, index=False)
 
-    return HttpResponseRedirect('/ToOs/')  # Redirect to a success page (to be created)
+    return HttpResponseRedirect('/telescope_time/')  # Redirect to a success page (to be created)
 
 def get_ToO_data():
     ToO_filename = "./data/too_data.csv"
@@ -699,7 +699,7 @@ class ToOView(TemplateView):
                 new_ToO_data.to_csv(fileOut, index=False)
 
             # Redirect after POST to avoid resubmitting form on page refresh
-            return HttpResponseRedirect('/ToOs/')  # Redirect to a success page (to be created)
+            return HttpResponseRedirect('/telescope_time/')  # Redirect to a success page (to be created)
         else:
             # Re-render the form with errors if invalid
             # print(form)

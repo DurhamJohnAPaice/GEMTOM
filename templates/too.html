@@ -106,7 +106,7 @@ You can find the form for registering your own programs at the bottom!
                     $("#error-message").hide();
 
                     $.ajax({
-                        url: "{% url 'ToOs' %}",  // Replace with your actual view name
+                        url: "{% url 'telescope_time' %}",  // Replace with your actual view name
                         type: "POST",
                         data: $(this).serialize(),
                         success: function(response){
