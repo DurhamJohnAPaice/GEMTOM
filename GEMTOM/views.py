@@ -6357,7 +6357,7 @@ def plot_altitude_graph(name, target_ra, target_dec, night, location):
     plt.xlabel('Hours from UTC Midnight')
     plt.ylabel('Altitude [deg]')
 
-    savename = output_dir + "/AltitudePlot_%.6f"%float(target_ra) + "_%.6f"%float(target_dec) + "_" + night + "_" + str(location_name) + ".png"
+    savename = output_dir + "/AltitudePlot_%.5f"%float(target_ra) + "_%.5f"%float(target_dec) + "_" + night + "_" + str(location_name) + ".png"
     plt.savefig(savename, bbox_inches='tight')
 
     print("Plotted.")
@@ -6480,7 +6480,7 @@ def df_to_lists(obs_data):
     telescope_list = []
     for ra, dec, night, telescope, location in zip(obs_data.ra, obs_data.dec, obs_data.night, obs_data.telescope, obs_data.location):
         # altitude_path = "./data/AltitudeGraphs/AltitudePlot_" + str(ra) + "_" + str(dec) + "_" + str(night) + "_" + str(location) + ".png"
-        altitude_path = "./data/AltitudeGraphs/AltitudePlot_%.6f"%float(ra) + "_%.6f"%float(dec) + "_" + str(night) + "_" + str(location) + ".png"
+        altitude_path = "./data/AltitudeGraphs/AltitudePlot_%.5f"%float(ra) + "_%.5f"%float(dec) + "_" + str(night) + "_" + str(location) + ".png"
         print(altitude_path)
         if os.path.exists(altitude_path):
             altitude_plot_list.append(altitude_path)
