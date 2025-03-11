@@ -11,7 +11,7 @@ we've inputted into the system, because a tutorial told me to.
 <strong>Testing ground:</strong>
 </p> -->
 
-
+{{ ToOs }}
 
 <h5>Submit new target:</h5>
 
@@ -44,6 +44,13 @@ we've inputted into the system, because a tutorial told me to.
                   <option value="Low">Low</option>
                   <option value="Med">Med</option>
                   <option value="High">High</option>
+                </select> &nbsp
+                <label for="observation">Observation Block:</label>
+                <select id="observation" name="observation">
+                  <option value="0">(None)</option>
+                  {% for num, telescopes, date_start, date_close, PI in Observations %}
+                  <option value="{{num}}">{{date_start}} - {{date_close}} -- {{telescopes}} (PI: {{PI}})</option>
+                  {% endfor %}
                 </select>
                 <input type="text" name="notes" style="margin:3px" placeholder="Goals, requirements, and other info" size="82" required> &nbsp
             </div>
@@ -121,6 +128,7 @@ we've inputted into the system, because a tutorial told me to.
                 <th>RA<br>Dec</th>
                 <th>Notes</th>
                 <th style="width:110px">Night</th>
+                <th>Telescope</th>
                 <th>Priority</th>
                 <th>Submitter</th>
                 <th></th>
@@ -129,7 +137,7 @@ we've inputted into the system, because a tutorial told me to.
             </tr>
         </thead>
         <tbody>
-            {% for id, Name, Num, RA, Dec, Notes, Night, Priority, Submitter, Observed, GEMTOM_ID, AltitudeGraph in df%}
+            {% for id, Name, Num, RA, Dec, Notes, Night, Priority, Telescope, Location, Submitter, Observed, GEMTOM_ID, AltitudeGraph in df%}
                 {% if Observed %}
                     <tr style="color: #D5D5D5;">
                 {% else %}
@@ -143,12 +151,18 @@ we've inputted into the system, because a tutorial told me to.
                         <td style="vertical-align: middle;">{{ RA }}<br>{{ Dec }}</td>
                         <td style="vertical-align: middle; text-align:left;">{{ Notes }}</td>
                         <td style="vertical-align: middle;">{{ Night }}</td>
+                        <td style="vertical-align: middle;">{{ Telescope }}</td>
                         <td style="padding-left:0px; padding-right:0px; vertical-align: middle;">{{ Priority }}</td>
                         <td style="vertical-align: middle;">{{ Submitter }}</td>
                         <!-- <td><a href="/{{ AltitudeGraph }}">Altitude</a></td> -->
                         <td class="description"  style="padding: 5px; padding-right: 4px; vertical-align: middle;">
 
-                            <a href="/{{ AltitudeGraph }}"   style="margin:2px; width:95px" title="See Altitude Plot (from NOT)" class="btn  btn-outline-primary">Altitude</a>
+                            {% if AltitudeGraph %}
+                                <a href="/{{ AltitudeGraph }}"   style="margin:2px; width:95px" title="See Altitude Plot (from NOT)" class="btn  btn-outline-primary">Altitude</a>
+                            {% else %}
+                                <!-- <a style="margin:2px; width:95px" title="No Altitude Plot" class="btn  btn-outline-light" disabled>Altitude</a> -->
+                                <a class="btn btn-outline-secondary" href=https://astro.ing.iac.es/staralt/ target="_blank">STARALT</a>
+                            {% endif %}
 
                             {% if GEMTOM_ID %}
                                 <a href="/targets/{{ GEMTOM_ID }}"   style="margin:2px; width:95px" title="Go to Target page"  class="btn  btn-outline-primary">Target</a>

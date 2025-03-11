@@ -9,6 +9,7 @@ import numpy as np
 from django import forms
 import pandas as pd
 from GEMTOM import views
+import os
 # from ...GEMTOM.views import plot_BGEM_lightcurve
 # from ...forms import *
 # from django import forms
@@ -344,6 +345,50 @@ def observe_staralt(target):
         'target_name' : target_name,
         'staralt_ra'  : round(target.ra, 3),
         'staralt_dec' : round(target.dec, 3)
+        }
+    # return target
+
+@register.inclusion_tag('tom_dataproducts/partials/add_to_observations.html')
+def add_to_observations(target, user):
+    """
+    Gets all the observations in the Telescope csv
+    """
+    # # target_name = target.name
+    # if target_name[:4] == 'BGEM': target_name = target.name[5:12]
+    # else:
+    #     target_name = target_name.replace(" ","")
+    #     target_name = target_name[:9]
+    # print(target_name)
+    # print("/n/n/n/nADD TO OBSERVATIONS/n/n/n/n")
+
+    user_first_name = user.first_name
+    user_last_name  = user.last_name
+    target_name     = target.name
+    target_id       = target.id
+    target_ra       = target.ra
+    target_dec      = target.dec
+
+    too_file = "./data/too_data.csv"
+    if os.path.exists(too_file):
+
+        ToO_data = pd.read_csv(too_file)
+        num         = list(ToO_data.num)
+        telescopes  = list(ToO_data.Telescope)
+        # locations   = list(ToO_data.Location)
+        date_start  = list(ToO_data.date_start)
+        date_close  = list(ToO_data.date_close)
+        PI          = list(ToO_data.Name)
+
+        observations = zip(num, telescopes, date_start, date_close, PI)
+
+    return {
+        'user_first_name'   : user_first_name,
+        'user_last_name'    : user_last_name,
+        'target_name'       : target_name,
+        'target_id'         : target_id,
+        'target_ra'         : target_ra,
+        'target_dec'        : target_dec,
+        'observations'      : observations,
         }
     # return target
 

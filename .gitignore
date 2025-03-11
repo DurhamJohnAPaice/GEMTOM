@@ -17,6 +17,8 @@ db.sqlite3
 /data/.DS_Store
 /data/planned_observations_data.csv
 /data/AltitudeGraphs/*
+/data/too_data.csv
+/data/too_data_old.csv
 
 ## ====== Default Ignores below this point ======
 

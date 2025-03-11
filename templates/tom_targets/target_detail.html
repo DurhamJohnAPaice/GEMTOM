@@ -96,29 +96,7 @@
         <hr/>
         {% other_pages target %}
         <hr>
-        <div style="text-align:center;">
-
-            <h5>Schedule for NOT Observation:</h5>
-
-
-            <form method="get" action="{% url 'Observations' %}">
-                <!-- <label for="user_input" style="color:grey"><em>(Try 25030590) &nbsp</em></label> -->
-                <input type="hidden" name="submitter" value="{{ user.first_name }} {{ user.last_name }}">
-                <input type="hidden" name="name" value="{{ target.name }}">
-                <input type="hidden" name="gemtom_id" value="{{ target.id }}">
-                <input type="hidden" name="ra" value="{{ target.ra }}">
-                <input type="hidden" name="dec" value="{{ target.dec }}">
-                <input type="text" name="notes" placeholder="Goals, requirements, etc." required> &nbsp
-                <input type="date" name="night" required> &nbsp
-                <label for="priority">Priority:</label>
-                <select id="priority" name="priority">
-                  <option value="Low">Low</option>
-                  <option value="Med">Med</option>
-                  <option value="High">High</option>
-                </select> &nbsp
-                <button type="submit" class="btn btn-primary">Submit</button>
-            </form>
-        </div>
+        {% add_to_observations target user %}
         <!-- <hr/> -->
         <!-- <h4>Observe</h4>
         {% observing_buttons object %}

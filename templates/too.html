@@ -15,9 +15,10 @@
     }
 </style>
 
-<h2>List of ToOs</h2>
+<h2>List of Telescope Time</h2>
 
-Here there will be a list of ToOs that people have that they can dedicate to the project!
+Below is a list of all the programs that we have on telescopes, or programs we are connected to and can use.<br>
+You can find the form for registering your own programs at the bottom!
 
 <br>
 <br>
@@ -27,25 +28,105 @@ Here there will be a list of ToOs that people have that they can dedicate to the
 
 <br>
 
-<h4>ToOs available for BlackGEM transients</h4>
-{% load plotly_dash %}
-<div class="dash-container">
-    {% plotly_app name="ToO_Database" ratio=0.3 %}
+<h4></h4>
+
+
+<div class="table_container" style="text-align:center; vertical-align: middle; font-size: 15px;">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>PI</th>
+                <!-- <th>RA<br>Dec</th> -->
+                <th style="width:115px">Date Start</th>
+                <th style="width:115px">Date End</th>
+                <th>Notes</th>
+                <th>Telescope</th>
+                <th>Band(s)</th>
+                <th>Submitter</th>
+                <th></th>
+                <!-- <th>Priority</th> -->
+                <!-- <th>Submitter</th> -->
+            </tr>
+        </thead>
+        <tbody>
+            {% for Num, Name, date_start, date_close, Telescope, Location, Band, Notes, Submitter, in_past in ToO_data%}
+                {% if in_past %}
+                    <tr style="color: #D5D5D5;">
+                {% else %}
+                    <tr style="color: black;">
+                {% endif %}
+                        <td style="vertical-align: middle;">{{ Name }}</td>
+                        <td style="vertical-align: middle;">{{ date_start }}</td>
+                        <td style="vertical-align: middle;">{{ date_close }}</td>
+                        <td style="vertical-align: middle; text-align:left;">{{ Notes }}</td>
+                        <!-- <td style="padding-left:0px; padding-right:0px; vertical-align: middle;">{{ Priority }}</td> -->
+                        <td style="vertical-align: middle;">{{ Telescope }}</td>
+                        <td style="vertical-align: middle;">{{ Band }}</td>
+                        <td style="vertical-align: middle;">{{ Submitter }}</td>
+                        <!-- <td><a href="/{{ AltitudeGraph }}">Altitude</a></td> -->
+                        <td class="description"  style="padding: 5px; padding-left: 0px; vertical-align: middle;">
+                            <form method="post" action="{% url 'delete_telescopetime' %}" class="image-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="Num" value="{{ Num }}">
+                                <button type="submit" style="margin-top:0px" class="btn btn-outline-danger" title="Delete Entry" onclick="return confirm('Deleting entry ({{ Telescope }}, PI: {{ Name }}); are you sure?')">✗</button>
+                            </form>
+                        </td>
+                    </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
+</html>
+
+<br>
+<br>
 <div>
-    <h4>Register new ToO Time</h4>
+    <h4>Input new Telescope Time</h4>
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
+        <input type="hidden" name="submitter" value="{{ user.first_name }} {{ user.last_name }}">
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>
+
+    <p id="error-message" style="color: red; display: none;"></p>
+
+    <script>
+        $(document).ready(function(){
+            $("#myForm").submit(function(event){
+                event.preventDefault(); // Prevents page reload
+
+                let startDate = new Date($("#id_date_start").val());
+                let endDate = new Date($("#id_date_close").val());
+
+                if (endDate < startDate) {
+                    $("#error-message").text("End date cannot be before the start date.").show();
+                } else {
+                    $("#error-message").hide();
+
+                    $.ajax({
+                        url: "{% url 'ToOs' %}",  // Replace with your actual view name
+                        type: "POST",
+                        data: $(this).serialize(),
+                        success: function(response){
+                            alert("Form submitted successfully!");
+                            $("#myForm")[0].reset();
+                        },
+                        error: function(){
+                            alert("Error submitting form.");
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 </div>
 
 <br>
 
-All information is stored in a .csv file. <b>Please make sure your email is formatted correctly, or the data won't save!</b><br>
-If you need to edit or remove data, please contact me (john@blackgem.org)
+<!-- All information is stored in a .csv file. <b>Please make sure your email is formatted correctly, or the data won't save!</b><br>
+If you need to edit or remove data, please contact me (john@blackgem.org) -->
 <!-- <ul>
   {% for target in targets %}
   <li>{{ target.name }}</li>

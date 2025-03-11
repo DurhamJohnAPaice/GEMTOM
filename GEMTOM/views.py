@@ -503,6 +503,26 @@ def authentication(request):
 ## =============================================================================
 ## -------------------------- Codes for the ToO page ---------------------------
 
+@login_required
+def delete_telescopetime(request):
+
+    '''
+    Deletes telescope time entry
+    '''
+
+    num = request.POST.get('Num')
+    if len(num) > 0: num = np.int64(num)
+
+    ToO_filename = "./data/too_data.csv"
+    ToO_data = pd.read_csv(ToO_filename)
+
+    index = ToO_data.index[ToO_data['num'] == num]
+
+    ToO_data = ToO_data.drop(index)
+
+    ToO_data.to_csv(ToO_filename, index=False)
+
+    return HttpResponseRedirect('/ToOs/')  # Redirect to a success page (to be created)
 
 def get_ToO_data():
     ToO_filename = "./data/too_data.csv"
@@ -512,12 +532,44 @@ def get_ToO_data():
 def plot_ToO_timeline():
 
     ToO_data = get_ToO_data()
-    print(ToO_data)
-    # ToO_data = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/finance-charts-apple.csv')
-    # ToO_data = ToO_data.rename(columns={
-    #     'Date'          : "date_start",
-    #     'AAPL.Open'          : "Telescope",
-    # })
+
+    ## Split up all multi-band observations
+    first = True
+    for i in range(len(ToO_data)):
+        band = ToO_data.Band[i]
+        if "/" in band:
+            band = band.split("/")
+            sub_df = [[ToO_data.loc[i,j]]*len(band) for j in ToO_data.columns]
+            # sub_df = zip(sub_df)
+            sub_df = pd.DataFrame.from_records(sub_df)
+            sub_df = sub_df.transpose()
+            sub_df.columns = ToO_data.columns
+            for k in range(len(band)):
+                sub_df.loc[k,"Band"] = band[k]
+
+            ToO_data = ToO_data.drop(i)
+            if first:
+                sub_df_array = sub_df
+                first = False
+            else:
+                sub_df_array = pd.concat([sub_df_array,sub_df]).reset_index(drop=True)
+
+    if not first:
+        ToO_data = pd.concat([ToO_data,sub_df_array]).reset_index(drop=True)
+
+    custom_dict = {
+        "Radio"         : 0,
+        "Millimetre"    : 1,
+        "Microwave"     : 2,
+        "Infrared"      : 3,
+        "Optical"       : 4,
+        "Ultraviolet"   : 5,
+        "X-Ray"         : 6,
+        "Gamma"         : 7,
+        "Other"         : 8,
+    }
+
+    ToO_data = ToO_data.sort_values(by="Band", key=lambda x: x.map(custom_dict))
 
     print("\nMaking ToO Timeline...")
 
@@ -528,26 +580,22 @@ def plot_ToO_timeline():
     fig = go.Figure()
 
     for i in range(len(ToO_data)):
-        ToO_data.loc[i, "date_start"]    = datetime.strptime(str(ToO_data["date_start"].iloc[i]), '%Y-%m-%d')
-        # ToO_data.loc[i, "date_close"]    = datetime.strptime(str(ToO_data["date_close"].iloc[i]),   '%Y-%m-%d')
+        ToO_data.loc[i, "date_start"]    = datetime.strptime(ToO_data.loc[i, "date_start"], '%Y-%m-%d')
+        ToO_data.loc[i, "date_close"]    = datetime.strptime(ToO_data.loc[i, "date_close"], '%Y-%m-%d')+timedelta(days=1)
 
-    # print(ToO_data["date_start"].iloc[0])
-    # print(time_now)
+    ToO_data["Notes"] = [" " if i != i else i for i in ToO_data["Notes"]]
 
     fig = px.timeline(
         ToO_data,
         x_start='date_start',
         x_end='date_close',
-        y = 'Telescope',
-        hover_data = ['Name', 'Email', 'Notes'],
-        color='Band',
+        # y = 'Telescope',
+        y = 'Band',
+        hover_data = ['Name', 'Notes'],
+        color='Telescope',
         # color=['red', 'green', 'blue'],
         opacity=0.5,
     )
-    # fig = fig.add_trace(
-    #     px_timeline.data[0]
-    # )
-    # fig.layout = px_timeline.layout
 
     fig.add_vline(x=time_now, line_width=1, line_dash="dash", line_color="grey",)
     fig.add_annotation(x=time_now,text="Now", textangle=90, xshift=-7, showarrow=False, font=dict(color="grey"))
@@ -572,68 +620,83 @@ class ToOView(TemplateView):
     def get_context_data(self, **kwargs):
 
         if not os.path.isfile("./data/too_data.csv"):
-            ToO_data = pd.DataFrame(columns = ['Name', 'Email', 'date_start', 'date_close', 'Telescope', 'Band', 'Notes'])
+            ToO_data = pd.DataFrame(columns = ['num','Name','date_start','date_close','Telescope','Location','Band','Notes','Submitter'])
             ToO_data.to_csv("./data/too_data.csv", index=False)
 
         too_lightcurve = plot(plot_ToO_timeline(), output_type='div')
 
+        ToO_data = get_ToO_data()
+        ToO_data = ToO_data.sort_values(by=["date_start"])
+
         context = super().get_context_data(**kwargs)
         context['form'] = ToOForm()  # Add the form to the context
         context['lightcurve'] = too_lightcurve
-        # context['csv_data'] = json.dumps(self.get_csv_data())  # Pass the CSV data as JSON
-        # context['csv_data'] = get_csv_data().to_json()  # Pass the CSV data as JSON
-        self.load_ToO_data()
+        ToO_data["Notes"]       = [" " if i != i else i for i in ToO_data["Notes"]]
+        ToO_data["Submitter"]   = [" " if i != i else i for i in ToO_data["Submitter"]]
+
+        in_past = [(datetime.strptime(i, '%Y-%m-%d') < (datetime.now()-timedelta(1))) for i in ToO_data["date_close"]]
+        # in_past = [True if i.seconds < 0 else False for i in in_past]
+        # print(in_past)
+        ToO_data["in_past"] = in_past
+
+        context["ToO_data"] = zip(*[ToO_data[col] for col in ToO_data])
+
         return context
 
     def post(self, request, *args, **kwargs):
         form = ToOForm(request.POST)
         if form.is_valid():
             # Get the data from the form
-            name =          form.cleaned_data['name']
-            email =         form.cleaned_data['email']
-            date_start =    form.cleaned_data['date_start']
-            date_close =    form.cleaned_data['date_close']
-            telescope =     form.cleaned_data['telescope']
-            band =          form.cleaned_data['band']
-            notes =         form.cleaned_data['notes']
+            name        = form.cleaned_data['PI']
+            date_start  = form.cleaned_data['date_start']
+            date_close  = form.cleaned_data['date_close']
+            telescope   = form.cleaned_data['telescope']
+            band        = form.cleaned_data['band']
+            notes       = form.cleaned_data['notes']
+            location    = form.cleaned_data['location']
+            submitter   = request.POST.get('submitter')
 
-            ## Standardise the band data:
-            band = band.title()
-            if band == "Opt": band = "Optical"
-            elif band == "X": band = "X-Ray"
-            elif band == "Infrared": band = "IR"
-            elif band == "Ultraviolet": band = "UV"
-            elif band == "Milli": band = "Millimetre"
-            elif band == "Micro": band = "Microwave"
-            elif band == "Rad": band = "Radio"
+            telescope_lon = coords.EarthLocation.of_site(location).geodetic.lon
+            telescope_lat = coords.EarthLocation.of_site(location).geodetic.lat
 
-            print(name)
-            print(email)
-            print(date_start)
-            print(date_close)
-            print(telescope)
-            print(band)
-            print(notes)
+            print("Telescope:", telescope)
+            print("Location:", location)
+            print("Lon:", telescope_lon, " Lat:", telescope_lat)
+
+
+            band = "/".join(band)
 
             fileOut = "./data/too_data.csv"
 
-            new_output = pd.DataFrame({
-                'Name' : [name],
-                'Email' : [email],
-                'date_start' : [date_start],
-                'date_close' : [date_close],
-                'Telescope' : [telescope],
-                'Band' : [band],
-                'Notes' : [notes],
+            if os.path.exists(fileOut):
+                old_ToO_data = pd.read_csv(fileOut)
+                if len(old_ToO_data) > 0:
+                    new_num = max(old_ToO_data.num)+1
+                else:
+                    new_num = 1
+            else:
+                new_num = 1
+
+            new_ToO_data = pd.DataFrame({
+                'num'           : [new_num],
+                'Name'          : [name],
+                'date_start'    : [date_start],
+                'date_close'    : [date_close],
+                'Telescope'     : [telescope],
+                'Location'      : [location],
+                'Band'          : [band],
+                'Notes'         : [notes],
+                'Submitter'     : [submitter],
             })
 
-            if os.path.exists(fileOut):
-                output = pd.read_csv(fileOut)
-                full_output = pd.concat([output,new_output]).reset_index(drop=True)
-                full_output.to_csv(fileOut, index=False)
 
+
+
+            if os.path.exists(fileOut):
+                all_ToO_data = pd.concat([old_ToO_data,new_ToO_data]).reset_index(drop=True)
+                all_ToO_data.to_csv(fileOut, index=False)
             else:
-                output.to_csv(fileOut, index=False)
+                new_ToO_data.to_csv(fileOut, index=False)
 
             # Redirect after POST to avoid resubmitting form on page refresh
             return HttpResponseRedirect('/ToOs/')  # Redirect to a success page (to be created)
@@ -642,46 +705,49 @@ class ToOView(TemplateView):
             # print(form)
             print("Form not valid!")
             # raise ValidationError("Form not valid!")
-            return self.render_to_response(self.get_context_data(form=form))
+            print(str(form.errors.as_json())[26:-16])
+            return JsonResponse({"error": str(form.errors.as_json())[26:-16]}, status=400)
 
-    def load_ToO_data(self):
+            # return self.render_to_response(self.get_context_data(form=form))
 
-        ToO_data = get_ToO_data()
+    # def load_ToO_data(self):
 
-        app = DjangoDash('ToO_Database')
 
-        ToO_data = ToO_data.rename(columns={
-            'date_start'          : "Date (Start)",
-            'date_close'          : "Date (End)",
-        })
 
-        # for i in range(len(ToO_data)):
-        #     ToO_data.loc[i, "Date (Start)"]    = datetime.strptime(str(ToO_data["Date (Start)"].iloc[i]), '%Y%m%d')
-        #     ToO_data.loc[i, "Date (End)"]      = datetime.strptime(str(ToO_data["Date (End)"].iloc[i]),   '%Y%m%d')
-
-        app.layout = html.Div([
-            dag.AgGrid(
-                id='ToO_Database',
-                rowData=ToO_data.to_dict('records'),
-                columnDefs=[{'headerName': col, 'field': col} for col in ToO_data.columns],
-                defaultColDef={
-                    'sortable': True,
-                    'filter': True,
-                    'resizable': True,
-                    'editable': True,
-                },
-                columnSize="autoSize",
-                dashGridOptions={
-                    "skipHeaderOnAutoSize": True,
-                    "rowSelection": "single",
-                },
-                style={'height': '300px', 'width': '100%'},  # Set explicit height for the grid
-                className='ag-theme-balham'  # Add a theme for better appearance
-            ),
-            dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
-            html.Div(id='output-div'),  # Div to display the information
-        ], style={'height': '300px', 'width': '100%'}
-        )
+        # app = DjangoDash('ToO_Database')
+        #
+        # ToO_data = ToO_data.rename(columns={
+        #     'date_start'          : "Date (Start)",
+        #     'date_close'          : "Date (End)",
+        # })
+        #
+        # # for i in range(len(ToO_data)):
+        # #     ToO_data.loc[i, "Date (Start)"]    = datetime.strptime(str(ToO_data["Date (Start)"].iloc[i]), '%Y%m%d')
+        # #     ToO_data.loc[i, "Date (End)"]      = datetime.strptime(str(ToO_data["Date (End)"].iloc[i]),   '%Y%m%d')
+        #
+        # app.layout = html.Div([
+        #     dag.AgGrid(
+        #         id='ToO_Database',
+        #         rowData=ToO_data.to_dict('records'),
+        #         columnDefs=[{'headerName': col, 'field': col} for col in ToO_data.columns],
+        #         defaultColDef={
+        #             'sortable': True,
+        #             'filter': True,
+        #             'resizable': True,
+        #             'editable': True,
+        #         },
+        #         columnSize="autoSize",
+        #         dashGridOptions={
+        #             "skipHeaderOnAutoSize": True,
+        #             "rowSelection": "single",
+        #         },
+        #         style={'height': '300px', 'width': '100%'},  # Set explicit height for the grid
+        #         className='ag-theme-balham'  # Add a theme for better appearance
+        #     ),
+        #     dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
+        #     html.Div(id='output-div'),  # Div to display the information
+        # ], style={'height': '300px', 'width': '100%'}
+        # )
 
 ## =============================================================================
 ## ------------------------ Codes for the Target pages -------------------------
@@ -6150,7 +6216,7 @@ observatory_list = [
 
 
 
-def plot_altitude_graph(name, target_ra, target_dec, night):
+def plot_altitude_graph(name, target_ra, target_dec, night, location):
 
     output_dir = "./data/AltitudeGraphs/"
     if not os.path.exists(output_dir):
@@ -6161,12 +6227,14 @@ def plot_altitude_graph(name, target_ra, target_dec, night):
 
     now_time    = Time(datetime.utcnow(), scale='utc')                                        ## Find current time
 
-    location_name = 'roque de los muchachos'
+    location_name = location
     location    = EarthLocation.of_site(location_name)                                            ## Set Location
 
     sunset        = Observer.at_site(location_name).sun_set_time(today_time, which="previous")    ## Find Sunset
-    sunrise        = Observer.at_site(location_name).sun_rise_time(today_time, which="next")        ## Find Sunrise
-
+    # sunrise        = Observer.at_site(location_name).sun_rise_time(today_time, which="next")        ## Find Sunrise
+    sunrise        = Observer.at_site(location_name).sun_rise_time(sunset, which="next")        ## Find Sunrise
+    print(sunset)
+    print(sunrise)
 
     ## Define the location
     # location = EarthLocation(lat=-29.25738889*u.deg, lon=-70.73791667*u.deg, height=2200*u.m)
@@ -6178,9 +6246,9 @@ def plot_altitude_graph(name, target_ra, target_dec, night):
     astronomical_twilight_evening   = observer.twilight_evening_astronomical(   today_time+0.1, which='previous')
 
     # Morning twilight times
-    civil_twilight_morning = observer.twilight_morning_civil(today_time, which='next')
-    nautical_twilight_morning = observer.twilight_morning_nautical(today_time, which='next')
-    astronomical_twilight_morning = observer.twilight_morning_astronomical(today_time, which='next')
+    civil_twilight_morning = observer.twilight_morning_civil(sunset, which='next')
+    nautical_twilight_morning = observer.twilight_morning_nautical(sunset, which='next')
+    astronomical_twilight_morning = observer.twilight_morning_astronomical(sunset, which='next')
 
 
 
@@ -6190,15 +6258,6 @@ def plot_altitude_graph(name, target_ra, target_dec, night):
     print("")
 
     ## -- Find each hour section --
-    ## Shorten the dates for easy dividing...
-    sunset_short    = sunset.jd  - 2459000
-    sunrise_short   = sunrise.jd - 2459000
-
-    ## Find the nearest top of the hour to sunset and sunrise
-    sunset_nearest_hour     = (1/24) * round(sunset_short/(1/24))  + 2459000 + (1/24)   ## We often lose the first hour, so don't schedule it
-    sunrise_nearest_hour    = (1/24) * round(sunrise_short/(1/24)) + 2459000
-
-
     print("Plotting altitude graph...")
 
     # utcoffset        = -5*u.hour
@@ -6206,8 +6265,8 @@ def plot_altitude_graph(name, target_ra, target_dec, night):
     now_time_rel    = (now_time.mjd - today_time.mjd)*24
     sunset_rel      = (sunset.mjd - today_time.mjd)*24
     sunrise_rel     = (sunrise.mjd - today_time.mjd)*24
-    delta_midnight    = np.linspace(-12, 12, 1000)*u.hour
-    delta_midnight2    = np.linspace(-12, 12, 1000)
+    delta_midnight  = np.linspace(-24, 24, 2000)*u.hour
+    delta_midnight2 = np.linspace(-24, 24, 2000)
 
     ## Get the sun position
     print("Getting Sun position...")
@@ -6253,7 +6312,7 @@ def plot_altitude_graph(name, target_ra, target_dec, night):
     # xlimits = [-np.ceil(sunset_rel), np.ceil(sunrise_rel)]
     # xlimits = [sunset_rel-1, sunrise_rel+1]
 
-    plt.title(str(name) + "\nLocation: NOT     RA: " + str(target_ra) + "  Dec: " + str(target_dec) + "     Night of " + night)
+    plt.title(str(name) + "\nLocation: " + str(location_name) + "     RA: " + str(target_ra) + "  Dec: " + str(target_dec) + "     Night of " + night)
 
     ax = plt.gca()
     plt.plot(delta_midnight, moonaltazs.alt, color=[0.75]*3, ls='--', zorder=7, label='Moon')
@@ -6298,7 +6357,7 @@ def plot_altitude_graph(name, target_ra, target_dec, night):
     plt.xlabel('Hours from UTC Midnight')
     plt.ylabel('Altitude [deg]')
 
-    savename = output_dir + "/AltitudePlot_" + str(float(target_ra))[:10] + "_" + str(float(target_dec))[:10] + "_" + night + ".png"
+    savename = output_dir + "/AltitudePlot_%.6f"%float(target_ra) + "_%.6f"%float(target_dec) + "_" + night + "_" + str(location_name) + ".png"
     plt.savefig(savename, bbox_inches='tight')
 
     print("Plotted.")
@@ -6417,6 +6476,26 @@ def delete_observation(request):
 
 def df_to_lists(obs_data):
 
+    altitude_plot_list = []
+    telescope_list = []
+    for ra, dec, night, telescope, location in zip(obs_data.ra, obs_data.dec, obs_data.night, obs_data.telescope, obs_data.location):
+        # altitude_path = "./data/AltitudeGraphs/AltitudePlot_" + str(ra) + "_" + str(dec) + "_" + str(night) + "_" + str(location) + ".png"
+        altitude_path = "./data/AltitudeGraphs/AltitudePlot_%.6f"%float(ra) + "_%.6f"%float(dec) + "_" + str(night) + "_" + str(location) + ".png"
+        print(altitude_path)
+        if os.path.exists(altitude_path):
+            altitude_plot_list.append(altitude_path)
+        else:
+            altitude_plot_list.append("")
+        if telescope == telescope:
+            telescope_list.append(telescope)
+        else:
+            telescope_list.append(" ")
+
+    print("altitude_plot_list:")
+    print(altitude_plot_list)
+    # print("telescope_list:")
+    # print(telescope_list)
+
     df_lists = zip(
                 list(obs_data.id.astype(int)),
                 list(obs_data.name),
@@ -6426,10 +6505,13 @@ def df_to_lists(obs_data):
                 list(obs_data.notes),
                 list(obs_data.night),
                 list(obs_data.priority),
+                telescope_list,
+                list(obs_data.location),
                 list(obs_data.submitter),
                 list(obs_data.observed),
                 list(obs_data.gemtom_id),
-                list("./data/AltitudeGraphs/AltitudePlot_" + obs_data["ra"].astype(str) + "_" + obs_data["dec"].astype(str) + "_" + obs_data["night"].astype(str) + ".png"),
+                altitude_plot_list,
+                # list("./data/AltitudeGraphs/AltitudePlot_" + obs_data["ra"].astype(str) + "_" + obs_data["dec"].astype(str) + "_" + obs_data["night"].astype(str) + ".png"),
 
     )
 
@@ -6440,6 +6522,7 @@ def submit_observation(request):
 
     ## Get Initial Data
     data_file = "./data/planned_observations_data.csv"
+    too_file = "./data/too_data.csv"
 
     if os.path.exists(data_file):
         obs_data = pd.read_csv(data_file)
@@ -6455,13 +6538,29 @@ def submit_observation(request):
         df_lists = []
         nights = []
 
+    if os.path.exists(too_file):
+        ToO_data = pd.read_csv(too_file)
+        num         = list(ToO_data.num)
+        telescopes  = list(ToO_data.Telescope)
+        # locations   = list(ToO_data.Location)
+        date_start  = list(ToO_data.date_start)
+        date_close  = list(ToO_data.date_close)
+        PI          = list(ToO_data.Name)
+
+        observations = zip(num, telescopes, date_start, date_close, PI)
+
+    else:
+        observations = zip([],[],[],[],[])
+
+
 
     # print(nights.drop_duplicates())
 
     context = {
             "df"    : df_lists,
             "message" : [""],
-            "nights" : nights
+            "nights" : nights,
+            "Observations" : observations
     }
 
     ## Handle selecting a single night
@@ -6500,6 +6599,38 @@ def submit_observation(request):
         priority    = request.GET.get('priority')
         submitter   = request.GET.get('submitter')
         gemtom_id   = int(request.GET.get('gemtom_id'))
+
+        num   = request.GET.get('observation')
+        print("Num:")
+        print(num)
+
+        if num:
+            if int(num) > 0:
+                index = ToO_data.index[ToO_data['num'] == int(num)]
+                print(ToO_data.loc[index,"Name"].values[0])
+                print(ToO_data.loc[index,"Telescope"].values[0])
+                print(ToO_data.loc[index,"Location"].values[0])
+
+                telescope = str(ToO_data.loc[index,"Telescope"].values[0])
+                location = str(ToO_data.loc[index,"Location"].values[0])
+                try:
+                    print("Location:")
+                    print(location)
+                    telescope_lon = coords.EarthLocation.of_site(location).geodetic.lon.deg
+                    telescope_lat = coords.EarthLocation.of_site(location).geodetic.lat.deg
+
+                    # print("Telescope:", telescope)
+                    # print("Location:", location)
+                    print("Lon:", telescope_lon, " Lat:", telescope_lat)
+                    make_altitude = True
+                except:
+                    print("Telescope location not understood.")
+                    make_altitude = False
+
+        else:
+            telescope = " "
+            location = " "
+            make_altitude = False
 
         success, message  = ra_dec_checker(ra, dec)
         if not success:
@@ -6544,6 +6675,8 @@ def submit_observation(request):
             'notes'     : [notes],
             'night'     : [night],
             'priority'  : [priority],
+            'telescope' : [telescope],
+            'location'  : [location],
             'submitter' : [submitter],
             'gemtom_id' : [gemtom_id],
             'observed'  : [False],
@@ -6565,13 +6698,14 @@ def submit_observation(request):
         #     print(obs_data[col])
 
 
-        ## Plot altitude graph
-        altitude_path = "./data/AltitudeGraphs/AltitudePlot_" + ra + "_" + dec + "_" + night + ".png"
+        if make_altitude:
+            ## Plot altitude graph
+            altitude_path = "./data/AltitudeGraphs/AltitudePlot_" + ra + "_" + dec + "_" + night + "_" + location + ".png"
 
-        if not os.path.exists(altitude_path):
-            plot_altitude_graph(name, ra, dec, night)
-        else:
-            print("Altitude Plot already exists.")
+            if not os.path.exists(altitude_path):
+                plot_altitude_graph(name, ra, dec, night, location)
+            else:
+                print("Altitude Plot already exists.")
 
 
         df_lists = df_to_lists(obs_data)
