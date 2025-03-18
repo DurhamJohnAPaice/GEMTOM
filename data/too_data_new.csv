@@ -1,0 +1,5 @@
+num,Name,date_start,date_close,Telescope,Location,Band,Notes,Submitter
+1,John Egbert,2025-03-13,2025-03-23,Keck,Keck Observatory,Optical/Ultraviolet,2 hours per night,John A. Paice
+2,Rose Lalonde,2025-03-05,2025-03-15,ALMA,ALMA,Millimetre,No time constraints,John A. Paice
+3,Jade Harley,2025-03-21,2025-03-22,ULTRACAM,La Silla Observatory,Optical,1/2 night observing CVs,John A. Paice
+4,John Paice,2025-03-28,2025-03-30,NOT,"Roque de los Muchachos, La Palma",Optical,"Spectroscopy, 12 hours total",John A. Paice

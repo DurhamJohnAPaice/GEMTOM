@@ -16,7 +16,13 @@
     &nbsp
     <a class="btn btn-outline-primary" href="https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-c={{ target_ra }}%20{{ target_dec }}&-c.u=arcsec&-c.r=1.5&-c.eq=J2000&-c.geom=r&-out.max=50&-out.add=_r" target="_blank">VizieR</a>
     &nbsp
-    <a class="btn btn-outline-primary" href="https://aladin.cds.unistra.fr/AladinLite/?target={{ target_ra }}{{ target_dec }}&fov=0.05" target="_blank">Aladin</a>
+    {% if target_dec > 0 %}
+        <a class="btn btn-outline-primary" href="https://aladin.cds.unistra.fr/AladinLite/?target={{ target_ra }}+{{ target_dec }}&fov=0.05" target="_blank">Aladin</a>
+    {% else %}
+        <a class="btn btn-outline-primary" href="https://aladin.cds.unistra.fr/AladinLite/?target={{ target_ra }}{{ target_dec }}&fov=0.05" target="_blank">Aladin</a>
+    {% endif %}
+
+    <!-- <a class="btn btn-outline-primary" href="https://aladin.cds.unistra.fr/AladinLite/?target={{ target_ra }}{{ target_dec }}&fov=0.05" target="_blank">Aladin</a> -->
     {% if tns_name %}
         &nbsp
         <a class="btn btn-outline-success" href="https://www.wis-tns.org/object/{{ tns_name }}" target="_blank">TNS</a>
