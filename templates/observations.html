@@ -13,6 +13,7 @@ we've inputted into the system, because a tutorial told me to.
 
 {{ ToOs }}
 
+
 <h5>Submit new target:</h5>
 
 <html lang="en">
@@ -30,8 +31,12 @@ we've inputted into the system, because a tutorial told me to.
                 Name:
                 RA (°):
                 Date:
+                Block:
                 Notes:
             </div>
+            <!-- <div style="padding-left:15px; padding-top:15px">
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div> -->
         </div>
         <div class="col-md-9">
             <div style="margin:0px">
@@ -44,9 +49,9 @@ we've inputted into the system, because a tutorial told me to.
                   <option value="Low">Low</option>
                   <option value="Med">Med</option>
                   <option value="High">High</option>
-                </select> &nbsp
-                <label for="observation">Observation Block:</label>
-                <select id="observation" name="observation">
+                </select> <br>
+                <!-- <label for="observation">Observation Block:</label> -->
+                <select id="observation" name="observation" style="margin-top:10px; margin-bottom:10px;">
                   <option value="0">(None)</option>
                   {% for num, telescopes, date_start, date_close, PI in Observations %}
                   <option value="{{num}}">{{date_start}} - {{date_close}} -- {{telescopes}} (PI: {{PI}})</option>
@@ -59,12 +64,10 @@ we've inputted into the system, because a tutorial told me to.
             <br>
             <br>
             <br>
-            <br>
             <button type="submit" class="btn btn-primary">Submit</button>
         </div>
     </div>
 </form>
-
 
 <!-- <form method="get" action="{% url 'Observations' %}">
     <div class="row">
@@ -105,17 +108,43 @@ we've inputted into the system, because a tutorial told me to.
 
 <h5>Submitted Targets:</h5>
 
-<form method="GET">
-    <label for="show_night">Select Night:</label>
-    <select name="show_night" id="show_night" onchange="this.form.submit()">
-        <option value=""></option>
-        {% for night in nights %}
-            <option value="{{ night }}" {% if request.GET.show_night == night|stringformat:"s" %}selected{% endif %}>
-                {{ night }}
-            </option>
-        {% endfor %}
-    </select>
-</form>
+<div class="row">
+    <div class="col-md-10" style="margin-top:8px">
+        <form method="GET">
+            <label for="show_night">Show Night:</label>
+            <select name="show_night" id="show_night" onchange="this.form.submit()">
+                <!-- <option value=""></option> -->
+                {% for night in nights %}
+                    <option value="{{ night }}" {% if request.GET.show_night == night|stringformat:"s" %}selected{% endif %}>
+                        {{ night }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            &nbsp
+
+            <label for="show_block">Show Observation Block:</label>
+            <select name="show_block" id="show_block" onchange="this.form.submit()">
+                <!-- <option value=""></option> -->
+                <option value="All" {% if request.GET.show_block == "All" %}selected{% endif %}>All</option>
+                {% for num, telescopes, date_start, date_close, PI in Observations %}
+                    {{ num }}
+                    <option value="{{num}}" {% if request.GET.show_block == num|stringformat:"s" %}selected{% endif %}>{{date_start}} - {{date_close}} -- {{telescopes}} (PI: {{PI}})</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    <div class="col-md-2">
+
+        <form method="GET" style="margin-bottom:10px">
+            {% csrf_token %}
+            <input type="hidden" name="Night" value="All">
+            <input type="hidden" name="block_num" value="All">
+            <button type="submit" name="observed_new" value="False" style="margin:0px" title="Show All" class="btn btn-outline-info">Show All</button>
+
+        </form>
+    </div>
+</div>
 
 <!-- I would really like to see this source because I have been very good and I deserve a lot of data. Also, there is a need to test this form that requires a lot of text, and I could go get some lorem ipsum but really you need to understand that that's kinda difficult and really I just want to have some fun by typing a lot so let's just do some example text liek this. Numbers are things like 16, 38, and 27.2. Hopefully this can be done by 26/02/06. Which will be a big effort, but I think with some focused R&D, we can crack this whole time travel thing. Unless I mean 2106, in which case, yeah. Anyway. Let's see how this works. -->
 
@@ -177,6 +206,7 @@ we've inputted into the system, because a tutorial told me to.
                                 {% csrf_token %}
                                 <input type="hidden" name="Num" value="{{ Num }}">
                                 <input type="hidden" name="Night" value="{{ show_night }}">
+                                <input type="hidden" name="block_num" value="{{ show_block }}">
                                 {% if Observed %}
                                     <button type="submit" name="observed_new" value="False" style="margin:0px" title="Mark as Unobserved" class="btn btn-outline-light">✓</button>
                                     <!-- <button type="submit" name="observed_new" value="False" style="margin:2px" class="btn btn-outline-primary">Mark As Unobserved</button> -->
@@ -194,6 +224,7 @@ we've inputted into the system, because a tutorial told me to.
                                 {% csrf_token %}
                                 <input type="hidden" name="Num" value="{{ Num }}">
                                 <input type="hidden" name="Night" value="{{ show_night }}">
+                                <input type="hidden" name="block_num" value="{{ show_block }}">
                                 <button type="submit" style="margin-top:0px" class="btn btn-outline-danger" title="Delete Entry" onclick="return confirm('Deleting {{ Name }}; Are you sure?')">✗</button>
                             </form>
                         </td>

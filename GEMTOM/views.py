@@ -6425,6 +6425,7 @@ def set_observed(request):
 
     num = request.POST.get('Num')
     night = request.POST.get('Night')
+    block_num = request.POST.get('block_num')
     if len(num) > 0: num = np.int64(num)
 
     observed_new = request.POST.get('observed_new')
@@ -6434,20 +6435,21 @@ def set_observed(request):
 
     print("Night:", night)
 
-    print(type(obs_data['num'][0]))
+    print(type(obs_data['targ_num'][0]))
     # print(type(int(num)))
-    print(obs_data['num'][0])
+    print(obs_data['targ_num'][0])
     print(num)
-    print(obs_data['num'][0] == num)
+    print(obs_data['targ_num'][0] == num)
 
-    index = obs_data.index[obs_data['num'] == num]
+    index = obs_data.index[obs_data['targ_num'] == num]
     obs_data.loc[index,"observed"] = observed_new
 
     obs_data.to_csv(data_file, index=False)
 
     ## Are we looking at a certain night?
-    if night:
-        return redirect('/Observations/?show_night=' + night)
+    if night and block_num: return redirect('/Observations/?show_night=' + night + '&show_block=' + block_num)
+    elif night: return redirect('/Observations/?show_night=' + night)
+    elif block_num: return redirect('/Observations/?show_block=' + block_num)
     else:
         return redirect('/Observations/')
 
@@ -6459,20 +6461,22 @@ def delete_observation(request):
 
     num = request.POST.get('Num')
     night = request.POST.get('Night')
+    block_num = request.POST.get('block_num')
     if len(num) > 0: num = np.int64(num)
 
     data_file = "./data/planned_observations_data.csv"
     obs_data = pd.read_csv(data_file)
 
-    index = obs_data.index[obs_data['num'] == num]
+    index = obs_data.index[obs_data['targ_num'] == num]
 
     obs_data = obs_data.drop(index)
 
     obs_data.to_csv(data_file, index=False)
 
     ## Are we looking at a certain night?
-    if night:
-        return redirect('/Observations/?show_night=' + night)
+    if night and block_num: return redirect('/Observations/?show_night=' + night + '&show_block=' + block_num)
+    elif night:             return redirect('/Observations/?show_night=' + night)
+    elif block_num:         return redirect('/Observations/?show_block=' + block_num)
     else:
         return redirect('/Observations/')
 
@@ -6502,7 +6506,7 @@ def df_to_lists(obs_data):
     df_lists = zip(
                 list(obs_data.id.astype(int)),
                 list(obs_data.name),
-                list(obs_data.num),
+                list(obs_data.targ_num),
                 list(obs_data.ra),
                 list(obs_data.dec),
                 list(obs_data.notes),
@@ -6563,28 +6567,59 @@ def submit_observation(request):
             "df"    : df_lists,
             "message" : [""],
             "nights" : nights,
-            "Observations" : observations
+            "Observations" : list(observations),
     }
 
     ## Handle selecting a single night
     if 'show_night' in request.GET:
         print("Request: Show Night")
         show_night = request.GET.get('show_night')
+        show_block = request.GET.get('show_block')
 
-        if show_night == "All": obs_data = pd.read_csv(data_file)
-        else:                   obs_data = obs_data[obs_data["night"]==show_night]
+    #     if show_night == "All": obs_data = pd.read_csv(data_file)
+    #     else:                   obs_data = obs_data[obs_data["night"]==show_night]
+    #
+    #     # print("obs_data:")
+    #     # print(obs_data)
+    #
+    #     df_lists = df_to_lists(obs_data)
+    #
+    #     context["df"] = df_lists
+    #     context["show_night"] = show_night
+    #     # context = {
+    #     #         "df"    : df_lists,
+    #     #         "message" : [""],
+    #     #         "nights" : nights,
+    #     #         "Observations" : list(observations),
+    #     #         "show_night" : show_night,
+    #     #         "show_block" : show_block,
+    #     # }
+    #
+    #     return render(request, "observations.html", context)
+    #     # return redirect('/Observations/')
+    #
+    # ## Handle selecting a single night
+    # if 'show_block' in request.GET:
+    #     print("Request: Show Block")
+    #     show_night = request.GET.get('show_night')
+    #     show_block = request.GET.get('show_block')
+        print(show_night)
+        print(show_block)
+
+        if not show_block:          obs_data = pd.read_csv(data_file)
+        elif show_block == "All":   obs_data = pd.read_csv(data_file)
+        else:                       obs_data = obs_data[obs_data["block_num"]==show_block]
+
+        if show_night and show_night != "All": obs_data = obs_data[obs_data["night"]==show_night]
 
         # print("obs_data:")
         # print(obs_data)
 
         df_lists = df_to_lists(obs_data)
 
-        context = {
-                "df"    : df_lists,
-                "message" : [""],
-                "nights" : nights,
-                "show_night" : show_night,
-        }
+        context["df"] = df_lists
+        context["show_night"] = show_night
+        context["show_block"] = show_block
 
         return render(request, "observations.html", context)
         # return redirect('/Observations/')
@@ -6614,6 +6649,7 @@ def submit_observation(request):
                 print(ToO_data.loc[index,"Telescope"].values[0])
                 print(ToO_data.loc[index,"Location"].values[0])
 
+                block_num = str(ToO_data.loc[index,"num"].values[0])
                 telescope = str(ToO_data.loc[index,"Telescope"].values[0])
                 location = str(ToO_data.loc[index,"Location"].values[0])
                 try:
@@ -6631,6 +6667,7 @@ def submit_observation(request):
                     make_altitude = False
 
         else:
+            block_num = " "
             telescope = " "
             location = " "
             make_altitude = False
@@ -6655,11 +6692,15 @@ def submit_observation(request):
         print(nearest_id)
         # 186.2724, 12.8787, 60
 
+        # print("len(obs_data.targ_num):")
+        # print(len(obs_data.targ_num))
+        # print(max(obs_data.targ_num))
         if os.path.exists(data_file):
-            if len(obs_data.num) > 0:   new_num = max(obs_data.num)+1
+            if len(obs_data.targ_num) > 0:   new_num = max(obs_data.targ_num)+1
             else:                       new_num = 1
         else:
             new_num = 1
+        # print("new_num:", new_num)
 
         if name:
             if len(name) == 0:
@@ -6672,12 +6713,13 @@ def submit_observation(request):
         new_output = pd.DataFrame({
             'id'        : nearest_id,
             'name'      : name,
-            'num'       : [new_num],
+            'targ_num'  : [new_num],
             'ra'        : [str(float(ra))[:10]],
             'dec'       : [str(float(dec))[:10]],
             'notes'     : [notes],
             'night'     : [night],
             'priority'  : [priority],
+            'block_num' : [block_num],
             'telescope' : [telescope],
             'location'  : [location],
             'submitter' : [submitter],
