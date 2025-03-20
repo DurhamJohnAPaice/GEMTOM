@@ -9,6 +9,8 @@ def GEM_to_TOM(data, request):
 
     ## Deal with column names - all lower case!
     for column_name in data.columns:
+        data = data.rename(columns={column_name : column_name.replace(" ", "")})
+
         if \
         (column_name.lower() == "name") or \
         (column_name.lower() == "ra") or \
