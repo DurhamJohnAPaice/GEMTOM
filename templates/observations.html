@@ -121,7 +121,7 @@ we've inputted into the system, because a tutorial told me to.
                 {% endfor %}
             </select>
 
-            &nbsp
+            <br>
 
             <label for="show_block">Show Observation Block:</label>
             <select name="show_block" id="show_block" onchange="this.form.submit()">
@@ -136,7 +136,7 @@ we've inputted into the system, because a tutorial told me to.
     </div>
     <div class="col-md-2">
 
-        <form method="GET" style="margin-bottom:10px">
+        <form method="GET" style="margin-top:10px; margin-bottom:10px">
             {% csrf_token %}
             <input type="hidden" name="Night" value="All">
             <input type="hidden" name="block_num" value="All">
