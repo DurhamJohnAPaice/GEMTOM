@@ -6609,9 +6609,14 @@ def submit_observation(request):
         if not show_block:          obs_data = pd.read_csv(data_file)
         elif show_block == "All":   obs_data = pd.read_csv(data_file)
         else:
-            print("block_nums:", obs_data["block_num"].values)
+            # print("block_nums:", obs_data["block_num"].values)
+            # for value in obs_data["block_num"].values:
+            #     print(value)
+            #     print(type(value))
+            #     print(type(show_block))
+            #     print(show_block == value)
 
-            obs_data = obs_data[obs_data["block_num"]==show_block]
+            obs_data = obs_data[obs_data["block_num"]==np.int64(show_block)]
 
         if show_night and show_night != "All": obs_data = obs_data[obs_data["night"]==show_night]
 
