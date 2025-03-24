@@ -2416,6 +2416,7 @@ def blackgem_recent_transients():
             'fwhm'          : [0],
             'desi_cutout'   : [0],
             'Gmag'          : [0],
+            'first_obs'     : ['2010-01-01'],
             'last_obs'      : ['2010-01-01'],
             'index_2'       : [0],
             'tns'           : [0],
@@ -2558,6 +2559,15 @@ def get_transients_filenames(obs_date, url_selection="all"):
 
 
 def get_recent_blackgem_transients(days_since_last_update):
+    creds_user_file = str(Path.home()) + "/.bg_follow_user_john_creds"
+    creds_db_file = str(Path.home()) + "/.bg_follow_transientsdb_creds"
+    creds_user_file = "../../.bg_follow_user_john_creds"
+    creds_db_file = "../../.bg_follow_transientsdb_creds"
+    print(creds_user_file)
+    print(creds_db_file)
+
+    # Instantiate the BlackGEM object
+    bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
 
     obs_date = date.today() - timedelta(1)
     extended_obs_date = obs_date.strftime("%Y-%m-%d")
@@ -2584,10 +2594,14 @@ def get_recent_blackgem_transients(days_since_last_update):
     data_list = []
 
     num_sources = 0
+
+
     for obs_date in dates:
         extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
         # print("Bark!")
         transients_filename = get_transients_filenames(obs_date, url_selection="transient")
+        print("\n\ntransients_filename\n\n")
+        print(transients_filename)
         try:
             data = pd.read_csv(transients_filename)
         except Exception as e:
@@ -2596,26 +2610,47 @@ def get_recent_blackgem_transients(days_since_last_update):
             print(e)
             continue
 
-        # ## Get the list of files from Hugo's server
-        # files = list_files(base_url + obs_date)
-        #
-        # ## Check to find the transients file. It could be under one of two names...
-        # if extended_date+"_gw_BlackGEM_transients.csv" in files:
-        #     transients_filename = base_url + obs_date + "/" + extended_date + "_gw_BlackGEM_transients.csv"
-        #     data = pd.read_csv(transients_filename)
-        # elif extended_date+"_BlackGEM_transients.csv" in files:
-        #     transients_filename = base_url + obs_date + "/" + extended_date + "_BlackGEM_transients.csv"
-        #     data = pd.read_csv(transients_filename)
-        # else:
-        #     ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
-        #     print("No transients on", obs_date)
-        #     continue
-
-
         d           = pd.Series([extended_date])
         date_column = d.repeat(len(data))
         date_column = date_column.set_axis(range(len(data)))
+
+        data = data.sort_values(by=['runcat_id']).reset_index(drop=True)
+
+        ## Find first time observed:
+
+        qu = """\
+            SELECT a.runcat
+                  ,MIN(i."date-obs")
+              FROM assoc a
+                  ,extractedsource x
+                  ,image i
+             WHERE a.runcat IN %(runcatids)s
+               AND a.xtrsrc = x.id
+               AND x.image = i.id
+             GROUP BY a.runcat;
+        """
+
+        params = {'runcatids' : tuple(list(data.runcat_id))}
+
+        # params['runcatids'] = tuple(data['runcat_id']) + (data['runcat_id'].iloc[0],)
+        query = qu % (params)
+
+        l_results = bg.run_query(query)
+        df_dates = pd.DataFrame(l_results, columns=['runcat_id','first_obs'])
+        df_dates = df_dates.sort_values(by=['runcat_id']).reset_index(drop=True)
+
+
+        print(len(data))
+        print(len(df_dates))
+
+        print(data["runcat_id"].iloc[0:5])
+        print(df_dates["runcat_id"].iloc[0:5])
+
+        df_dates['first_obs'] = df_dates['first_obs'].dt.strftime('%Y-%m-%d')
+
+        data = pd.merge(data, df_dates, on="runcat_id", how="left")
         data["last_obs"] = date_column
+
 
         # data_list.append(data.iloc[:20])
         data_list.append(data)
@@ -4279,7 +4314,8 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
                 {'headerName': 'u dif', 'field': 'u_dif',       'minWidth': 75, 'maxWidth': 75},
                 {'headerName': 'i min', 'field': 'i_min_sml',   'minWidth': 75, 'maxWidth': 75},
                 {'headerName': 'i dif', 'field': 'i_dif',       'minWidth': 75, 'maxWidth': 75},
-                {'headerName': 'Last Obs', 'field': 'last_obs', 'maxWidth': 110},
+                {'headerName': 'First Obs', 'field': 'first_obs', 'maxWidth': 110},
+                {'headerName': 'Last Obs',  'field': 'last_obs',  'maxWidth': 110},
             ],
             defaultColDef={
                 'sortable': True,
