@@ -1333,6 +1333,7 @@ def get_blackgem_stats(obs_date):
     extragalactic_sources_id    = []
     extragalactic_sources_ra    = []
     extragalactic_sources_dec   = []
+    extragalactic_sources_pipe  = []
     extragalactic_sources_check = []
 
     old_images = False
@@ -2600,8 +2601,8 @@ def get_recent_blackgem_transients(days_since_last_update):
         extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
         # print("Bark!")
         transients_filename = get_transients_filenames(obs_date, url_selection="transient")
-        print("\n\ntransients_filename\n\n")
-        print(transients_filename)
+        # print("\n\ntransients_filename\n\n")
+        # print(transients_filename)
         try:
             data = pd.read_csv(transients_filename)
         except Exception as e:
@@ -2640,11 +2641,11 @@ def get_recent_blackgem_transients(days_since_last_update):
         df_dates = df_dates.sort_values(by=['runcat_id']).reset_index(drop=True)
 
 
-        print(len(data))
-        print(len(df_dates))
-
-        print(data["runcat_id"].iloc[0:5])
-        print(df_dates["runcat_id"].iloc[0:5])
+        # print(len(data))
+        # print(len(df_dates))
+        #
+        # print(data["runcat_id"].iloc[0:5])
+        # print(df_dates["runcat_id"].iloc[0:5])
 
         df_dates['first_obs'] = df_dates['first_obs'].dt.strftime('%Y-%m-%d')
 
