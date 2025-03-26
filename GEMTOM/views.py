@@ -6522,9 +6522,11 @@ def df_to_lists(obs_data):
 
     altitude_plot_list = []
     telescope_list = []
-    for ra, dec, night, telescope, location in zip(obs_data.ra, obs_data.dec, obs_data.night, obs_data.telescope, obs_data.location):
+    for ra, dec, night, start_night, telescope, location in zip(obs_data.ra, obs_data.dec, obs_data.night, obs_data.start_night, obs_data.telescope, obs_data.location):
+        if night != "Any": used_night = night
+        else: used_night = start_night
         # altitude_path = "./data/AltitudeGraphs/AltitudePlot_" + str(ra) + "_" + str(dec) + "_" + str(night) + "_" + str(location) + ".png"
-        altitude_path = "./data/AltitudeGraphs/AltitudePlot_%.5f"%float(ra) + "_%.5f"%float(dec) + "_" + str(night) + "_" + str(location) + ".png"
+        altitude_path = "./data/AltitudeGraphs/AltitudePlot_%.5f"%float(ra) + "_%.5f"%float(dec) + "_" + str(used_night) + "_" + str(location) + ".png"
         print(altitude_path)
         if os.path.exists(altitude_path):
             altitude_plot_list.append(altitude_path)
@@ -6811,15 +6813,18 @@ def submit_observation(request):
 
 
         if make_altitude:
+            print("Making Altitude Plot...")
+            if night != "Any": used_night = night
+            else: used_night = start_night
             ## Plot altitude graph
-            altitude_path = "./data/AltitudeGraphs/AltitudePlot_" + ra + "_" + dec + "_" + night + "_" + location + ".png"
+            altitude_path = "./data/AltitudeGraphs/AltitudePlot_" + ra + "_" + dec + "_" + used_night + "_" + location + ".png"
 
             if not os.path.exists(altitude_path):
-                if night != "Any": used_night = night
-                else: used_night = start_night
                 plot_altitude_graph(name, ra, dec, used_night, location)
             else:
                 print("Altitude Plot already exists.")
+        else:
+            print("Not making Altitude Plot.")
 
 
         df_lists = df_to_lists(obs_data)
