@@ -1,0 +1,3 @@
+id,name,targ_num,ra,dec,notes,night,start_night,close_night,priority,block_num,telescope,location,submitter,gemtom_id,observed
+0,Potential CV?,10,123.1211,-14.44867,Need SED coverage with other telescopes,2025-03-12,2025-03-10,2025-03-14,High,4,ALMA,ALMA,John A. Paice,0,False
+44878422,AT 2024pff,12,184.340819,-20.784208,Timing - requires at least 30 minutes on-source.,2025-03-21,2025-03-11,2025-03-29,Low,26,NTT,La Silla Observatory (ESO),John A. Paice,0,False

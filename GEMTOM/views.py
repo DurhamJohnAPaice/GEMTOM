@@ -6577,6 +6577,9 @@ def submit_observation(request):
         nights = pd.concat([pd.Series(["All"]), nights])
         nights = nights.drop_duplicates()
         print(nights)
+        if "Any" in nights.unique():
+            print("BARRKKARABBARKBARBKABRKBARK!")
+            nights = nights[nights != "Any"]
 
     else:
         df_lists = []
@@ -6609,37 +6612,10 @@ def submit_observation(request):
 
     ## Handle selecting a single night
     if 'show_night' in request.GET:
-        print("Request: Show Night")
+        print("Request: Show Night or Block")
         show_night = request.GET.get('show_night')
         show_block = request.GET.get('show_block')
 
-    #     if show_night == "All": obs_data = pd.read_csv(data_file)
-    #     else:                   obs_data = obs_data[obs_data["night"]==show_night]
-    #
-    #     # print("obs_data:")
-    #     # print(obs_data)
-    #
-    #     df_lists = df_to_lists(obs_data)
-    #
-    #     context["df"] = df_lists
-    #     context["show_night"] = show_night
-    #     # context = {
-    #     #         "df"    : df_lists,
-    #     #         "message" : [""],
-    #     #         "nights" : nights,
-    #     #         "Observations" : list(observations),
-    #     #         "show_night" : show_night,
-    #     #         "show_block" : show_block,
-    #     # }
-    #
-    #     return render(request, "observations.html", context)
-    #     # return redirect('/Observations/')
-    #
-    # ## Handle selecting a single night
-    # if 'show_block' in request.GET:
-    #     print("Request: Show Block")
-    #     show_night = request.GET.get('show_night')
-    #     show_block = request.GET.get('show_block')
         print(show_night)
         print(show_block)
 
@@ -6655,7 +6631,28 @@ def submit_observation(request):
 
             obs_data = obs_data[obs_data["block_num"]==np.int64(show_block)]
 
-        if show_night and show_night != "All": obs_data = obs_data[obs_data["night"]==show_night]
+        if show_night and show_night != "All":
+            # obs_data = obs_data[obs_data["night"]==show_night]
+            obs_data = obs_data[(obs_data["night"]==show_night) | (obs_data["night"]=="Any") ]
+
+            if show_night != "Any":
+                drop_list = []
+                for index in range(len(obs_data)):
+                    if obs_data["night"].iloc[index] == "Any":
+                        night_datetime = datetime.strptime(show_night, '%Y-%m-%d')
+                        start_datetime = datetime.strptime(obs_data["start_night"].iloc[index], '%Y-%m-%d')
+                        close_datetime = datetime.strptime(obs_data["close_night"].iloc[index], '%Y-%m-%d')
+                        print(show_night)
+                        print(start_datetime)
+                        print(close_datetime)
+                        print(night_datetime > start_datetime)
+                        print(night_datetime < close_datetime)
+                        if night_datetime < start_datetime or night_datetime > close_datetime:
+                            drop_list.append(index)
+
+                obs_data = obs_data.drop(obs_data.index[drop_list])
+
+            # df[(df['age'] < 25) & df['name'].str.endswith('e')]
 
         # print("obs_data:")
         # print(obs_data)
@@ -6682,34 +6679,57 @@ def submit_observation(request):
         priority    = request.GET.get('priority')
         submitter   = request.GET.get('submitter')
         gemtom_id   = int(request.GET.get('gemtom_id'))
+        num         = request.GET.get('observation')
 
-        num   = request.GET.get('observation')
+        if not night:
+            night = "Any"
+            any_night = True
+            print("\n\nAny Night!\n\n")
+            if not num or int(num) == 0:
+
+                start_night = datetime.today().strftime("%Y-%m-%d")
+                close_night = (datetime.today()+timedelta(30)).strftime("%Y-%m-%d")
+                print(start_night)
+                print(close_night)
+
+            else:
+                index = ToO_data.index[ToO_data['num'] == int(num)]
+                start_night = ToO_data.loc[index,"date_start"].values[0]
+                close_night = ToO_data.loc[index,"date_close"].values[0]
+                print(start_night)
+                print(close_night)
+        else:
+            start_night = night
+            close_night = night
+
+
         print("Num:")
         print(num)
 
-        if num:
-            if int(num) > 0:
-                index = ToO_data.index[ToO_data['num'] == int(num)]
-                print(ToO_data.loc[index,"Name"].values[0])
-                print(ToO_data.loc[index,"Telescope"].values[0])
-                print(ToO_data.loc[index,"Location"].values[0])
+        if num and (int(num) > 0):
+            index = ToO_data.index[ToO_data['num'] == int(num)]
+            print(ToO_data.loc[index,"Name"].values[0])
+            print(ToO_data.loc[index,"Telescope"].values[0])
+            print(ToO_data.loc[index,"Location"].values[0])
 
-                block_num = str(ToO_data.loc[index,"num"].values[0])
-                telescope = str(ToO_data.loc[index,"Telescope"].values[0])
-                location = str(ToO_data.loc[index,"Location"].values[0])
-                try:
-                    print("Location:")
-                    print(location)
-                    telescope_lon = coords.EarthLocation.of_site(location).geodetic.lon.deg
-                    telescope_lat = coords.EarthLocation.of_site(location).geodetic.lat.deg
+            block_num = str(ToO_data.loc[index,"num"].values[0])
+            telescope = str(ToO_data.loc[index,"Telescope"].values[0])
+            location = str(ToO_data.loc[index,"Location"].values[0])
+            start_night = ToO_data.loc[index,"date_start"].values[0]
+            close_night = ToO_data.loc[index,"date_close"].values[0]
+            try:
+                print("Location:")
+                print(location)
+                telescope_lon = coords.EarthLocation.of_site(location).geodetic.lon.deg
+                telescope_lat = coords.EarthLocation.of_site(location).geodetic.lat.deg
 
-                    # print("Telescope:", telescope)
-                    # print("Location:", location)
-                    print("Lon:", telescope_lon, " Lat:", telescope_lat)
-                    make_altitude = True
-                except:
-                    print("Telescope location not understood.")
-                    make_altitude = False
+                # print("Telescope:", telescope)
+                # print("Location:", location)
+                print("Lon:", telescope_lon, " Lat:", telescope_lat)
+                make_altitude = True
+            except:
+                print("Telescope location not understood.")
+                make_altitude = False
 
         else:
             block_num = " "
@@ -6756,20 +6776,22 @@ def submit_observation(request):
             else:           name = "Source #" + new_num
 
         new_output = pd.DataFrame({
-            'id'        : nearest_id,
-            'name'      : name,
-            'targ_num'  : [new_num],
-            'ra'        : [str(float(ra))[:10]],
-            'dec'       : [str(float(dec))[:10]],
-            'notes'     : [notes],
-            'night'     : [night],
-            'priority'  : [priority],
-            'block_num' : [block_num],
-            'telescope' : [telescope],
-            'location'  : [location],
-            'submitter' : [submitter],
-            'gemtom_id' : [gemtom_id],
-            'observed'  : [False],
+            'id'            : nearest_id,
+            'name'          : name,
+            'targ_num'      : [new_num],
+            'ra'            : [str(float(ra))[:10]],
+            'dec'           : [str(float(dec))[:10]],
+            'notes'         : [notes],
+            'night'         : [night],
+            'start_night'   : [start_night],
+            'close_night'   : [close_night],
+            'priority'      : [priority],
+            'block_num'     : [block_num],
+            'telescope'     : [telescope],
+            'location'      : [location],
+            'submitter'     : [submitter],
+            'gemtom_id'     : [gemtom_id],
+            'observed'      : [False],
         })
 
         if os.path.exists(data_file):
