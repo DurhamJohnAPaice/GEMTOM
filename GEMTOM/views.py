@@ -6815,7 +6815,9 @@ def submit_observation(request):
             altitude_path = "./data/AltitudeGraphs/AltitudePlot_" + ra + "_" + dec + "_" + night + "_" + location + ".png"
 
             if not os.path.exists(altitude_path):
-                plot_altitude_graph(name, ra, dec, night, location)
+                if night != "Any": used_night = night
+                else: used_night = start_night
+                plot_altitude_graph(name, ra, dec, used_night, location)
             else:
                 print("Altitude Plot already exists.")
 
