@@ -6628,7 +6628,7 @@ def submit_observation(request):
 
 
     ## Remake Altitude Plots
-    remake_altitude = True
+    remake_altitude = False
     if remake_altitude:
         print("Remaking Altitude Plots...")
         for name, ra, dec, night, start_night, telescope, location in zip(obs_data.name, obs_data.ra, obs_data.dec, obs_data.night, obs_data.start_night, obs_data.telescope, obs_data.location):
