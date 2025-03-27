@@ -6268,139 +6268,153 @@ def plot_altitude_graph(name, target_ra, target_dec, night, location):
     now_time    = Time(datetime.utcnow(), scale='utc')                                        ## Find current time
 
     location_name = location
-    location    = EarthLocation.of_site(location_name)                                            ## Set Location
 
-    sunset        = Observer.at_site(location_name).sun_set_time(today_time, which="previous")    ## Find Sunset
-    # sunrise        = Observer.at_site(location_name).sun_rise_time(today_time, which="next")        ## Find Sunrise
-    sunrise        = Observer.at_site(location_name).sun_rise_time(sunset, which="next")        ## Find Sunrise
-    print(sunset)
-    print(sunrise)
+    try:
+        location    = EarthLocation.of_site(location_name)                                            ## Set Location
+        valid_location = True
+    except:
+        print("Location not recognised:")
+        print(location)
+        valid_location = False
 
-    ## Define the location
-    # location = EarthLocation(lat=-29.25738889*u.deg, lon=-70.73791667*u.deg, height=2200*u.m)
-    observer = Observer(location=location, timezone='UTC')
+    if valid_location:
+        sunset        = Observer.at_site(location_name).sun_set_time(today_time, which="previous")    ## Find Sunset
+        # sunrise        = Observer.at_site(location_name).sun_rise_time(today_time, which="next")        ## Find Sunrise
+        sunrise        = Observer.at_site(location_name).sun_rise_time(sunset, which="next")        ## Find Sunrise
+        print(sunset)
+        print(sunrise)
 
-    # Evening twilight times
-    civil_twilight_evening          = observer.twilight_evening_civil(          today_time+0.1, which='previous')
-    nautical_twilight_evening       = observer.twilight_evening_nautical(       today_time+0.1, which='previous')
-    astronomical_twilight_evening   = observer.twilight_evening_astronomical(   today_time+0.1, which='previous')
+        ## Define the location
+        # location = EarthLocation(lat=-29.25738889*u.deg, lon=-70.73791667*u.deg, height=2200*u.m)
+        observer = Observer(location=location, timezone='UTC')
 
-    # Morning twilight times
-    civil_twilight_morning = observer.twilight_morning_civil(sunset, which='next')
-    nautical_twilight_morning = observer.twilight_morning_nautical(sunset, which='next')
-    astronomical_twilight_morning = observer.twilight_morning_astronomical(sunset, which='next')
+        # Evening twilight times
+        civil_twilight_evening          = observer.twilight_evening_civil(          today_time+0.1, which='previous')
+        nautical_twilight_evening       = observer.twilight_evening_nautical(       today_time+0.1, which='previous')
+        astronomical_twilight_evening   = observer.twilight_evening_astronomical(   today_time+0.1, which='previous')
 
+        # Morning twilight times
+        civil_twilight_morning = observer.twilight_morning_civil(sunset, which='next')
+        nautical_twilight_morning = observer.twilight_morning_nautical(sunset, which='next')
+        astronomical_twilight_morning = observer.twilight_morning_astronomical(sunset, which='next')
 
+        print("")
+        print("")
 
-    print("Sunset at:  {0.iso}".format(sunset))
-    print("Sunrise at: {0.iso}".format(sunrise))
-    print("")
-    print("")
+        # print("Sunset at:  {0.iso}".format(sunset))
+        # print("Sunrise at: {0.iso}".format(sunrise))
+        ## -- Find each hour section --
+        print("Plotting altitude graph...")
 
-    ## -- Find each hour section --
-    print("Plotting altitude graph...")
+        # utcoffset        = -5*u.hour
+        midnight        = today_time
+        now_time_rel    = (now_time.mjd - today_time.mjd)*24
+        sunset_rel      = (sunset.mjd - today_time.mjd)*24
+        sunrise_rel     = (sunrise.mjd - today_time.mjd)*24
+        delta_midnight  = np.linspace(-24, 24, 2000)*u.hour
+        delta_midnight2 = np.linspace(-24, 24, 2000)
 
-    # utcoffset        = -5*u.hour
-    midnight        = today_time
-    now_time_rel    = (now_time.mjd - today_time.mjd)*24
-    sunset_rel      = (sunset.mjd - today_time.mjd)*24
-    sunrise_rel     = (sunrise.mjd - today_time.mjd)*24
-    delta_midnight  = np.linspace(-24, 24, 2000)*u.hour
-    delta_midnight2 = np.linspace(-24, 24, 2000)
+        ## Get the sun position
+        print("Getting Sun position...")
 
-    ## Get the sun position
-    print("Getting Sun position...")
+        times            = midnight+delta_midnight
+        frame            = AltAz(obstime=times, location=location)
+        sunaltazs        = get_sun(times).transform_to(frame)
 
-    times            = midnight+delta_midnight
-    frame            = AltAz(obstime=times, location=location)
-    sunaltazs        = get_sun(times).transform_to(frame)
+        ## Get the moon position
+        print("Getting Moon position...")
+        moon            = get_moon(times)
+        moonaltazs         = moon.transform_to(frame)
 
-    ## Get the moon position
-    print("Getting Moon position...")
-    moon            = get_moon(times)
-    moonaltazs         = moon.transform_to(frame)
+        ## Get the positions of our taargets
+        print("Getting Target positions...")
+        target_coords = SkyCoord(target_ra, target_dec, unit=(u.deg), frame='icrs')
+        target_altazs = target_coords.transform_to(frame)
 
-    ## Get the positions of our taargets
-    print("Getting Target positions...")
-    target_coords = SkyCoord(target_ra, target_dec, unit=(u.deg), frame='icrs')
-    target_altazs = target_coords.transform_to(frame)
+        ## Find sunrise and sunset
+        sunset_hour     = (today_time.mjd-sunset.mjd)*24
+        sunrise_hour    = (sunrise.mjd-today_time.mjd)*24
 
-    ## Find sunrise and sunset
-    sunset_hour     = (today_time.mjd-sunset.mjd)*24
-    sunrise_hour    = (sunrise.mjd-today_time.mjd)*24
+        civ_twilight_sunset = (civil_twilight_evening.mjd-today_time.mjd)*24
+        nau_twilight_sunset = (nautical_twilight_evening.mjd-today_time.mjd)*24
+        ast_twilight_sunset = (astronomical_twilight_evening.mjd-today_time.mjd)*24
 
-    civ_twilight_sunset = (civil_twilight_evening.mjd-today_time.mjd)*24
-    nau_twilight_sunset = (nautical_twilight_evening.mjd-today_time.mjd)*24
-    ast_twilight_sunset = (astronomical_twilight_evening.mjd-today_time.mjd)*24
-
-    civ_twilight_sunrise = (civil_twilight_morning.mjd-today_time.mjd)*24
-    nau_twilight_sunrise = (nautical_twilight_morning.mjd-today_time.mjd)*24
-    ast_twilight_sunrise = (astronomical_twilight_morning.mjd-today_time.mjd)*24
-
-
-    moon_distance = target_altazs.separation(moonaltazs)
-
-    moon_dist_x = delta_midnight[0::50]
-    moon_dist_y = moonaltazs.alt[0::50]
-    moon_dist_t = moon_distance [0::50]
-
-
-    ## ----- Plot! -----
-    fig = plt.figure(figsize=(8, 8))
-
-    xlimits = [-np.ceil(sunset_hour), np.ceil(sunrise_hour)]
-    # xlimits = [-np.ceil(sunset_rel), np.ceil(sunrise_rel)]
-    # xlimits = [sunset_rel-1, sunrise_rel+1]
-
-    plt.title(str(name) + "\nLocation: " + str(location_name) + "     RA: " + str(target_ra) + "  Dec: " + str(target_dec) + "     Night of " + night)
-
-    ax = plt.gca()
-    plt.plot(delta_midnight, moonaltazs.alt, color=[0.75]*3, ls='--', zorder=7, label='Moon')
-    # plt.text(moon_dist_x.value, moon_dist_y.value, moon_dist_t.value)
-    for x, y, text in zip(moon_dist_x.value, moon_dist_y.value, moon_dist_t.value):
-        if (x > xlimits[0]) and (y > 0) and (x < xlimits[1]):
-            plt.text(x, y, "%.0f°"%text, ha="center", va="center", backgroundcolor="white", zorder=7)
-
-    colour            = "darkviolet"
-
-    ## Plot the full altitude plot
-    plt.plot(delta_midnight, target_altazs.alt, lw=2, ls="-", color=colour, zorder=18, label='Target')
-
-    # ## Plot when it's right now!
-    # plt.vlines(now_time_rel, 0, 90, linestyle="--", linewidth=1, zorder=9, color="r")
-
-    plt.vlines(sunset_rel,           0, 90, linestyle="-",  linewidth=2, zorder=5, color="k")
-    plt.vlines(civ_twilight_sunset,  0, 90, linestyle="--", linewidth=2, zorder=5, color="grey")
-    plt.vlines(nau_twilight_sunset,  0, 90, linestyle="--", linewidth=1, zorder=5, color="grey")
-    plt.vlines(ast_twilight_sunset,  0, 90, linestyle=":",  linewidth=1, zorder=5, color="grey")
-    plt.vlines(ast_twilight_sunrise, 0, 90, linestyle=":",  linewidth=1, zorder=5, color="grey")
-    plt.vlines(nau_twilight_sunrise, 0, 90, linestyle="--", linewidth=1, zorder=5, color="grey")
-    plt.vlines(civ_twilight_sunrise, 0, 90, linestyle="--", linewidth=2, zorder=5, color="grey")
-    plt.vlines(sunrise_rel,          0, 90, linestyle="-",  linewidth=2, zorder=5, color="k")
-
-    plt.text(sunset_rel,           20, "Sunset",                rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
-    plt.text(civ_twilight_sunset,  20, "Civil Twilight",        rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
-    plt.text(nau_twilight_sunset,  20, "Nautical Twilight",     rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
-    plt.text(ast_twilight_sunset,  20, "Astronomical Twilight", rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
-    plt.text(ast_twilight_sunrise, 20, "Astronomical Twilight", rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
-    plt.text(nau_twilight_sunrise, 20, "Nautical Twilight",     rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
-    plt.text(civ_twilight_sunrise, 20, "Civil Twilight",        rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
-    plt.text(sunrise_rel,          20, "Sunrise",               rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+        civ_twilight_sunrise = (civil_twilight_morning.mjd-today_time.mjd)*24
+        nau_twilight_sunrise = (nautical_twilight_morning.mjd-today_time.mjd)*24
+        ast_twilight_sunrise = (astronomical_twilight_morning.mjd-today_time.mjd)*24
 
 
-    ## Various legends and axes properties
-    plt.legend(loc='lower center', ncol=3, shadow=True).set_zorder(15)
-    plt.xlim(xlimits)
-    plt.xticks(np.arange(xlimits[0], xlimits[1], 1))
-    plt.grid(linestyle=":", zorder=5)
-    plt.ylim(0, 90)
-    plt.xlabel('Hours from UTC Midnight')
-    plt.ylabel('Altitude [deg]')
+        moon_distance = target_altazs.separation(moonaltazs)
 
-    savename = output_dir + "/AltitudePlot_%.5f"%float(target_ra) + "_%.5f"%float(target_dec) + "_" + night + "_" + str(location_name) + ".png"
-    plt.savefig(savename, bbox_inches='tight')
+        moon_dist_x = delta_midnight[0::50]
+        moon_dist_y = moonaltazs.alt[0::50]
+        moon_dist_t = moon_distance [0::50]
 
-    print("Plotted.")
+
+        ## ----- Plot! -----
+        fig, ax1 = plt.subplots(figsize=(8, 8))
+
+        xlimits = [-np.ceil(sunset_hour), np.ceil(sunrise_hour)]
+        # xlimits = [-np.ceil(sunset_rel), np.ceil(sunrise_rel)]
+        # xlimits = [sunset_rel-1, sunrise_rel+1]
+
+        plt.title(str(name) + "\nLocation: " + str(location_name) + "     RA: " + str(target_ra) + "  Dec: " + str(target_dec) + "     Night of " + night)
+        ax1 = plt.gca()
+
+        ax1.plot(delta_midnight, moonaltazs.alt, color=[0.75]*3, ls='--', zorder=7, label='Moon')
+        # plt.text(moon_dist_x.value, moon_dist_y.value, moon_dist_t.value)
+        for x, y, text in zip(moon_dist_x.value, moon_dist_y.value, moon_dist_t.value):
+            if (x > xlimits[0]) and (y > 0) and (x < xlimits[1]):
+                ax1.text(x, y, "%.0f°"%text, ha="center", va="center", backgroundcolor="white", zorder=7)
+
+        colour            = "darkviolet"
+
+        ## Plot the full altitude plot
+        ax1.plot(delta_midnight, target_altazs.alt, lw=2, ls="-", color=colour, zorder=18, label='Target')
+
+        # ## Plot when it's right now!
+        # plt.vlines(now_time_rel, 0, 90, linestyle="--", linewidth=1, zorder=9, color="r")
+
+        ax1.vlines(sunset_rel,           0, 90, linestyle="-",  linewidth=2, zorder=5, color="k")
+        ax1.vlines(civ_twilight_sunset,  0, 90, linestyle="--", linewidth=2, zorder=5, color="grey")
+        ax1.vlines(nau_twilight_sunset,  0, 90, linestyle="--", linewidth=1, zorder=5, color="grey")
+        ax1.vlines(ast_twilight_sunset,  0, 90, linestyle=":",  linewidth=1, zorder=5, color="grey")
+        ax1.vlines(ast_twilight_sunrise, 0, 90, linestyle=":",  linewidth=1, zorder=5, color="grey")
+        ax1.vlines(nau_twilight_sunrise, 0, 90, linestyle="--", linewidth=1, zorder=5, color="grey")
+        ax1.vlines(civ_twilight_sunrise, 0, 90, linestyle="--", linewidth=2, zorder=5, color="grey")
+        ax1.vlines(sunrise_rel,          0, 90, linestyle="-",  linewidth=2, zorder=5, color="k")
+
+        ax1.text(sunset_rel,           20, "Sunset",                rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+        ax1.text(civ_twilight_sunset,  20, "Civil Twilight",        rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+        ax1.text(nau_twilight_sunset,  20, "Nautical Twilight",     rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+        ax1.text(ast_twilight_sunset,  20, "Astronomical Twilight", rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+        ax1.text(ast_twilight_sunrise, 20, "Astronomical Twilight", rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+        ax1.text(nau_twilight_sunrise, 20, "Nautical Twilight",     rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+        ax1.text(civ_twilight_sunrise, 20, "Civil Twilight",        rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+        ax1.text(sunrise_rel,          20, "Sunrise",               rotation='vertical', ha="center", va="center", color="grey", backgroundcolor="white", zorder=6)
+
+
+        ## Various legends and axes properties
+        ax1.legend(loc='lower center', ncol=3, shadow=True).set_zorder(15)
+        ax1.set_xlim(xlimits)
+        ax1.set_xticks(np.arange(xlimits[0], xlimits[1], 1))
+        ax1.grid(linestyle=":", zorder=5)
+        ax1.set_ylim(0, 90)
+        ax1.set_xlabel('Hours from UTC Midnight')
+        ax1.set_ylabel('Altitude [deg]')
+
+        ## Plot Airmass
+        yticks = np.arange(10,91,10)
+        yticks_true = 1/np.cos(np.arange((8/9*np.pi)/2,-0.1,-np.pi/18))
+        yticks_true = ["%.2f"%x for x in yticks_true]
+        secax = ax1.secondary_yaxis('right')
+        secax.set_ylabel('Airmass')
+        secax.set_yticks(yticks, yticks_true)
+
+        savename = output_dir + "/AltitudePlot_%.5f"%float(target_ra) + "_%.5f"%float(target_dec) + "_" + night + "_" + str(location_name) + ".png"
+        plt.savefig(savename, bbox_inches='tight')
+
+        print("Plotted.")
 
 
 
@@ -6611,6 +6625,18 @@ def submit_observation(request):
             "nights" : nights,
             "Observations" : list(observations),
     }
+
+
+    ## Remake Altitude Plots
+    remake_altitude = True
+    if remake_altitude:
+        print("Remaking Altitude Plots...")
+        for name, ra, dec, night, start_night, telescope, location in zip(obs_data.name, obs_data.ra, obs_data.dec, obs_data.night, obs_data.start_night, obs_data.telescope, obs_data.location):
+            if night != "Any": used_night = night
+            else: used_night = start_night
+            plot_altitude_graph(name, ra, dec, used_night, location)
+
+
 
     ## Handle selecting a single night
     if 'show_night' in request.GET:
