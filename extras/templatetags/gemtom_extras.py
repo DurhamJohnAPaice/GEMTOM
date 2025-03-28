@@ -89,13 +89,6 @@ def ztf_for_target(context, target, width=700, height=600, background=None, labe
             photometry_data.setdefault('magnitude', []).append(datum.value.get('magnitude'))
             photometry_data.setdefault('error', []).append(datum.value.get('error'))
 
-
-
-        # print(photometry_data['jd'])
-        # print(photometry_data['magnitude'])
-        # print(photometry_data['error'])
-        # print(photometry_data['error'][0] != None)
-
         photometry_data['magnitude'] = [float(i) for i in photometry_data['magnitude']]
         for i in range(0, len(photometry_data['error'])):
             if photometry_data['error'][i] == None:
@@ -103,11 +96,6 @@ def ztf_for_target(context, target, width=700, height=600, background=None, labe
             else:
                 photometry_data['error'][i] = float(photometry_data['error'][i])
         # photometry_data['error'] = [float(i) for i in photometry_data['error']]
-
-        # print("\n\n\n\n\n\n\n")
-        # print(photometry_data['jd'])
-        # print(photometry_data['magnitude'])
-        # print(photometry_data['error'])
 
         series = go.Scatter(
             x=photometry_data['jd'],
@@ -299,8 +287,7 @@ def other_pages(target):
     target_id = target.id
     target_ra = target.ra
     target_dec = target.dec
-    # print(target.__dict__)
-    # bgem_id = target|target_extra_field:"bgem_id"
+
     try:    bgem_id = target.targetextra_set.get(key='BlackGEM ID').value
     except: bgem_id = None
     try:    tns_name = target.targetextra_set.get(key='TNS Name').value[3:]
@@ -331,16 +318,12 @@ def observe_staralt(target):
     Includes a link to staralt
     """
     target_name = target.name
-    # print("\n\n\n\n\n")
-    # print(target.ra)
-    # print(target.dec)
-    # print(target_name[:4])
-    # print("\n\n\n\n\n")
+
     if target_name[:4] == 'BGEM': target_name = target.name[5:12]
     else:
         target_name = target_name.replace(" ","")
         target_name = target_name[:9]
-    print(target_name)
+    # print(target_name)
     return {
         'target_name' : target_name,
         'staralt_ra'  : round(target.ra, 3),
@@ -353,13 +336,7 @@ def add_to_observations(target, user):
     """
     Gets all the observations in the Telescope csv
     """
-    # # target_name = target.name
-    # if target_name[:4] == 'BGEM': target_name = target.name[5:12]
-    # else:
-    #     target_name = target_name.replace(" ","")
-    #     target_name = target_name[:9]
-    # print(target_name)
-    # print("/n/n/n/nADD TO OBSERVATIONS/n/n/n/n")
+    print("Getting all Telescope blocks...")
 
     user_first_name = user.first_name
     user_last_name  = user.last_name

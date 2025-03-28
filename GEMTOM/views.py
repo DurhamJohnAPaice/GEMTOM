@@ -2003,8 +2003,6 @@ def NightView(request, obs_date):
     context['plot_image']       = image_base64
     context['prev_night']       = datetime.strftime(obs_date_to_datetime(obs_date) - timedelta(1), '%Y%m%d')
     context['next_night']       = datetime.strftime(obs_date_to_datetime(obs_date) + timedelta(1), '%Y%m%d')
-    # print(context['prev_night'])
-    # print(context['next_night'])
     time_list.append(time.time())
 
     ## Get transients overplotted HR diagram
@@ -2034,11 +2032,8 @@ def NightView(request, obs_date):
             notes_list = []
 
             for runcat_id in df_orphans.runcat_id:
-                # print(runcat_id)
                 if runcat_id in list(df_orphans_all.runcat_id):
                     index = df_orphans_all.index[df_orphans_all['runcat_id'] == int(runcat_id)]
-
-                    # print(df_orphans_all['yes_no'].values[index][0])
 
                     yes_no_list.append(df_orphans_all['yes_no'].values[index][0])
                     notes_list.append(df_orphans_all['notes'].values[index][0])
@@ -2053,8 +2048,6 @@ def NightView(request, obs_date):
             df_orphans['yes_no'] = [""]*len(df_orphans)
             df_orphans['notes']  = [""]*len(df_orphans)
 
-        # print(df_orphans.columns)
-        # print(['%.2f'%x for x in df_orphans.q_rb_avg])
         df_orphans = df_orphans.sort_values(by=['i_rb_avg'], ascending=False)
         df_orphans = df_orphans.sort_values(by=['u_rb_avg'], ascending=False)
         df_orphans = df_orphans.sort_values(by=['q_rb_avg'], ascending=False)
