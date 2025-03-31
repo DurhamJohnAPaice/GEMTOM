@@ -2226,7 +2226,35 @@ def url_to_GEMTOM(request, bgem_id, custom_name=False):
 
 @login_required
 def name_to_GEMTOM(request, bgem_id, custom_name):
-    url_to_GEMTOM(request, bgem_id, custom_name)
+    # url_to_GEMTOM(request, bgem_id, custom_name)
+    '''
+    Imports a target from the bgem_id and adds it as a custom name
+    '''
+    print("Running url_to_GEMTOM...")
+
+    name, ra, dec = all_stats_from_bgem_id(bgem_id)
+
+    if custom_name:
+        name = custom_name
+        custom_name = custom_name.replace(" ","")
+        custom_name = custom_name.replace("%20","")
+        source_is_TNS = False
+        if (custom_name[:2] == "AT") or (custom_name[:2] == "SN"):
+            tns_prefix = custom_name[:2]
+            tns_name = custom_name[2:]
+            source_is_TNS = True
+
+    if name == None or name == "None":
+        messages.error(
+            request,
+            'Upload failed; are you sure that ' + str(bgem_id) + ' is a valid BlackGEM ID? \
+            If so, check that the connection to the transient server is online.'
+        )
+        return redirect(reverse('tom_targets:list'))
+
+    if source_is_TNS:   created, existing_target_id = add_to_GEMTOM(bgem_id, name, ra, dec, tns_prefix, tns_name)
+    else:               created, existing_target_id = add_to_GEMTOM(bgem_id, name, ra, dec)
+
     return redirect(f'/targets/')
 
 
