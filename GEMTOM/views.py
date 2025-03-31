@@ -2633,6 +2633,7 @@ def get_recent_blackgem_transients(days_since_last_update):
         qu = """\
             SELECT a.runcat
                   ,MIN(i."date-obs")
+                  ,MAX(i."date-obs")
               FROM assoc a
                   ,extractedsource x
                   ,image i
@@ -2648,7 +2649,7 @@ def get_recent_blackgem_transients(days_since_last_update):
         query = qu % (params)
 
         l_results = bg.run_query(query)
-        df_dates = pd.DataFrame(l_results, columns=['runcat_id','first_obs'])
+        df_dates = pd.DataFrame(l_results, columns=['runcat_id','first_obs','last_obs'])
         df_dates = df_dates.sort_values(by=['runcat_id']).reset_index(drop=True)
 
 
@@ -2659,9 +2660,10 @@ def get_recent_blackgem_transients(days_since_last_update):
         # print(df_dates["runcat_id"].iloc[0:5])
 
         df_dates['first_obs'] = df_dates['first_obs'].dt.strftime('%Y-%m-%d')
+        df_dates['last_obs'] = df_dates['last_obs'].dt.strftime('%Y-%m-%d')
 
         data = pd.merge(data, df_dates, on="runcat_id", how="left")
-        data["last_obs"] = date_column
+        # data["last_obs"] = date_column
 
 
         # data_list.append(data.iloc[:20])
@@ -2762,6 +2764,7 @@ def get_recent_blackgem_transients(days_since_last_update):
     # print(len(df))
     # print(test.iloc[50:100])
     # print("\n\n")
+    df = df.dropna(subset=['first_obs', 'last_obs'])
 
     if update_data:
         print("Updating Recent History...")
