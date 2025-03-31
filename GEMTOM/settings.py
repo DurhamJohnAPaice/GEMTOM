@@ -316,10 +316,11 @@ DATA_PROCESSORS = {
 
 TOM_FACILITY_CLASSES = [
     # 'tom_observations.facilities.blackgem.BlackGEMFacility',
-    'tom_observations.facilities.lco.LCOFacility',
-    'tom_observations.facilities.gemini.GEMFacility',
-    'tom_observations.facilities.soar.SOARFacility',
-    'GEMTOM.notfacility.NOTFacility'
+    # 'tom_observations.facilities.lco.LCOFacility',
+    # 'tom_observations.facilities.gemini.GEMFacility',
+    # 'tom_observations.facilities.soar.SOARFacility',
+    'GEMTOM.notfacility.NOTFacility',
+    'GEMTOM.mookodifacility.MookodiFacility'
 
 ]
 

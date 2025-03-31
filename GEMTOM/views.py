@@ -2198,13 +2198,16 @@ def all_stats_from_bgem_id(bgem_id):
 
 
 @login_required
-def url_to_GEMTOM(request, bgem_id):
+def url_to_GEMTOM(request, bgem_id, custom_name=False):
     '''
     Imports a target from the bgem_id
     '''
     print("Running url_to_GEMTOM...")
 
     name, ra, dec = all_stats_from_bgem_id(bgem_id)
+
+    if custom_name:
+        name = custom_name
 
     if name == None or name == "None":
         messages.error(
@@ -2220,6 +2223,12 @@ def url_to_GEMTOM(request, bgem_id):
 
     # return redirect(reverse('tom_targets:list'))
     return redirect(f'/targets/{existing_target_id}')
+
+@login_required
+def name_to_GEMTOM(request, bgem_id, custom_name):
+    url_to_GEMTOM(request, bgem_id, custom_name)
+    return redirect(f'/targets/')
+
 
 def history_to_GEMTOM(request):
     '''
@@ -2264,25 +2273,6 @@ def add_to_GEMTOM_message(request, name, created, existing_target_id):
         )
 
     return
-
-
-# def TNS_to_GEMTOM(request):
-#     '''
-#     Imports a target from the History tab with a TNS ID
-#     '''
-#
-#     id          = request.POST.get('id')
-#     name        = request.POST.get('name')
-#     ra          = request.POST.get('ra')
-#     dec         = request.POST.get('dec')
-#     tns_prefix  = request.POST.get('tns_prefix')
-#     tns_name    = request.POST.get('tns_name')
-#
-#     print(tns_prefix + " " + tns_name)
-#
-#     add_to_GEMTOM(id, name, ra, dec, tns_prefix, tns_name)
-#
-#     return redirect(reverse('tom_targets:list'))
 
 
 def rate_target(request):
@@ -2655,6 +2645,7 @@ def get_recent_blackgem_transients(days_since_last_update):
     if data_list:
         update_data = True
         df_new = pd.concat(data_list).reset_index(drop=True)
+        # df_new = df_new.groupby('runcat_id', as_index=False).max()
 
     ## --- Remove data older than 30 days ---
     ## First, is there any data older than 30 days?
@@ -2727,6 +2718,23 @@ def get_recent_blackgem_transients(days_since_last_update):
         else:
             df = previous_history
 
+    ## LEGACY - there are no duplicates in the list! Need to find a way to update the list then...
+    # print("\n\nlen(df):")
+    # print(len(df))
+    # test = df[["runcat_id","ra"]]
+    # test = test.astype('str')
+    # print(len(test))
+    # df = df.sort_values('last_obs', ascending=False).drop_duplicates('runcat_id').sort_index()
+    # test = test.drop_duplicates(subset=['runcat_id'], keep='first', inplace=False)
+    # test.sort_values('runcat_id').reset_index()
+    # print(test.iloc[0])
+    # print(test.runcat_id[0])
+    # print(type(test.runcat_id[0]))
+    # print(df.iloc[0:5])
+    # print(len(df))
+    # print(test.iloc[50:100])
+    # print("\n\n")
+
     if update_data:
         print("Updating Recent History...")
         ## Make new columns and create new, truncated old columns
@@ -2735,7 +2743,7 @@ def get_recent_blackgem_transients(days_since_last_update):
         df['u_max'] = df['u_max'].replace(99,np.nan)
         df['i_max'] = df['i_max'].replace(99,np.nan)
 
-        print(df.iloc[0])
+        # print(df.iloc[0])
 
         ## Round values for displaying
         df['ra_sml']        = round(df['ra'],4)
@@ -3025,6 +3033,27 @@ def search_TNS_ID(request):
 
         return render(request, "transient/index_noTNS.html", context)
 
+# def TNS_to_GEMTOM(request, TNS_id):
+#     '''
+#     Adds a target to GEMTOM based on a TNS ID
+#     '''
+#     tns_object_name = TNS_id
+#     print(tns_object_name)
+#     bgem_message, bgem_id, tns_name, tns_ra, tns_dec, tns_success = get_bgem_id_from_tns(tns_object_name)
+#     if tns_success:
+#         print("BGEM ID Found:", bgem_id)
+#         return redirect(f'/transients/{bgem_id}')
+#     else:
+#         print("BGEM ID Not Found")
+#         context = {
+#             "bgem_message" : bgem_message,
+#             "bgem_id" : bgem_id,
+#             "tns_name" : tns_name,
+#             "tns_object_name" : tns_object_name,
+#             "tns_ra" : tns_ra,
+#             "tns_dec" : tns_dec,
+#         }
+#         return render(request, "transient/index_noTNS.html", context)
 
 def get_bgem_id_from_tns(tns_object_name):
     tns_object_data = get_ra_dec_from_tns(tns_object_name)

@@ -1,33 +1,24 @@
 from tom_observations.facility import BaseRoboticObservationFacility, BaseRoboticObservationForm
 from astropy import units
-from crispy_forms.layout import Layout
-from django import forms
 
-class NOTFacilityForm(BaseRoboticObservationForm):
+
+class MookodiFacilityForm(BaseRoboticObservationForm):
     pass
-    # exposure_time = forms.IntegerField()
-    # exposure_count = forms.IntegerField()
-    #
-    # def layout(self):
-    #     return Layout(
-    #         'exposure_time',
-    #         'exposure_count'
-    #     )
 
 
-class NOTFacility(BaseRoboticObservationFacility):
-    print("NOTFacility Class")
-    name = 'NOT'
+class MookodiFacility(BaseRoboticObservationFacility):
+    print("MookodiFacility Class")
+    name = 'Mookodi'
     # observation_types = [('OBSERVATION', 'Custom Observation')]
     observation_forms = {
-        'OBSERVATION': NOTFacilityForm
+        'OBSERVATION': MookodiFacilityForm
     }
 
     SITES = {
-        'Roque de los Muchachos': {
-            'latitude': 28.75611111,
-            'longitude': 17.89166667,
-            'elevation': 2396.00
+        'South African Astronomical Observatory': {
+            'latitude': -33.93604910,
+            'longitude': 18.47698560,
+            'elevation': 1798.00
         }
     }
 
@@ -43,7 +34,7 @@ class NOTFacility(BaseRoboticObservationFacility):
         return
 
     def get_form(self, observation_type):
-        return NOTFacilityForm
+        return MookodiFacilityForm
 
     def get_observation_status(self):
         return
