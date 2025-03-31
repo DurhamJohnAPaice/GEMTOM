@@ -2752,7 +2752,7 @@ def get_recent_blackgem_transients(days_since_last_update):
     # test = df[["runcat_id","ra"]]
     # test = test.astype('str')
     # print(len(test))
-    # df = df.sort_values('last_obs', ascending=False).drop_duplicates('runcat_id').sort_index()
+    df = df.sort_values('last_obs', ascending=False).drop_duplicates('runcat_id').sort_index()
     # test = test.drop_duplicates(subset=['runcat_id'], keep='first', inplace=False)
     # test.sort_values('runcat_id').reset_index()
     # print(test.iloc[0])
