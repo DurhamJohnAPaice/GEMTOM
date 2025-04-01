@@ -2264,6 +2264,7 @@ def history_to_GEMTOM(request):
     '''
     print("Running history_to_GEMTOM...")
 
+
     bgem_id = request.POST.get('id')
     name = request.POST.get('name')
     ra = request.POST.get('ra')
@@ -2271,13 +2272,17 @@ def history_to_GEMTOM(request):
     tns_prefix  = request.POST.get('tns_prefix')
     tns_name    = request.POST.get('tns_name')
 
+    print("TNS Details:")
+    print(tns_prefix)
+    print(tns_name)
+
     if tns_prefix and tns_name:
         name = tns_prefix + " " + tns_name
     else:
         name = iau_name_from_bgem_id(bgem_id)
 
 
-    created, existing_target_id = add_to_GEMTOM(bgem_id, name, ra, dec)
+    created, existing_target_id = add_to_GEMTOM(bgem_id, name, ra, dec, tns_prefix, tns_name)
 
     add_to_GEMTOM_message(request, name, created, existing_target_id)
 
@@ -4150,7 +4155,7 @@ def check_blackgem_recent_transients(recent_transients):
 
     ## Find the difference...
     difference = yesterday_date - most_recent_date
-    days_since_last_update = difference.days
+    days_since_last_update = difference.days + 1
     print("Days since last update:", days_since_last_update)
 
     yesterday_date_string = yesterday_date.strftime("%Y%m%d")

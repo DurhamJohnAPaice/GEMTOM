@@ -63,9 +63,6 @@ A list of the main features that have been requested and I intend to work on.
         <h5>Miscellaneous Features and Bugfixes:</h5>
         <ul>
             <li>Targets: When a source is uploaded with its TNS name, have that name be assigned to the 'TNS ID' field.</li>
-            <li>Transients: Solve the 'Last Obs' column in the Recent Transients table referring to the night of, rather than the date</li>
-            <li>Transients: Solve the 'Last Obs' column in the Recent Transients table not updating when new observations come in</li>
-            <li>Transients: Solve new blank columns in the 'Recent Transients' table - why does it not work on the server?</li>
             <li>Meta: Connect GEMTOM to the Full Source Database (when it has the full source data)</li>
             <li>Transients: Remove 99mag values from the lightcurves</li>
             <li>Transients: Submit multiple TNS/Gaia/RA Decs to be searched</li>
@@ -141,8 +138,7 @@ A list of the main features that have been requested and I intend to work on.
         <ul>
             <li>Observations can now be filtered by observation block as well as day.</li>
             <li>Targets do not need to be assigned to any one date; if no date is inputted, they are set as 'Any' date and will show up under any date within their run. Altitude graphs will be made corresponding to the first day of their assigned run.</li>
-            <li>Transients: Added a 'First Observed' date to the Recent Transients table<br>(Note that 'Last Obs' a) refers to the night of, so it can sometimes appear that a source was first observed after the last observation, and b) is only updated when it's added to the table, so can be outdated)</li>
-            <li>Transients: Removed duplicate sources in the Recent Transients table.</li>
+            <li>Transients: Added a 'First Observed' date to the Recent Transients table<br>(Note that 'Last Obs' is only updated when it's added to the table, so can be outdated)</li>
         </ul>
     </ul>
 
@@ -152,6 +148,10 @@ A list of the main features that have been requested and I intend to work on.
         <li>Solved a bug in the Import Targets function; GEMTOM can now remove spaces in headers.</li>
         <li>Adjusted the create-target form to handle larger names for observation blocks and such.</li>
         <li>Solved a bug where NOT and Mookodi spectra couldn't be uploaded. If you want to upload spectra from other telescopes, let me know!</li>
+        <li>Transients: Removed duplicate sources in the Recent Transients table.</li>
+        <li>Transients: Solved the 'Last Obs' column in the Recent Transients table referring to the night of, rather than the date; it now corresponds to the time of the most recent point.</li>
+        <li>Transients: Solved the 'Last Obs' column in the Recent Transients table not updating when new observations come in</li>
+        <li>Transients: Solved new blank columns in the 'Recent Transients' table</li>
         <!-- <li></li> -->
     </ul>
 </ul>
