@@ -6959,13 +6959,16 @@ def email_test_page(request):
             target_name = Target_2.name
             bgem_id = Target_2a.value
 
-            df_saved_lightcurve = pd.read_csv("./data/" + target_name + "/none/" + target_name + "_BGEM_Data.csv")
+            saved_filename = "./data/" + target_name + "/none/" + target_name + "_BGEM_Data.csv"
+            df_saved_lightcurve = pd.read_csv(saved_filename, index_col=False)
+            df_saved_lightcurve_orig = df_saved_lightcurve
             df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
 
             df_saved_lightcurve = df_saved_lightcurve[np.isfinite(df_saved_lightcurve.limit) == False]
 
             df_new_detections = df_bgem_lightcurve[['i."mjd-obs"', 'x.mag_zogy', 'x.magerr_zogy', 'i.filter']]
             df_new_detections = df_new_detections.rename(columns={'i."mjd-obs"' : 'MJD', 'x.mag_zogy' : 'Mag', 'x.magerr_zogy' : 'Mag_Err', 'i.filter' : 'Filter'})
+            df_new_detections_saved = df_new_detections
             df_new_detections = df_new_detections[~df_new_detections['MJD'].isin(df_saved_lightcurve.mjd)]
 
             av_mag_new_detection = np.mean(df_new_detections.Mag)
@@ -6982,6 +6985,23 @@ def email_test_page(request):
                 print("\nEmailing the following users about " + target_name + ":")
                 print(email_list)
                 email_new_detection(bgem_id, target_name, df_new_detections, av_mag_new_detection, plural_bool, email_list)
+
+                df_new_detections = df_new_detections.rename(columns={'MJD' : 'mjd', 'Mag' : 'mag', 'Mag_Err' : "magerr", 'Filter' : 'filter'})
+                # df_new_detections = df_new_detections[['mjd', 'mag', 'Mag_Err' : "mag", 'Filter' : 'filter']]
+                df_new_detections["limit"] = [np.nan]*len(df_new_detections)
+                print("df_new_detections")
+                print(df_new_detections)
+                df_new_lightcurve = pd.concat([df_saved_lightcurve_orig, df_new_detections]).reset_index(drop=True)
+
+
+                df_new_lightcurve.to_csv(saved_filename)
+                #
+                # print("Saved Lightcurve:")
+                # print(df_saved_lightcurve)
+                # print("Saved Limits:")
+                # print(df_limiting_mag)
+                # print("New BGEM Lightcurve:")
+                # print(df_new_detections_saved)
             else:
                 print("No new datapoint.")
 
