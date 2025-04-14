@@ -85,6 +85,16 @@ MIDDLEWARE = [
     'django_plotly_dash.middleware.ExternalRedirectionMiddleware',
 ]
 
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # SMTP server host
+EMAIL_PORT = 587  # SMTP server port (587 for TLS, 465 for SSL)
+EMAIL_USE_TLS = True  # True for TLS, False for SSL
+EMAIL_HOST_USER = 'john@blackgem.org'  # SMTP server username
+EMAIL_HOST_PASSWORD = os.getenv('GEMTOM_Email_Pass', 'GEMTOM_Email_Pass not set') # SMTP server password
+EMAIL_USE_SSL = False  # Set to True if using SSL
+DEFAULT_FROM_EMAIL = 'johnapaice@gmail.com'  # Default sender email address
+
 X_FRAME_OPTIONS = 'SAMEORIGIN'  ## For django-plotly-dash
 
 ROOT_URLCONF = 'GEMTOM.urls'

@@ -80,7 +80,8 @@ from blackpy.catalogs.blackgem import TransientsCatalog
 
 from tom_common.hooks import run_hook
 # from tom_observations.models import Target
-from tom_targets.models import Target
+from tom_targets.models import Target, TargetList, TargetName, TargetExtra
+from django.db.models import Q
 from tom_common.hints import add_hint
 from tom_dataproducts.exceptions import InvalidFileFormatException
 
@@ -92,6 +93,12 @@ from data_processor import run_data_processor
 from tom_dataproducts.models import DataProduct, DataProductGroup, ReducedDatum
 from tom_dataproducts.forms import DataProductUploadForm
 
+## Sending Email
+from django.core.mail import send_mail
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.message import Message
+from email.mime.text import MIMEText
 
 class TargetImportView(LoginRequiredMixin, TemplateView):
     """
@@ -6929,282 +6936,148 @@ def submit_observation(request):
 
 
 
+## ========== Send Email Testing ==========
+
+# @login_required
+def email_test_page(request):
+
+    print("\n\n ===== Updating Watched Targets... ===== \n")
+
+    # QueryDict is immutable, and we want to append the remaining params to the redirect URL
+    print("Fetching BlackGEM data:")
+
+    df_watched_targets = pd.read_csv("./data/watched_targets.csv")
+    num_list = df_watched_targets.num
+
+    unique_num_list = df_watched_targets['num'].unique()
 
 
+    for num in unique_num_list:
+        Target_2 = Target.objects.get(id=num)
+        try:
+            Target_2a = TargetExtra.objects.get(Q(target_id=num) & Q(key = 'BlackGEM ID'))
+            target_name = Target_2.name
+            bgem_id = Target_2a.value
 
-# class observation_view(TemplateView):
-#     template_name = 'observations.html'
-#     # if this is a POST request we need to process the form data
-#
-#     def get_context_data(self, **kwargs):
-#
-#         data_file = "./data/planned_observations_data.csv"
-#
-#         if os.path.exists(data_file):
-#
-#             obs_data = pd.read_csv(data_file)
-#
-#             obs_data = obs_data.sort_values(by=["night"])
-#
-#             print(obs_data)
-#
-#             df_lists = zip(
-#                         list(obs_data.ra),
-#                         list(obs_data.dec),
-#                         list(obs_data.notes),
-#                         list(obs_data.night),
-#             )
-#
-#             nights = obs_data.night
-#
-#
-#             context = {
-#                     "df"    : df_lists,
-#                     # "RA"    : obs_data["ra"],
-#                     # "Dec"   : obs_data["dec"],
-#                     # "Notes" : obs_data["notes"],
-#                     # "Night" : obs_data["night"]
-#                     "nights" : nights
-#
-#                     }
-#
-#             return context
+            df_saved_lightcurve = pd.read_csv("./data/" + target_name + "/none/" + target_name + "_BGEM_Data.csv")
+            df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
+
+            df_saved_lightcurve = df_saved_lightcurve[np.isfinite(df_saved_lightcurve.limit) == False]
+
+            df_new_detections = df_bgem_lightcurve[['i."mjd-obs"', 'x.mag_zogy', 'x.magerr_zogy', 'i.filter']]
+            df_new_detections = df_new_detections.rename(columns={'i."mjd-obs"' : 'MJD', 'x.mag_zogy' : 'Mag', 'x.magerr_zogy' : 'Mag_Err', 'i.filter' : 'Filter'})
+            df_new_detections = df_new_detections[~df_new_detections['MJD'].isin(df_saved_lightcurve.mjd)]
+
+            av_mag_new_detection = np.mean(df_new_detections.Mag)
+            if len(df_new_detections) > 1: plural_bool = True
+            else: plural_bool = False
+
+            df_to_alert = df_watched_targets[df_watched_targets.num == num]
+            df_to_alert = df_to_alert[df_to_alert['limit'] >= av_mag_new_detection]
+
+            email_list = list(df_to_alert[df_to_alert['num'] == num].person)
+
+            if len(df_bgem_lightcurve) > len(df_saved_lightcurve):
+                print("New datapoint!")
+                print("\nEmailing the following users about " + target_name + ":")
+                print(email_list)
+                email_new_detection(bgem_id, target_name, df_new_detections, av_mag_new_detection, plural_bool, email_list)
+            else:
+                print("No new datapoint.")
+
+        except Exception as e:
+            print(e)
+            print(Target_2, "has no BGEM ID. Please add one!")
+
+    return render(request, "email_test.html")
+
+def email_new_detection(bgem_id, target_name, df_new_detections, av_mag_new_detection, plural_bool, email_list):
+    if plural_bool:
+        subject_line = "New Detections of " + target_name + " (Av. %.1f mag)"%av_mag_new_detection
+        line_1 = "There are new detections of one of your targets!\n\n"
+    else:
+        subject_line = "New Detection of " + target_name + " (%.1f mag)"%av_mag_new_detection
+        line_1 = "There's a new detection of one of your targets!\n\n"
+    send_mail(
+        subject_line,
+        line_1+
+        "Target Name: \t" + target_name + "\n"+
+        "BlackGEM ID: \t" + bgem_id + "\n\n"+
+        "New detections:\n\n"+
+        df_new_detections.to_string() + "\n\n"
+        "See all detections here: https://gemtom.blackgem.org/transients/" + bgem_id + "\n\n",
+        # "love your self <3",
+        "john@blackgem.org",
+        email_list,
+        fail_silently=False,
+    )
+
+@login_required
+def add_to_watchlist(request):
+
+    print("\n\n\nFull Request:")
+    print(request.GET)
+    print("\n\n\n")
+
+    target_id   = int(request.GET.get("gemtom_id"))
+    user_email  = request.GET.get("user_email")
+    limit       = request.GET.get("limit")
+    subscribe       = request.GET.get("subscribe")
 
 
-    # return render(request, "observations.html", {"form": form})
+    if not limit:   limit = 98.0
+    else:           limit = float(limit)
+
+    df_watchlist = pd.read_csv("./data/watched_targets.csv")
+
+    df_watchlist = df_watchlist.loc[~((df_watchlist['num'] == target_id) & (df_watchlist['person'] == user_email))]
 
 
+    if subscribe == "Yes":
+
+        df_new_row = pd.DataFrame([[target_id, user_email, limit]], columns=["num", "person", "limit"])
+        df_watchlist = pd.concat([df_watchlist, df_new_row])
+
+    df_watchlist.to_csv("./data/watched_targets.csv", index=False)
+
+    if subscribe == "Yes":
+        if limit == 98.0:
+            messages.success(
+                request,
+                'Watchlist Updated! Any future detections of this source will be sent to ' + user_email + '.'
+            )
+        else:
+            messages.success(
+                request,
+                'Watchlist Updated! Any future detections of this source above ' + str(limit) + ' mag will be sent to ' + user_email + '.'
+            )
+    else:
+        messages.success(
+            request,
+            'Watchlist Updated! ' + user_email + ' has been unsubscribed from this target.'
+        )
 
 
+    return redirect('/targets/' + str(target_id))
 
-# def observation_view(request):
-#     # if this is a POST request we need to process the form data
-#     if request.method == "POST":
-#         # create a form instance and populate it with data from the request:
-#         form = ObservationForm(request.POST)
-#         # check whether it's valid:
-#         if form.is_valid():
-#
-#             # Get the data from the form
-#             ra      = form.cleaned_data['RA']
-#             dec     = form.cleaned_data['dec']
-#             notes   = form.cleaned_data['notes']
-#             night   = form.cleaned_data['night']
-#
-#             ## Standardise the band data:
-#
-#             print(ra)
-#             print(dec)
-#             print(notes)
-#             print(night)
-#
-#             fileOut = "./data/planned_observations_data.csv"
-#
-#             new_output = pd.DataFrame({
-#                 'ra'      : [ra],
-#                 'dec'     : [dec],
-#                 'notes'   : [notes],
-#                 'night'    : [night],
-#             })
-#
-#             if os.path.exists(fileOut):
-#                 output = pd.read_csv(fileOut)
-#                 full_output = pd.concat([output,new_output]).reset_index(drop=True)
-#                 full_output.to_csv(fileOut, index=False)
-#
-#             else:
-#                 new_output.to_csv(fileOut, index=False)
-#
-#             obs_data = pd.read_csv(data_file)
-#             context = {
-#                     "RA"    : obs_data["ra"],
-#                     "Dec"   : obs_data["dec"],
-#                     "Notes" : obs_data["notes"],
-#                     "Night" : obs_data["night"]
-#                     }
-#
-#             return HttpResponseRedirect("/Observations/", context)
-#
-#     # if a GET (or any other method) we'll create a blank form
-#     else:
-#         form = ObservationForm()
-#
-#     def get_context_data(**kwargs):
-#
-#         data_file = "./data/planned_observations_data.csv"
-#
-#         if os.path.exists(data_file):
-#
-#             obs_data = pd.read_csv(data_file)
-#
-#             context = {
-#                     "RA"    : obs_data["ra"],
-#                     "Dec"   : obs_data["dec"],
-#                     "Notes" : obs_data["notes"],
-#                     "Night" : obs_data["night"]
-#                     }
-#
-#             return render(request, "Observations.html", context)
-#
-#
-#     return render(request, "observations.html", {"form": form})
+@login_required
+def send_email_test(request):
+    '''
+    Send an Email
+    '''
 
-#
-# class UpdateBlackGEMView(LoginRequiredMixin, RedirectView):
-#     """
-#     View that handles the updating of BlackGEM data. Requires authentication.
-#     """
-#
-#     def get(self, request, *args, **kwargs):
-#         """
-#         Method that handles the GET requests for this view. Calls the management command to update the reduced data and
-#         adds a hint using the messages framework about automation.
-#         """
-#
-#
-#         print("\n\n ===== Running UpdateZTFView... ===== \n")
-#
-#         # QueryDict is immutable, and we want to append the remaining params to the redirect URL
-#         query_params = request.GET.copy()
-#         print("Fetching ZTF data:")
-#         print(query_params)
-#
-#         target_name = query_params.pop('target', None)
-#         target_id   = query_params.pop('target_id', None)
-#         target_ra   = query_params.pop('target_ra', None)
-#         target_dec  = query_params.pop('target_dec', None)
-#         # print(target_id[0])
-#         # print(target_ra[0])
-#         # print(target_dec[0])
-#
-#         out = StringIO()
-#
-#         # if target_id:
-#         if isinstance(target_name, list):   target_name    = target_name[-1]
-#         if isinstance(target_id, list):     target_id      = target_id[-1]
-#         if isinstance(target_ra, list):     target_ra      = target_ra[-1]
-#         if isinstance(target_dec, list):    target_dec     = target_dec[-1]
-#
-#         form = { \
-#             'observation_record': None, \
-#             'target': target_name, \
-#             'files': "./data/GEMTOM_ZTF_Test.csv", \
-#             'data_product_type': 'ztf_data', \
-#             'referrer': '/targets/' + target_id + '/?tab=ztf'}
-#
-#         # print(form)
-#
-#         print("-- ZTF: Looking for target...", end="\r")
-#         try:
-#             lcq = lightcurve.LCQuery.from_position(target_ra, target_dec, 5)
-#
-#             ZTF_data_full = pd.DataFrame(lcq.data)
-#             ZTF_data = pd.DataFrame({'JD' : lcq.data.mjd+2400000.5, 'Magnitude' : lcq.data.mag, 'Magnitude_Error' : lcq.data.magerr})
-#
-#             if len(ZTF_data) == 0:
-#                 raise Exception("No ZTF data found within 5 arcseconds of given RA/Dec.")
-#
-#             print("-- ZTF: Looking for target... target found.")
-#             print(lcq.__dict__)
-#
-#             ## Save ZTF Data
-#             df = ZTF_data
-#             # print(df)
-#             if not os.path.exists("./data/" + target_name + "/none/"):
-#                 os.makedirs("./data/" + target_name + "/none/")
-#             filepath = "./data/" + target_name + "/none/" + target_name + "_ZTF_Data.csv"
-#             df.to_csv(filepath)
-#
-#             target_instance = Target.objects.get(pk=target_id)
-#
-#             dp = DataProduct(
-#                 target=target_instance,
-#                 observation_record=None,
-#                 data=target_name + "/none/" + target_name + "_ZTF_Data.csv",
-#                 product_id=None,
-#                 data_product_type='ztf_data'
-#             )
-#             # print(dp)
-#             dp.save()
-#
-#             ## Ingest the data
-#             successful_uploads = []
-#
-#             try:
-#                 run_hook('data_product_post_upload', dp)
-#                 reduced_data = run_data_processor(dp)
-#
-#                 if not settings.TARGET_PERMISSIONS_ONLY:
-#                     for group in form.cleaned_data['groups']:
-#                         assign_perm('tom_dataproducts.view_dataproduct', group, dp)
-#                         assign_perm('tom_dataproducts.delete_dataproduct', group, dp)
-#                         assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
-#                 successful_uploads.append(str(dp))
-#
-#             except InvalidFileFormatException as iffe:
-#                 print("Invalid File Format Exception!")
-#                 print(iffe)
-#                 ReducedDatum.objects.filter(data_product=dp).delete()
-#                 dp.delete()
-#                 messages.error(
-#                     self.request,
-#                     'File format invalid for file {0} -- Error: {1}'.format(str(dp), iffe)
-#                 )
-#             except Exception as iffe:
-#                 print("Exception!")
-#                 print(iffe)
-#                 ReducedDatum.objects.filter(data_product=dp).delete()
-#                 dp.delete()
-#                 messages.error(self.request, 'There was a problem processing your file: {0}'.format(str(dp)))
-#
-#             if successful_uploads:
-#                 print("Successful upload!")
-#                 messages.success(
-#                     self.request,
-#                     'Successfully uploaded: {0}'.format('\n'.join([p for p in successful_uploads]))
-#                 )
-#             else:
-#                 print("Upload unsuccessful!")
-#
-#
-#         except Exception as e:
-#             messages.error(
-#                 self.request,
-#                 'Error while fetching ZTF data; ' + str(e)
-#             )
-#
-#
-#
-#         return redirect(form.get('referrer', '/'))
+    print("\n\n\nFull Request:")
+    print(request.POST)
+    print("\n\n\n")
 
-#
-# class AboutView(TemplateView):
-#     template_name = 'about.html'
-#
-#
-#     def get_context_data(self, **kwargs):
-#         return {'targets': Target.objects.all()}
-#
-#
-#     def post(self, request, **kwargs):
-#         source_ra  = float(request.POST['num1'])
-#         source_dec = float(request.POST['num2'])
-#
-#         print("-- ZTF: Looking for target...", end="\r")
-#         lcq = lightcurve.LCQuery.from_position(source_ra, source_dec, 5)
-#         ZTF_data_full = pd.DataFrame(lcq.data)
-#         ZTF_data = pd.DataFrame({'JD' : lcq.data.mjd, 'Magnitude' : lcq.data.mag, 'Magnitude_Error' : lcq.data.magerr})
-#
-#         if len(ZTF_data) == 0:
-#             raise Exception("-- ZTF: Target not found. Try AAVSO instead?")
-#
-#         print("-- ZTF: Looking for target... target found.")
-#         print(lcq.__dict__)
-#
-#         df = ZTF_data # replace with your own data source
-#
-#         fig = px.scatter(df, x='JD', y='Magnitude')
-#         fig.update_layout(
-#             yaxis = dict(autorange="reversed")
-#         )
-#         return HttpResponse("Closest target within 5 arcseconds:" + fig.to_html() + ZTF_data_full.to_html())
+    from django.core.mail import send_mail
+
+    send_mail(
+        "Test Email Please Read",
+        "love your self <3",
+        "john@blackgem.org",
+        ["johnapaice@gmail.com"],
+        fail_silently=False,
+    )
+
+    return redirect('/EmailTest/')

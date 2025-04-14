@@ -89,6 +89,11 @@ urlpatterns = [
     path('delete_observation/', delete_observation, name='delete_observation'),
     path('Observations/', submit_observation, name='Observations'),
 
+    path('EmailTest/', email_test_page, name='EmailTest'),
+    path('send_email_test/', send_email_test, name='send_email_test'),
+    path('add_to_watchlist/', add_to_watchlist, name='add_to_watchlist'),
+    # path('remove_from_watchlist/', remove_from_watchlist, name='remove_from_watchlist'),
+
     # path('ToOs/', too_view, name='ToOs'),
     # path('upload/', UploadView.as_view(), name='upload'),
 ]

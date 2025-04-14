@@ -62,7 +62,6 @@ A list of the main features that have been requested and I intend to work on.
 
         <h5>Miscellaneous Features and Bugfixes:</h5>
         <ul>
-            <li>Targets: When a source is uploaded with its TNS name, have that name be assigned to the 'TNS ID' field.</li>
             <li>Meta: Connect GEMTOM to the Full Source Database (when it has the full source data)</li>
             <li>Transients: Remove 99mag values from the lightcurves</li>
             <li>Transients: Submit multiple TNS/Gaia/RA Decs to be searched</li>
@@ -84,11 +83,7 @@ A list of the main features that have been requested and I intend to work on.
             <li>Live Feed: Link to the Treasure Map</li>
             <li>Targets: Automatically delete the previous instance of BlackGEM data when updating.</li>
             <li>Targets: Get the flux values for the lightcurves.</li>
-            <li>Targets: Link to TNS, if available.</li>
-            <li>Targets: Find out why non-detections aren't plotting.</li>
-            <li>Targets: Get lightcurves showing on the Observe tab for SN 2024vjm.</li>
             <li>Targets: Add functionality to fold the lightcurves.</li>
-            <li>Targets: Fix the TNS functionality (currently, the TNS Name field is not updated if the target is added with a TNS name, and different links are given).</li>
             <li>Link to the Daily Scanning page (34.90.13.7)</li>
             <li>Add a 'Watchlist' functionality that emails users when their targets come up.</li>
             <li>Get Hugo’s code on our servers</li>
@@ -97,8 +92,7 @@ A list of the main features that have been requested and I intend to work on.
             <li>When a source is uploaded, look for a DES source in a certain radius.</li>
             <li>Find a way to have certain parts of pages load after the page itself,
                 e.g. TNS queries, lightcurves, etc., to speed up loading; similar to the Transients page.</li>
-                <li>Lightcurves: Click on datum to go to detection of that datum</li>
-            <li>Set up some kind of spreadsheet/observing list capability, so that on a given night, we can see what we should observe.</li>
+            <li>Lightcurves: Click on datum to go to detection of that datum</li>
             <!-- <li></li>
             <li></li>
             <li></li> -->
@@ -152,6 +146,8 @@ A list of the main features that have been requested and I intend to work on.
         <li>Transients: Solved the 'Last Obs' column in the Recent Transients table referring to the night of, rather than the date; it now corresponds to the time of the most recent point.</li>
         <li>Transients: Solved the 'Last Obs' column in the Recent Transients table not updating when new observations come in</li>
         <li>Transients: Solved new blank columns in the 'Recent Transients' table</li>
+        <li>Targets: Made sure that, when a source is uploaded with its TNS name, that name is assigned to the 'TNS ID' field.</li>
+        <li>Targets: Pages now link to TNS, if TNS ID is set.</li>
         <!-- <li></li> -->
     </ul>
 </ul>

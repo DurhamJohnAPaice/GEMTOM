@@ -367,6 +367,22 @@ def add_to_observations(target, user):
         'target_dec'        : target_dec,
         'observations'      : observations,
         }
+
+
+@register.inclusion_tag('tom_dataproducts/partials/add_to_watchlist.html')
+def add_to_watchlist(target, user):
+    """
+    Gets all the observations in the Telescope csv
+    """
+    print("Getting all Telescope blocks...")
+
+    user_email  = user.email
+    target_id   = target.id
+
+    return {
+        'user_email'        : user_email,
+        'target_id'         : target_id,
+        }
     # return target
 
 ## Testing for updating BGEM LC:

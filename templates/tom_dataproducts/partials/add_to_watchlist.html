@@ -1,0 +1,48 @@
+{% load bootstrap4 targets_extras %}
+
+
+<!-- <br> -->
+
+<div style="text-align:center;">
+
+    <h5>Get Email Notifications about this source</h5>
+
+    <form method="get" action="{% url 'add_to_watchlist' %}">
+        <!-- <label for="user_input" style="color:grey"><em>(Try 25030590) &nbsp</em></label> -->
+        <!-- <input type="hidden" name="submitter" value="{{ user_first_name }} {{ user_last_name }}"> -->
+        <input type="hidden" name="user_email" value="{{ user_email }}">
+        <!-- <input type="hidden" name="name" value="{{ target_name }}"> -->
+        <input type="hidden" name="gemtom_id" value="{{ target_id }}">
+        <!-- <input type="hidden" name="ra" value="{{ target_ra }}"> -->
+        <!-- <input type="hidden" name="dec" value="{{ target_dec }}"> -->
+        <!-- <input type="text" name="notes" placeholder="Goals, requirements, etc." required> &nbsp -->
+        <label for="limit">Notify me above magnitude...</label>
+        <input type="number" name="limit" placeholder="20.0" style="width: 100px;" step=".1"> &nbsp
+        <label for="limit">(leave blank for all detections)</label>
+        <!-- <input type="date" name="night"> &nbsp -->
+        <!-- <label for="priority">Priority:</label>
+        <select id="priority" name="priority">
+          <option value="Low">Low</option>
+          <option value="Med">Med</option>
+          <option value="High">High</option>
+        </select> &nbsp -->
+        <!-- <br> -->
+        <!-- <label for="observation">Observation Block:</label>
+        <select id="observation" name="observation">
+          <option value="0">(None)</option>
+          {% for num, telescopes, date_start, date_close, PI in observations %}
+          <option value="{{num}}">{{date_start}} - {{date_close}} -- {{telescopes}} (PI: {{PI}})</option>
+          {% endfor %}
+        </select> -->
+        <br>
+        <button type="submit" name="subscribe" value="Yes" class="btn btn-primary">Add to Watchlist</button>
+        <button type="submit" name="subscribe" value="No" class="btn btn-outline-primary">Unsubscribe (this target)</button>
+    </form>
+</div> 
+
+<!--
+    <form method="get" action="{% url 'add_to_watchlist' %}">
+        <input type="hidden" name="user_email" value="{{ user_email }}">
+        <input type="hidden" name="gemtom_id" value="{{ target_id }}">
+    </form>
+-->
