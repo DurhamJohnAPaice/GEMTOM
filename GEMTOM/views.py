@@ -6960,7 +6960,7 @@ def email_test_page(request):
             bgem_id = Target_2a.value
 
             saved_filename = "./data/" + target_name + "/none/" + target_name + "_BGEM_Data.csv"
-            df_saved_lightcurve = pd.read_csv(saved_filename, index_col=False)
+            df_saved_lightcurve = pd.read_csv(saved_filename)
             df_saved_lightcurve_orig = df_saved_lightcurve
             df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
 
@@ -6980,7 +6980,13 @@ def email_test_page(request):
 
             email_list = list(df_to_alert[df_to_alert['num'] == num].person)
 
-            if len(df_bgem_lightcurve) > len(df_saved_lightcurve):
+            # print("These:")
+            # print(df_saved_lightcurve)
+            # print(df_bgem_lightcurve)
+            # print(df_new_detections)
+
+            # if len(df_bgem_lightcurve) > len(df_saved_lightcurve):
+            if len(df_new_detections) > 0:
                 print("New datapoint!")
                 print("\nEmailing the following users about " + target_name + ":")
                 print(email_list)
@@ -6994,7 +7000,7 @@ def email_test_page(request):
                 df_new_lightcurve = pd.concat([df_saved_lightcurve_orig, df_new_detections]).reset_index(drop=True)
 
 
-                df_new_lightcurve.to_csv(saved_filename)
+                df_new_lightcurve.to_csv(saved_filename, index=False)
                 #
                 # print("Saved Lightcurve:")
                 # print(df_saved_lightcurve)

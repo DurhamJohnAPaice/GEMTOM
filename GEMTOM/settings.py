@@ -85,6 +85,13 @@ MIDDLEWARE = [
     'django_plotly_dash.middleware.ExternalRedirectionMiddleware',
 ]
 
+## Get keys from Dotenv
+print("Loading dotenv...")
+from dotenv import load_dotenv, dotenv_values
+load_dotenv()
+print(dotenv_values())
+print("Dotenv loaded.")
+
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  # SMTP server host
