@@ -7016,7 +7016,7 @@ def email_test_page(request):
 
         except Exception as e:
             print(e)
-            print(Target_2, "has a problem. See above!")
+            print("There's been a problem. See above!")
 
     return render(request, "email_test.html")
 
@@ -7062,10 +7062,6 @@ def add_to_watchlist(request):
         os.makedirs("./data/" + target_name + "/none/")
 
         df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
-
-        print(df_bgem_lightcurve)
-        print(df_limiting_mag)
-        print(df_limiting_mag.columns)
 
         df_bgem_lightcurve = df_bgem_lightcurve[['i."mjd-obs"', "x.mag_zogy", "x.magerr_zogy", "i.filter"]]
         df_limiting_mag = df_limiting_mag[['mjd','limiting_mag','filter']]
