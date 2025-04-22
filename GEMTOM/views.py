@@ -6953,8 +6953,8 @@ def email_test_page(request):
 
 
     for num in unique_num_list:
-        Target_2 = Target.objects.get(id=num)
         try:
+            Target_2 = Target.objects.get(id=num)
             Target_2a = TargetExtra.objects.get(Q(target_id=num) & Q(key = 'BlackGEM ID'))
             target_name = Target_2.name
             bgem_id = Target_2a.value
@@ -6965,6 +6965,9 @@ def email_test_page(request):
             df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
 
             df_saved_lightcurve = df_saved_lightcurve[np.isfinite(df_saved_lightcurve.limit) == False]
+
+            df_saved_lightcurve = df_saved_lightcurve.round(6)
+            df_bgem_lightcurve  = df_bgem_lightcurve.round(6)
 
             df_new_detections = df_bgem_lightcurve[['i."mjd-obs"', 'x.mag_zogy', 'x.magerr_zogy', 'i.filter']]
             df_new_detections = df_new_detections.rename(columns={'i."mjd-obs"' : 'MJD', 'x.mag_zogy' : 'Mag', 'x.magerr_zogy' : 'Mag_Err', 'i.filter' : 'Filter'})
@@ -7013,7 +7016,7 @@ def email_test_page(request):
 
         except Exception as e:
             print(e)
-            print(Target_2, "has no BGEM ID. Please add one!")
+            print(Target_2, "has a problem. See above!")
 
     return render(request, "email_test.html")
 
@@ -7049,6 +7052,40 @@ def add_to_watchlist(request):
     user_email  = request.GET.get("user_email")
     limit       = request.GET.get("limit")
     subscribe       = request.GET.get("subscribe")
+
+    Target_2 = Target.objects.get(id=target_id)
+    target_name = Target_2.name
+    Target_2a = TargetExtra.objects.get(Q(target_id=target_id) & Q(key = 'BlackGEM ID'))
+    bgem_id = Target_2a.value
+
+    if not os.path.exists("./data/" + target_name + "/none/"):
+        os.makedirs("./data/" + target_name + "/none/")
+
+        df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
+
+        print(df_bgem_lightcurve)
+        print(df_limiting_mag)
+        print(df_limiting_mag.columns)
+
+        df_bgem_lightcurve = df_bgem_lightcurve[['i."mjd-obs"', "x.mag_zogy", "x.magerr_zogy", "i.filter"]]
+        df_limiting_mag = df_limiting_mag[['mjd','limiting_mag','filter']]
+
+        df_bgem_lightcurve = df_bgem_lightcurve.rename(columns={
+            'i."mjd-obs"'       : "mjd",
+            'x.mag_zogy'        : "mag",
+            'x.magerr_zogy'     : "magerr",
+            'i.filter'          : "filter",
+        })
+
+        df_limiting_mag = df_limiting_mag.rename(columns={
+            'limiting_mag'      : "limit",
+        })
+
+        df_full = pd.concat([df_bgem_lightcurve,df_limiting_mag]).reset_index(drop=True)
+        df_full = df_full[['mjd','mag','magerr','limit','filter']]
+
+        filepath = "./data/" + target_name + "/none/" + target_name + "_BGEM_Data.csv"
+        df_full.to_csv(filepath)
 
 
     if not limit:   limit = 98.0
