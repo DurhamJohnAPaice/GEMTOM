@@ -57,6 +57,7 @@ urlpatterns = [
 
     path('history/', HistoryView.as_view(), name='history'),
     path('history/<int:obs_date>/', NightView, name='night'),
+    path('history/<int:obs_date>/Gaia', NightView_Gaia, name='night_gaia'),
     path('history_to_GEMTOM/', history_to_GEMTOM, name='history_to_GEMTOM'),
     path('rate_target/', rate_target, name='rate_target'),
     # path('TNS_to_GEMTOM/', TNS_to_GEMTOM, name='TNS_to_GEMTOM'),

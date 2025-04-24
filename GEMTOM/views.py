@@ -941,7 +941,7 @@ def get_any_nights_sky_plot(night):
         os.makedirs("./data/night_"+str(night)+"/")
 
 
-    if not os.path.exists(stats_out) or time_diff_days < 1.5:
+    if not os.path.exists(stats_out) or time_diff_days < 1.6:
         bg = authenticate_blackgem()
         tc = TransientsCatalog(bg)
 
@@ -1005,7 +1005,7 @@ def get_any_nights_sky_plot(night):
                         'num_red'       : [num_red]}
         df_field_stats = pd.DataFrame(data=field_dict)
 
-        if time_diff_days < 1.5:
+        if time_diff_days < 1.6:
             stats_out = "./data/night_"+str(night)+"/" + str(night) + "_fieldstats_temp.png"
 
         df_field_stats.to_csv(stats_out)
@@ -1015,7 +1015,7 @@ def get_any_nights_sky_plot(night):
         field_stats = [df.num_fields[0], df.num_green[0], df.num_yellow[0], df.num_orange[0], df.num_red[0]]
         print(field_stats)
 
-    if not os.path.exists(fileout) or time_diff_days < 1.5:
+    if not os.path.exists(fileout) or time_diff_days < 1.6:
         ## ===== Plotting =====
 
         ## Create list for RA, Dec, and times
@@ -1094,7 +1094,7 @@ def get_any_nights_sky_plot(night):
 
         ## -- NEW - Save the plot to a file
 
-        if time_diff_days < 1.5:
+        if time_diff_days < 1.6:
             fileout = "./data/night_"+str(night)+"/" + str(night) + "_skyview_temp.png"
 
         plt.savefig(fileout)
@@ -1940,66 +1940,116 @@ def scatter_plot_view(request):
     return render(request, 'scatter_plot.html', {'plot_html': plot_html})
 
 
-@login_required
-def NightView(request, obs_date):
-    '''
-    Finds and displays data from a certain date.
-    '''
-    print("Starting NightView...")
-    time_list = []
-    time_list.append(time.time())
 
-    response = "You're looking at BlackGEM date %s."
 
-    obs_date = str(obs_date)
+
+
+def get_any_nights_files(obs_date):
+
+    ## Check if it's more than a day ago
+    this_nights_datetime = obs_date_to_datetime(str(obs_date))
+    now_datetime = datetime.now()
+    time_diff = now_datetime - this_nights_datetime
+    time_diff_days = time_diff.total_seconds()/86400
+    print(time_diff_days)
     extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
 
-    data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
-        transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(obs_date)
+    filenames_out = "./data/night_"+str(obs_date)+"/" + str(obs_date) + "_filenames_final.json"
 
-    if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
-    else: data_length_plural = "s"; data_length_plural_2 = "ve"
-    if num_in_gaia == "1": gaia_plural = ""
-    else: gaia_plural = "es"
-    if extragalactic_sources_length == "1": extragalactic_sources_plural = ""
-    else: extragalactic_sources_plural = "s"
+    if time_diff_days < 0.875:
+        context = {
+            "obs_date"                      : obs_date,
+            "extended_date"                 : extended_date,
+            "mjd"                           : int(Time(extended_date + "T00:00:00.00", scale='utc').mjd),
+        }
+        with open("./data/future_filenames.json", 'r') as f:
+            context2 = json.load(f)
+
+        context = {**context, **context2}
+
+    else:
+        if not os.path.exists("./data/night_"+str(obs_date)+"/"):
+            os.makedirs("./data/night_"+str(obs_date)+"/")
+
+        if not os.path.exists(filenames_out) or time_diff_days < 1.6:
+
+            data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
+                transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(obs_date)
+
+            if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
+            else: data_length_plural = "s"; data_length_plural_2 = "ve"
+            if num_in_gaia == "1": gaia_plural = ""
+            else: gaia_plural = "es"
+            if extragalactic_sources_length == "1": extragalactic_sources_plural = ""
+            else: extragalactic_sources_plural = "s"
+
+            context = {
+                "obs_date"                      : obs_date,
+                "extended_date"                 : extended_date,
+                "mjd"                           : int(Time(extended_date + "T00:00:00.00", scale='utc').mjd),
+                "data_length"                   : data_length,
+                "num_in_gaia"                   : num_in_gaia,
+                "extragalactic_sources_length"  : extragalactic_sources_length,
+                "extragalactic_sources_id"      : extragalactic_sources[0],
+                "extragalactic_sources_ra"      : extragalactic_sources[1],
+                "extragalactic_sources_dec"     : extragalactic_sources[2],
+                "extragalactic_sources_pipe"    : extragalactic_sources[3],
+                "extragalactic_sources_check"   : extragalactic_sources[4],
+                "old_images"                    : extragalactic_sources[5],
+                "data_length_plural"            : data_length_plural,
+                "data_length_plural_2"          : data_length_plural_2,
+                "gaia_plural"                   : gaia_plural,
+                "extragalactic_sources_plural"  : extragalactic_sources_plural,
+                "images_urls_sorted"            : images_urls_sorted,
+            }
+
+            context['transients_filename']      = transients_filename
+            context['gaia_filename']            = gaia_filename
+            context['extragalactic_filename']   = extragalactic_filename
+
+            print(context)
+
+            with open(filenames_out, 'w') as f:
+                json.dump(context, f)
+
+        else:
+            with open(filenames_out, 'r') as f:
+                context = json.load(f)
+
+
+    return context
+
+def get_any_nights_context(obs_date):
+    response = "You're looking at BlackGEM date %s."
+
+    context2 = get_any_nights_files(obs_date)
 
     context = {
-        "response"                      : response % obs_date,
-        "obs_date"                      : obs_date,
-        "extended_date"                 : extended_date,
-        "mjd"                           : int(Time(extended_date + "T00:00:00.00", scale='utc').mjd),
-        "data_length"                   : data_length,
-        "num_in_gaia"                   : num_in_gaia,
-        "extragalactic_sources_length"  : extragalactic_sources_length,
-        "extragalactic_sources_id"      : extragalactic_sources[0],
-        "extragalactic_sources_ra"      : extragalactic_sources[1],
-        "extragalactic_sources_dec"     : extragalactic_sources[2],
-        "extragalactic_sources_pipe"    : extragalactic_sources[3],
-        "extragalactic_sources_check"   : extragalactic_sources[4],
-        "old_images"                    : extragalactic_sources[5],
-        "data_length_plural"            : data_length_plural,
-        "data_length_plural_2"          : data_length_plural_2,
-        "gaia_plural"                   : gaia_plural,
-        "extragalactic_sources_plural"  : extragalactic_sources_plural,
-        "images_urls_sorted"            : images_urls_sorted,
+        "response"                      : response % obs_date
     }
 
-    if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0") and (extragalactic_sources[0] == "") and (images_urls_sorted == ""):
+    context = {**context, **context2}
+
+    data_length = context["data_length"]
+    num_in_gaia = context["num_in_gaia"]
+    extragalactic_sources_length = context["extragalactic_sources_length"]
+    images_urls_sorted = context["images_urls_sorted"]
+
+    extragalactic_sources_id    = context["extragalactic_sources_id"]
+    extragalactic_sources_ra    = context["extragalactic_sources_ra"]
+    extragalactic_sources_dec   = context["extragalactic_sources_dec"]
+    extragalactic_sources_pipe  = context["extragalactic_sources_pipe"]
+    extragalactic_sources_check = context["extragalactic_sources_check"]
+
+
+    if (data_length == "0") and (num_in_gaia == "0") and (extragalactic_sources_length == "0") and (extragalactic_sources_id == "") and (images_urls_sorted == ""):
         observed_string = "No transients were recorded by BlackGEM that night."
         images_daily_text_1 = zip([], ["No transients were recorded by BlackGEM that night."])
     else:
         observed_string = "Yes!"
-        # images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3])
-        images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources[0], extragalactic_sources[1], extragalactic_sources[2], extragalactic_sources[3], extragalactic_sources[4])
-
+        images_daily_text_1 = zip(images_urls_sorted, extragalactic_sources_id, extragalactic_sources_ra, extragalactic_sources_dec, extragalactic_sources_pipe, extragalactic_sources_check)
     context['observed']                 = observed_string
     context['images_daily_text_1']      = images_daily_text_1
-    context['transients_filename']      = transients_filename
-    context['gaia_filename']            = gaia_filename
-    context['extragalactic_filename']   = extragalactic_filename
-
-    time_list.append(time.time())
 
     field_stats, image_base64 = get_any_nights_sky_plot(obs_date)
     context['num_fields']       = field_stats[0]
@@ -2010,16 +2060,22 @@ def NightView(request, obs_date):
     context['plot_image']       = image_base64
     context['prev_night']       = datetime.strftime(obs_date_to_datetime(obs_date) - timedelta(1), '%Y%m%d')
     context['next_night']       = datetime.strftime(obs_date_to_datetime(obs_date) + timedelta(1), '%Y%m%d')
+
+    return context
+
+
+@login_required
+def NightView(request, obs_date):
+    '''
+    Finds and displays data from a certain date.
+    '''
+    print("Starting NightView...")
+    time_list = []
     time_list.append(time.time())
 
-    ## Get transients overplotted HR diagram
+    obs_date = str(obs_date)
 
-    fig = plot_nightly_hr_diagram(obs_date, gaia_filename)
-    time_list.append(time.time())
-    lightcurve = plot(fig, output_type='div')
-    context['lightcurve']       = lightcurve
-
-    time_list.append(time.time())
+    context = get_any_nights_context(obs_date)
 
     df_orphans = get_nightly_orphans(obs_date)
 
@@ -2111,43 +2167,6 @@ def NightView(request, obs_date):
         else:
             context['orphans_sources_plural'] = "s"
 
-        # if "yes_no" in df_orphans.columns:
-        #     context['orphans'] = zip(
-        #         list(df_orphans.runcat_id),
-        #         ['%.3f'%x for x in df_orphans.ra_psf],
-        #         ['%.3f'%x for x in df_orphans.dec_psf],
-        #         ['%.3g'%x for x in df_orphans.ra_std],
-        #         ['%.3g'%x for x in df_orphans.dec_std],
-        #         ['%.5s'%x for x in df_orphans.q_min],
-        #         ['%.4s'%x for x in df_orphans.q_rb_avg],
-        #         ['%.5s'%x for x in df_orphans.u_min],
-        #         ['%.4s'%x for x in df_orphans.u_rb_avg],
-        #         ['%.5s'%x for x in df_orphans.i_min],
-        #         ['%.4s'%x for x in df_orphans.i_rb_avg],
-        #         ['%.4s'%x for x in df_orphans.det_sep],
-        #         [x for x in df_orphans.yes_no],
-        #         [x for x in df_orphans.notes],
-        #     )
-        #
-        # else:
-        #     context['orphans'] = zip(
-        #         list(df_orphans.runcat_id),
-        #         ['%.3f'%x for x in df_orphans.ra_psf],
-        #         ['%.3f'%x for x in df_orphans.dec_psf],
-        #         ['%.3g'%x for x in df_orphans.ra_std],
-        #         ['%.3g'%x for x in df_orphans.dec_std],
-        #         ['%.5s'%x for x in df_orphans.q_min],
-        #         ['%.4s'%x for x in df_orphans.q_rb_avg],
-        #         ['%.5s'%x for x in df_orphans.u_min],
-        #         ['%.4s'%x for x in df_orphans.u_rb_avg],
-        #         ['%.5s'%x for x in df_orphans.i_min],
-        #         ['%.4s'%x for x in df_orphans.i_rb_avg],
-        #         ['%.4s'%x for x in df_orphans.det_sep],
-        #         ["" for x in df_orphans.det_sep],
-        #         ["" for x in df_orphans.det_sep],
-        #     )
-
-        # context['orphans_bool'] = True
     else:
         context['orphans'] = ""
         context['orphans_sources_length'] = 0
@@ -2171,6 +2190,43 @@ def NightView(request, obs_date):
 
 
     return render(request, "history/index.html", context)
+
+
+@login_required
+def NightView_Gaia(request, obs_date):
+    '''
+    Finds and displays data from a certain date.
+    '''
+    print("Starting NightView...")
+    time_list = []
+    time_list.append(time.time())
+
+    obs_date = str(obs_date)
+
+    context = get_any_nights_context(obs_date)
+
+    fig = plot_nightly_hr_diagram(obs_date, context["gaia_filename"])
+    time_list.append(time.time())
+    lightcurve = plot(fig, output_type='div')
+    context['lightcurve']       = lightcurve
+
+    time_list.append(time.time())
+
+    if 'history_daily_text_1' in context:
+        if field_stats[0] == 0 and "No" not in context['history_daily_text_1']:
+            context['blackhub'] = False
+        else:
+            context['blackhub'] = True
+    else:
+        context['blackhub'] = True
+
+    time_list.append(time.time())
+    print("NightView Times:")
+    for i in range(len(time_list)-1):
+        print("t"+str(i)+"->t"+str(i+1)+": "+str(time_list[i+1]-time_list[i]))
+
+
+    return render(request, "history/index_gaia.html", context)
 
 
 def all_stats_from_bgem_id(bgem_id):

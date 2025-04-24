@@ -136,23 +136,33 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
 <hr>
 <h5>Files:</h5>
 
-{% if transients_filename %}
-    <a href= {{ transients_filename }}>Transients File</a> <br>
-{% else %}
-    <em>No Transients file to download</em> <br>
-{% endif %}
+<div class="row" style="margin-bottom: 5px;">
+    <div class="col-md-4">
+        {% if transients_filename %}
+            <a href={{ transients_filename }} class="btn btn-outline-info" role="button">Transients File</a>
+        {% else %}
+            <em>No Transients file to download</em> <br>
+        {% endif %}
+    </div>
+    <div class="col-md-4">
+        {% if gaia_filename %}
+            <div style="margin-bottom: 5px;">
+                <a href={{ gaia_filename }} class="btn btn-outline-info" role="button">Gaia Crossmatched  File</a>
+            </div>
+            <a href="/history/{{ obs_date }}/Gaia" class="btn btn-outline-primary" role="button">Gaia Sources</a>
+        {% else %}
+            <em>No Gaia Crossmatched file to download</em> <br>
+        {% endif %}
+    </div>
+    <div class="col-md-4">
+        {% if extragalactic_filename %}
+            <a href={{ extragalactic_filename }} class="btn btn-outline-info" role="button">Extragalactic Transients File</a><br>
+        {% else %}
+            <em>No Extragalactic file to download</em>
+        {% endif %}
+    </div>
+</div>
 
-{% if gaia_filename %}
-    <a href= {{ gaia_filename }}>Gaia Crossmatched File</a> <br>
-{% else %}
-    <em>No Gaia Crossmatched file to download</em> <br>
-{% endif %}
-
-{% if extragalactic_filename %}
-    <a href= {{ extragalactic_filename }}>Extragalactic Transients File</a> <br>
-{% else %}
-    <em>No Extragalactic file to download</em>
-{% endif %}
 
 <hr>
 
@@ -163,9 +173,6 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
   <ul class="nav nav-tabs nav-fill">
     <li class="nav-item">
       <a class="nav-link active" data-toggle="tab" href="#orphans">Orphaned Transients</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" data-toggle="tab" href="#gaia">Gaia Transients</a>
     </li>
     <li class="nav-item">
       <a class="nav-link" data-toggle="tab" href="#extragalactic">Extragalactic Transients</a>
@@ -271,37 +278,6 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
                 </tbody>
             </table>
         </div>
-    </div>
-
-    <div class="tab-pane container fade" id="gaia">
-        <h5>Gaia-Crossmatched Transients:</h5>
-        <p>Below, you can find all gaia cross-matches of last night's transients (red), with potential Cataclysmic Variables highlighted (orange).<br>
-        They are overplotted on an HR diagram (blue), sourced from the Gaia Catalog of Nearby Stars.<br>
-        <em><font style="color:grey;">Only sources with a Real/Bogus score above 0.8 and a Parallax:Error ratio of greater than 2 are included.</font></em><br>
-        <b>Click on a point to go to its GEMTOM page!</b></p>
-
-        <div id="scatter-plot" style="
-            display: block;
-            position: relative;
-            margin: auto;
-            padding:0px;
-            text-align:center;
-            max-width:800px;
-            display: block;
-            left:-0px;
-            right:300px;
-            bottom:-0px;
-
-        ">
-            {{ lightcurve|safe }}
-        </div>
-        <br>
-        <!-- Button to trigger the CSV generation -->
-        <form method="post" action="{% url 'download_possible_CVs' %}" class="image-form">
-            {% csrf_token %}
-            <input type="hidden" name="obs_date" value="{{ obs_date }}">
-            <button type="submit" class="btn btn-outline-primary">Download Possible CVs</button>
-        </form>
     </div>
 
     <div class="tab-pane container fade" id="extragalactic">
