@@ -51,6 +51,7 @@ urlpatterns = [
     path('search_BGEM_RA_Dec/', search_BGEM_RA_Dec, name='search_BGEM_RA_Dec'),
     path('search_skytiles_from_RA_Dec_orig/', search_skytiles_from_RA_Dec_orig, name='search_skytiles_from_RA_Dec_orig'),
     path('transients/<int:bgem_id>/', BGEM_ID_View, name='bgem_id'),
+    path('delayed_search_for_TNS/', delayed_search_for_TNS, name='delayed_search_for_TNS'),
 
     path('transients/', UnifiedTransientsView.as_view(), name='transients'),
     path('transients/orphans/', OrphanedTransientsView.as_view(), name='orphaned_transients'),

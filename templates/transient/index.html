@@ -30,7 +30,42 @@
         justify-content: center;
         align-items: center;
     }
+    .loading::after {
+      display: inline-block;
+      animation: dotty steps(1,end) 1s infinite;
+      content: '';
+    }
+
+    @keyframes dotty {
+        0%   { content: ''; }
+        25%  { content: '.'; }
+        50%  { content: '..'; }
+        75%  { content: '...'; }
+        100% { content: ''; }
+    }
 </style>
+
+
+<script>
+
+    const ra = "{{ ra|escapejs }}";
+    const dec = "{{ dec|escapejs }}";
+    const bgem_id = "{{ bgem_id|escapejs }}";
+
+    // Get base URL from Django
+    const baseUrl = "{% url 'delayed_search_for_TNS' %}";
+
+    // Add query params
+    const url = `${baseUrl}?ra=${ra}&dec=${dec}&bgemid=${bgem_id}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('refreshable-tns').innerHTML = data.message;
+        })
+        .catch(error => console.error('Error:', error))
+</script>
+
 
 <div align="center">
 
@@ -119,36 +154,17 @@ On this page, you can find the data for a specific BlackGEM transient.
 </div> -->
 
 
-{% if tns_flag %}
+<div align="center">
     <div class="row" style="margin-top:10px">
         <div class="col-md-4"></div>
-        <div class="col-md-4" style="border:thin solid green; padding:10px;">
-            TNS Object within 10 arcseconds!<br>
-            <b><a href="#" onclick='window.open("https://www.wis-tns.org/object/{{ tns_flag_name }}");return false;'>{{tns_flag_prefix}} {{tns_flag_name}}</a></b><br>
-            <a style="color:grey"><em>Separation: {{ tns_flag_sep }} arcseconds</em></a>
-            <div style="padding:5px">
-                <form method="post" action="{% url 'history_to_GEMTOM' %}" class="image-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="id" value="{{ bgem_id }}">
-                    <input type="hidden" name="name" value="{{ iau_name }}">
-                    <input type="hidden" name="ra" value="{{ ra }}">
-                    <input type="hidden" name="dec" value="{{ dec }}">
-                    <input type="hidden" name="tns_prefix" value="{{ tns_flag_prefix }}">
-                    <input type="hidden" name="tns_name" value="{{ tns_flag_name }}">
-                    <button type="submit" class="btn btn-outline-success">Add to GEMTOM with TNS</button>
-                </form>
+        <div class="col-md-4" style="border:thin solid lightgrey; padding:10px;">
+            <div id="refreshable-tns" style="">
+                <div class="loading" style="color:lightgrey"><em>Searching TNS for nearby objects</em><br></div>
             </div>
-            {% if tns_flag_bgem %}
-                <a style="color:mediumaquamarine"><em>BlackGEM data reported to TNS</em></a>
-            {% else %}
-                <a style="color:darkorange"><em>BlackGEM data not in TNS!</em></a>
-            {% endif %}
         </div>
         <div class="col-md-4"></div>
     </div>
-{% endif %}
-
-<!-- <div style="color:green">{{tns_nearby}}</div> -->
+</div>
 
 <hr>
 
@@ -396,21 +412,6 @@ On this page, you can find the data for a specific BlackGEM transient.
 </div>
 
 
-<hr>
-<!-- <p>TNS Readout (within 100 arcsec):</p> -->
-<h5>TNS Search</h5>
-{{ tns_text }} <br>
-<!-- {% for tns_object in tns_list %}
-    {{ tns_object }} <br>
-{% endfor %} -->
-<!-- {% for tns_object in tns_objects_data %}
-    {{ tns_object }} <br>
-{% endfor %} -->
-
-<p><em>Right-click on an object name to go to the TNS server page for that object.</em></p>
-<div class="dash-container-small">
-    {% plotly_app name="TNS_Sources" ratio=0.2 %}
-</div>
 
 <hr>
 

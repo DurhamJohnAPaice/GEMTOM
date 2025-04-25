@@ -3476,72 +3476,76 @@ def BGEM_ID_View(request, bgem_id):
 
     ## TNS:
     print("Starting TNS Query...")
-    search_radius = 10
-    tns_data = get_tns_from_ra_dec(ra, dec, search_radius)
-    time_list.append(time.time())
-    if tns_data == "Too many requests!":
-        tns_text = "Too many TNS requests. Please check later."
-        tns_list = []
-    elif tns_data == "Unauthorised!":
-        tns_text = "Note: TNS Unauthorised. Please check."
-        tns_list = []
-    elif tns_data == "Website Error":
-        tns_text = "TNS site encountered an error. Please try again later."
-        tns_list = []
-    else:
-        tns_reply = tns_data["data"]
-        tns_reply_length = len(tns_data["data"])
-        if tns_reply_length == 0:
-            tns_text = "No TNS object found within " + str(search_radius) + " arcseconds."
-            tns_list = []
-        else:
-            tns_text = "TNS results within " + str(search_radius) + " arcseconds"
-            tns_list = tns_reply
+    # search_radius = 10
+    # tns_data = get_tns_from_ra_dec(ra, dec, search_radius)
+    # print("\ntns_data:")
+    # print(tns_data)
+    # print("^tns_data\n")
 
-    tns_object_names    = []
-    tns_object_ids      = []
-    for tns_object in tns_list:
-        tns_object_names.append(tns_object["objname"])
-        tns_object_ids.append(tns_object["objid"])
-    # print(tns_object_names)
+    # time_list.append(time.time())
+    # if tns_data == "Too many requests!":
+    #     tns_text = "Too many TNS requests. Please check later."
+    #     tns_list = []
+    # elif tns_data == "Unauthorised!":
+    #     tns_text = "Note: TNS Unauthorised. Please check."
+    #     tns_list = []
+    # elif tns_data == "Website Error":
+    #     tns_text = "TNS site encountered an error. Please try again later."
+    #     tns_list = []
+    # else:
+    #     tns_reply = tns_data["data"]
+    #     tns_reply_length = len(tns_data["data"])
+    #     if tns_reply_length == 0:
+    #         tns_text = "No TNS object found within " + str(search_radius) + " arcseconds."
+    #         tns_list = []
+    #     else:
+    #         tns_text = "TNS results within " + str(search_radius) + " arcseconds"
+    #         tns_list = tns_reply
 
-    # tns_objects_data = []
-    tns_object_prefix       = []
-    tns_object_ra           = []
-    tns_object_dec          = []
-    tns_object_sep          = []
-    tns_object_internalname = []
-    bgem_object_radec       = SkyCoord(ra*u.deg, dec*u.deg, frame='icrs')
-    for tns_object_name in tns_object_names:
-        # tns_object_ra, tns_object_dec = get_ra_dec_from_tns(tns_object_name)
-        tns_object_data = get_ra_dec_from_tns(tns_object_name)
-        if tns_data == "Too many requests!":
-            tns_object_data = "Too many TNS requests. Please check later."
-            break
-        else:
-            # print(tns_object_data)
-            # print(tns_object_data["data"])
-
-            ## Get RA and Dec, and find distance to our current target.
-            this_object_ra      = tns_object_data["data"]["radeg"]
-            this_object_dec     = tns_object_data["data"]["decdeg"]
-            this_object_radec   = SkyCoord(this_object_ra*u.deg, this_object_dec*u.deg, frame='icrs')
-            this_object_sep     = bgem_object_radec.separation(this_object_radec)
-
-            # print(this_object_radec)
-            # print(bgem_object_radec)
-            # print(this_object_sep.arcsecond)
-
-            ## Save the individual details
-            tns_object_prefix.append(tns_object_data["data"]["name_prefix"])
-            tns_object_ra.append(this_object_ra)
-            tns_object_dec.append(this_object_dec)
-            tns_object_sep.append(this_object_sep.arcsecond)
-            tns_object_internalname.append(tns_object_data["data"]["internal_names"])
-    # print(tns_objects_data)
-    # print(tns_object_ra)
-    # print(tns_object_dec)
-    print(tns_object_sep)
+    # tns_object_names    = []
+    # tns_object_ids      = []
+    # for tns_object in tns_list:
+    #     tns_object_names.append(tns_object["objname"])
+    #     tns_object_ids.append(tns_object["objid"])
+    # # print(tns_object_names)
+    #
+    # # tns_objects_data = []
+    # tns_object_prefix       = []
+    # tns_object_ra           = []
+    # tns_object_dec          = []
+    # tns_object_sep          = []
+    # tns_object_internalname = []
+    # bgem_object_radec       = SkyCoord(ra*u.deg, dec*u.deg, frame='icrs')
+    # for tns_object_name in tns_object_names:
+    #     # tns_object_ra, tns_object_dec = get_ra_dec_from_tns(tns_object_name)
+    #     tns_object_data = get_ra_dec_from_tns(tns_object_name)
+    #     if tns_data == "Too many requests!":
+    #         tns_object_data = "Too many TNS requests. Please check later."
+    #         break
+    #     else:
+    #         # print(tns_object_data)
+    #         # print(tns_object_data["data"])
+    #
+    #         ## Get RA and Dec, and find distance to our current target.
+    #         this_object_ra      = tns_object_data["data"]["radeg"]
+    #         this_object_dec     = tns_object_data["data"]["decdeg"]
+    #         this_object_radec   = SkyCoord(this_object_ra*u.deg, this_object_dec*u.deg, frame='icrs')
+    #         this_object_sep     = bgem_object_radec.separation(this_object_radec)
+    #
+    #         # print(this_object_radec)
+    #         # print(bgem_object_radec)
+    #         # print(this_object_sep.arcsecond)
+    #
+    #         ## Save the individual details
+    #         tns_object_prefix.append(tns_object_data["data"]["name_prefix"])
+    #         tns_object_ra.append(this_object_ra)
+    #         tns_object_dec.append(this_object_dec)
+    #         tns_object_sep.append(this_object_sep.arcsecond)
+    #         tns_object_internalname.append(tns_object_data["data"]["internal_names"])
+    # # print(tns_objects_data)
+    # # print(tns_object_ra)
+    # # print(tns_object_dec)
+    # print(tns_object_sep)
     # tns_objects_data = zip(tns_object_names, tns_object_ra, tns_object_dec)
 
     # ## If object is close enough...
@@ -3554,33 +3558,33 @@ def BGEM_ID_View(request, bgem_id):
     # else:
     #     tns_nearby = ""
 
-    tns_objects_data = pd.DataFrame({
-        'ObjID': tns_object_ids,
-        'Prefix': tns_object_prefix,
-        'Name': tns_object_names,
-        'RA': tns_object_ra,
-        'Dec': tns_object_dec,
-        'Internal_Name': tns_object_internalname,
-        'Separation': tns_object_sep,
-    })
-
-    tns_objects_potential = tns_objects_data.loc[tns_objects_data['Separation'] < 10]
-    if len(tns_objects_potential) > 0:
-        tns_objects_potential = tns_objects_potential.sort_values(by=['Separation'])
-        tns_flag = True
-        tns_flag_prefix = tns_objects_potential["Prefix"].iloc[0]
-        tns_flag_name = tns_objects_potential["Name"].iloc[0]
-        tns_flag_sep = round(tns_objects_potential["Separation"].iloc[0], 2)
-        if "BGEM" in tns_objects_potential["Internal_Name"].iloc[0]: tns_flag_bgem = True
-        else: tns_flag_bgem = False
-    else:
-        tns_flag = False
-        tns_flag_prefix = ""
-        tns_flag_name = ""
-        tns_flag_sep = ""
-        tns_flag_bgem = ""
-
-    time_list.append(time.time())
+    # tns_objects_data = pd.DataFrame({
+    #     'ObjID': tns_object_ids,
+    #     'Prefix': tns_object_prefix,
+    #     'Name': tns_object_names,
+    #     'RA': tns_object_ra,
+    #     'Dec': tns_object_dec,
+    #     'Internal_Name': tns_object_internalname,
+    #     'Separation': tns_object_sep,
+    # })
+    #
+    # tns_objects_potential = tns_objects_data.loc[tns_objects_data['Separation'] < 10]
+    # if len(tns_objects_potential) > 0:
+    #     tns_objects_potential = tns_objects_potential.sort_values(by=['Separation'])
+    #     tns_flag = True
+    #     tns_flag_prefix = tns_objects_potential["Prefix"].iloc[0]
+    #     tns_flag_name = tns_objects_potential["Name"].iloc[0]
+    #     tns_flag_sep = round(tns_objects_potential["Separation"].iloc[0], 2)
+    #     if "BGEM" in tns_objects_potential["Internal_Name"].iloc[0]: tns_flag_bgem = True
+    #     else: tns_flag_bgem = False
+    # else:
+    #     tns_flag = False
+    #     tns_flag_prefix = ""
+    #     tns_flag_name = ""
+    #     tns_flag_sep = ""
+    #     tns_flag_bgem = ""
+    #
+    # time_list.append(time.time())
 
     # ## --- Find the image ---
     # print("Getting image...")
@@ -3596,46 +3600,46 @@ def BGEM_ID_View(request, bgem_id):
 
 
 
-    tns_objects_data['Name'] = tns_objects_data['Name'].apply(lambda x: f'[{x}](https://www.wis-tns.org/object/{x})')
-
-    # TNS_object_url = "https://sandbox.wis-tns.org/object/2024ot"
-
-    tns_objects_data = tns_objects_data.sort_values(by=['Separation'])
-
-    ## TNS Dash App
-    app = DjangoDash('TNS_Sources')
-    app.layout = html.Div([
-        dag.AgGrid(
-            id='tns-grid',
-            rowData=tns_objects_data.to_dict('records'),
-            columnDefs=[
-                        {'headerName': 'ObjID',         'field':  'ObjID'},
-                        {'headerName': 'Prefix',        'field':  'Prefix'},
-                        {'headerName': 'Name', 'field':  'Name', 'cellRenderer': 'markdown'},
-                        # {'headerName': 'Name',          'field':  'Name'},
-                        {'headerName': 'RA',            'field':  'RA'  },
-                        {'headerName': 'Dec',           'field':  'Dec' },
-                        {'headerName': 'Internal Name', 'field':  'Internal_Name' },
-                        {'headerName': 'Separation (arcsec)',    'field':  'Separation' },
-            ],
-            defaultColDef={
-                'sortable': True,
-                'filter': True,
-                'resizable': True,
-                'editable': True,
-            },
-            columnSize="autoSize",
-            dashGridOptions={
-                "skipHeaderOnAutoSize": False,
-                "rowSelection": "single",
-            },
-            style={'height': '200px', 'width': '100%'},  # Set explicit height for the grid
-            className='ag-theme-balham'  # Add a theme for better appearance
-        ),
-        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
-        html.Div(id='output-div'),  # Div to display the information
-    ], style={'height': '200px', 'width': '100%'}
-    )
+    # tns_objects_data['Name'] = tns_objects_data['Name'].apply(lambda x: f'[{x}](https://www.wis-tns.org/object/{x})')
+    #
+    # # TNS_object_url = "https://sandbox.wis-tns.org/object/2024ot"
+    #
+    # tns_objects_data = tns_objects_data.sort_values(by=['Separation'])
+    #
+    # ## TNS Dash App
+    # app = DjangoDash('TNS_Sources')
+    # app.layout = html.Div([
+    #     dag.AgGrid(
+    #         id='tns-grid',
+    #         rowData=tns_objects_data.to_dict('records'),
+    #         columnDefs=[
+    #                     {'headerName': 'ObjID',         'field':  'ObjID'},
+    #                     {'headerName': 'Prefix',        'field':  'Prefix'},
+    #                     {'headerName': 'Name', 'field':  'Name', 'cellRenderer': 'markdown'},
+    #                     # {'headerName': 'Name',          'field':  'Name'},
+    #                     {'headerName': 'RA',            'field':  'RA'  },
+    #                     {'headerName': 'Dec',           'field':  'Dec' },
+    #                     {'headerName': 'Internal Name', 'field':  'Internal_Name' },
+    #                     {'headerName': 'Separation (arcsec)',    'field':  'Separation' },
+    #         ],
+    #         defaultColDef={
+    #             'sortable': True,
+    #             'filter': True,
+    #             'resizable': True,
+    #             'editable': True,
+    #         },
+    #         columnSize="autoSize",
+    #         dashGridOptions={
+    #             "skipHeaderOnAutoSize": False,
+    #             "rowSelection": "single",
+    #         },
+    #         style={'height': '200px', 'width': '100%'},  # Set explicit height for the grid
+    #         className='ag-theme-balham'  # Add a theme for better appearance
+    #     ),
+    #     dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
+    #     html.Div(id='output-div'),  # Div to display the information
+    # ], style={'height': '200px', 'width': '100%'}
+    # )
 
     # print(df_new)
 
@@ -3656,14 +3660,14 @@ def BGEM_ID_View(request, bgem_id):
         "columns"           : df_bgem_lightcurve.columns,
         "location_on_sky"   : location_on_sky,
         "lightcurve"        : lightcurve,
-        "tns_flag"          : tns_flag,
-        "tns_flag_prefix"   : tns_flag_prefix,
-        "tns_flag_name"     : tns_flag_name,
-        "tns_flag_sep"      : tns_flag_sep,
-        "tns_flag_bgem"     : tns_flag_bgem,
-        "tns_data"          : tns_data,
-        "tns_text"          : tns_text,
-        "tns_list"          : tns_list,
+        # "tns_flag"          : tns_flag,
+        # "tns_flag_prefix"   : tns_flag_prefix,
+        # "tns_flag_name"     : tns_flag_name,
+        # "tns_flag_sep"      : tns_flag_sep,
+        # "tns_flag_bgem"     : tns_flag_bgem,
+        # "tns_data"          : tns_data,
+        # "tns_text"          : tns_text,
+        # "tns_list"          : tns_list,
         # "image_name"        : file_name
         # "tns_nearby"        : tns_nearby,
         # "tns_objects_data"  : tns_objects_data,
@@ -3680,6 +3684,210 @@ def BGEM_ID_View(request, bgem_id):
 
     return render(request, "transient/index.html", context)
 
+
+def delayed_search_for_TNS(request):
+
+    print("\n\nDelayed Search for TNS called!\n\n")
+
+    print(request)
+    print(request.GET)
+    ra = request.GET.get('ra')
+    dec = request.GET.get('dec')
+    bgem_id = request.GET.get('bgemid')
+
+    # message_1, message_2, message_3 = get_time_in_la_silla()
+
+    ## TNS:
+    print("Starting TNS Query...")
+    search_radius = 10
+    tns_data = get_tns_from_ra_dec(ra, dec, search_radius)
+
+    if tns_data == "Too many requests!":
+        tns_text = "Too many TNS requests. Please check later."
+        tns_list = []
+    elif tns_data == "Unauthorised!":
+        tns_text = "Note: TNS Unauthorised. Please check."
+        tns_list = []
+    elif tns_data == "Website Error":
+        tns_text = "TNS site encountered an error. Please try again later."
+        tns_list = []
+    else:
+        tns_reply = tns_data["data"]
+        tns_reply_length = len(tns_data["data"])
+        if tns_reply_length == 0:
+            tns_text = "No TNS object found within " + str(search_radius) + " arcseconds."
+            tns_list = []
+        else:
+            tns_text = "TNS results within " + str(search_radius) + " arcseconds"
+            tns_list = tns_reply
+
+
+
+    # tns_object_names    = []
+    # tns_object_ids      = []
+    # for tns_object in tns_list:
+    #     tns_object_names.append(tns_object["objname"])
+    #     tns_object_ids.append(tns_object["objid"])
+    # # print(tns_object_names)
+    #
+    # # tns_objects_data = []
+    # tns_object_prefix       = []
+    # tns_object_ra           = []
+    # tns_object_dec          = []
+    # tns_object_sep          = []
+    # tns_object_internalname = []
+    # bgem_object_radec       = SkyCoord(ra*u.deg, dec*u.deg, frame='icrs')
+    # for tns_object_name in tns_object_names:
+    #     # tns_object_ra, tns_object_dec = get_ra_dec_from_tns(tns_object_name)
+    #     tns_object_data = get_ra_dec_from_tns(tns_object_name)
+    #     if tns_data == "Too many requests!":
+    #         tns_object_data = "Too many TNS requests. Please check later."
+    #         break
+    #     else:
+    #
+    #         ## Get RA and Dec, and find distance to our current target.
+    #         this_object_ra      = tns_object_data["data"]["radeg"]
+    #         this_object_dec     = tns_object_data["data"]["decdeg"]
+    #         this_object_radec   = SkyCoord(this_object_ra*u.deg, this_object_dec*u.deg, frame='icrs')
+    #         this_object_sep     = bgem_object_radec.separation(this_object_radec)
+    #
+    #         ## Save the individual details
+    #         tns_object_prefix.append(tns_object_data["data"]["name_prefix"])
+    #         tns_object_ra.append(this_object_ra)
+    #         tns_object_dec.append(this_object_dec)
+    #         tns_object_sep.append(this_object_sep.arcsecond)
+    #         tns_object_internalname.append(tns_object_data["data"]["internal_names"])
+    #
+    # tns_objects_data = zip(tns_object_names, tns_object_ra, tns_object_dec)
+    #
+    # ## If object is close enough...
+    # close_enough_sep = 40
+    # if tns_object_sep:
+    #     if np.min(tns_object_sep) < close_enough_sep:
+    #         tns_nearby = "TNS Object within " + str(close_enough_sep) + " arcseconds!"
+    #     else:
+    #         tns_nearby = ""
+    # else:
+    #     tns_nearby = ""
+    #
+    # tns_objects_data = pd.DataFrame({
+    #     'ObjID': tns_object_ids,
+    #     'Prefix': tns_object_prefix,
+    #     'Name': tns_object_names,
+    #     'RA': tns_object_ra,
+    #     'Dec': tns_object_dec,
+    #     'Internal_Name': tns_object_internalname,
+    #     'Separation': tns_object_sep,
+    # })
+    #
+    # tns_objects_potential = tns_objects_data.loc[tns_objects_data['Separation'] < 10]
+    # if len(tns_objects_potential) > 0:
+    #     tns_objects_potential = tns_objects_potential.sort_values(by=['Separation'])
+    #     tns_flag = True
+    #     tns_flag_prefix = tns_objects_potential["Prefix"].iloc[0]
+    #     tns_flag_name = tns_objects_potential["Name"].iloc[0]
+    #     tns_flag_sep = round(tns_objects_potential["Separation"].iloc[0], 2)
+    #     if "BGEM" in tns_objects_potential["Internal_Name"].iloc[0]: tns_flag_bgem = True
+    #     else: tns_flag_bgem = False
+    # else:
+    #     tns_flag = False
+    #     tns_flag_prefix = ""
+    #     tns_flag_name = ""
+    #     tns_flag_sep = ""
+    #     tns_flag_bgem = ""
+    #
+    # time_list.append(time.time())
+    #
+    # ## --- Find the image ---
+    # print("Getting image...")
+    # print(os.getcwd())
+    # if tns_flag:
+    #     file_name = "../" + get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve,
+    #         tns_objects_potential["RA"].iloc[0], tns_objects_potential["Dec"].iloc[0]
+    #         )
+    # else:
+    #     file_name = "../" + get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve)
+    #
+    # print("Image name:", file_name)
+
+
+
+    if tns_reply_length == 0:
+        message = '<div style="color:lightgrey"><em>No TNS Object within 10 arcseconds.</em></div>'
+    else:
+        tns_name = str(tns_reply[0]["prefix"] + " " + tns_reply[0]["objname"])
+
+        # message = str(tns_reply) + "<br>"
+        # message += tns_name + "<br>"
+        message = 'TNS Object within 10 arcseconds!<br>'
+        message += '<b><a href=https://www.wis-tns.org/object/' + tns_reply[0]["objname"] + ' target="_blank">' + tns_reply[0]["prefix"] + ' ' + tns_reply[0]["objname"] + '</a></b><br>'
+    # message_2 = f"<span style='color: grey; font-style: italic;'>{message_2}</span><br>"
+    # message_3 = f"<span style='color: grey; font-style: italic;'>{message_3}</span>"
+
+        ## Find Separation
+        print("Getting object data...")
+        tns_object_data     = get_ra_dec_from_tns(tns_reply[0]["objname"])
+        bgem_object_radec   = SkyCoord(float(ra)*u.deg, float(dec)*u.deg, frame='icrs')
+        this_object_ra      = tns_object_data["data"]["radeg"]
+        this_object_dec     = tns_object_data["data"]["decdeg"]
+        this_object_radec   = SkyCoord(this_object_ra*u.deg, this_object_dec*u.deg, frame='icrs')
+        this_object_sep     = bgem_object_radec.separation(this_object_radec).arcsecond
+        print(this_object_sep)
+
+        message += '<a style="color:grey"><em>Separation: %.1f arcseconds</em></a><br>'%this_object_sep
+
+        print(bgem_id)
+        print(tns_name)
+
+        message += '<a style="margin:5px" class="btn btn-outline-success" href="https://gemtom.blackgem.org/name_to_GEMTOM/' + bgem_id + '/' + tns_name + \
+            '/"  target="_blank">Add to GEMTOM with TNS</a><br>'
+        # message += '<form method="post" action="name_to_GEMTOM/' + bgem_id + '/' + tns_name + \
+            # '/" class="image-form"><button type="submit" class="btn btn-outline-success">Add to GEMTOM with TNS</button></form><br>'
+
+
+        print(tns_object_data["data"])
+        if "BGEM" in tns_object_data["data"]["internal_names"]:
+            tns_flag_bgem = True
+            message += '<a style="color:mediumaquamarine"><em>BlackGEM data reported to TNS</em></a><br>'
+        else:
+            message += '<a style="color:darkorange"><em>BlackGEM data not in TNS!</em></a><br>'
+        print("tns_flag_bgem:", tns_flag_bgem)
+
+
+    print("Returning TNS response.")
+    return JsonResponse({'message': message})
+
+
+    # print(message_1)
+    # print(message_2)
+    # print(message_3)
+
+    # message = message_1+message_2+message_3
+
+    # return JsonResponse(tns_data)
+
+
+    #         {{ tns_flag_sep }}
+    #         <div style="padding:5px">
+    #             <form method="post" action="{% url 'history_to_GEMTOM' %}" class="image-form">
+    #                 {% csrf_token %}
+    #                 <input type="hidden" name="id" value="{{ bgem_id }}">
+    #                 <input type="hidden" name="name" value="{{ iau_name }}">
+    #                 <input type="hidden" name="ra" value="{{ ra }}">
+    #                 <input type="hidden" name="dec" value="{{ dec }}">
+    #                 <input type="hidden" name="tns_prefix" value="{{ tns_flag_prefix }}">
+    #                 <input type="hidden" name="tns_name" value="{{ tns_flag_name }}">
+    #                 <button type="submit" class="btn btn-outline-success">Add to GEMTOM with TNS</button>
+    #             </form>
+    #         </div>
+    #         {% if tns_flag_bgem %}
+    #             <a style="color:mediumaquamarine"><em>BlackGEM data reported to TNS</em></a>
+    #         {% else %}
+    #             <a style="color:darkorange"><em>BlackGEM data not in TNS!</em></a>
+    #         {% endif %}
+    #     </div>
+    #     <div class="col-md-4"></div>
+    # </div>
 
 
 ## =============================================================================
@@ -5381,6 +5589,7 @@ def update_time_in_la_silla(request):
     message = message_1+message_2+message_3
 
     return JsonResponse({'time': message})
+
 
 class LiveFeed(LoginRequiredMixin, TemplateView):
     template_name = 'live_feed.html'
