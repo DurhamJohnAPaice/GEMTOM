@@ -269,13 +269,16 @@ def update_classification(target):
     """
     target_name = target.name
     target_id = target.id
+    try:    classification = target.targetextra_set.get(key='Classification').value
+    except: classification = None
 
-    form = ClassificationForm()
+    form = ClassificationForm(initial={'dropdown': classification})
 
     return {
-        'target_name' : target_name,
-        'target_id'   : target_id,
-        'form'        : form
+        'target_name'       : target_name,
+        'target_id'         : target_id,
+        'classification'    : classification,
+        'form'              : form
         }
 
 @register.inclusion_tag('tom_dataproducts/partials/other_pages.html')

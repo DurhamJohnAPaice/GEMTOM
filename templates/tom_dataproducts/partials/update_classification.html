@@ -3,7 +3,7 @@
     <link rel="stylesheet" type="text/css" href="{% static 'css/custom_styles.css' %}">
 </head>
 <div>
-  <h4>Classification</h4>
+  <div style="padding-top:10px; margin-bottom:10px;"><h5>Classification: {{ classification }}</h5></div>
   {% csrf_token %}
   <!-- Click <a href=https://astro.ing.iac.es/staralt/ target="_blank">here</a> to go to STARALT to calculate visibility for this target.<br> -->
   <!-- Enter the following into the coordinates box:
@@ -17,6 +17,7 @@
       <input type="hidden" name="name" value="{{ target_name }}">
       <button type="submit" class="btn btn-primary">Update Classification</button>
   </form> -->
+  Update Classification:
   <form method="post" action="{% url 'update_classification' %}" class="image-form">
       {% csrf_token %}
       {{ form.as_p }}
