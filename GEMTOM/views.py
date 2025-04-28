@@ -3739,11 +3739,11 @@ def delayed_search_for_TNS(request):
             # '/" class="image-form"><button type="submit" class="btn btn-outline-success">Add to GEMTOM with TNS</button></form><br>'
 
         if "BGEM" in tns_object_data["data"]["internal_names"]:
-            tns_flag_bgem = True
+            # tns_flag_bgem = True
             message += '<a style="color:mediumaquamarine"><em>BlackGEM data reported to TNS</em></a><br>'
         else:
             message += '<a style="color:darkorange"><em>BlackGEM data not in TNS!</em></a><br>'
-        print("tns_flag_bgem:", tns_flag_bgem)
+        # print("tns_flag_bgem:", tns_flag_bgem)
 
 
     print("Returning TNS response.")
