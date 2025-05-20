@@ -185,6 +185,7 @@ class ClassificationForm(forms.Form):
 
     """
     CHOICES = [
+        ("To Classify",          "To Classify"),
         ("Other",                "Other"),
         ("SN",                   "SN"),
         ("SN I",                 "SN I"),
