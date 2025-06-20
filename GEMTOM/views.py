@@ -2076,7 +2076,7 @@ def NightView(request, obs_date):
     obs_date = str(obs_date)
 
     context = get_any_nights_context(obs_date)
-    
+
     time_list.append(time.time())
 
     df_orphans = get_nightly_orphans(obs_date)
@@ -4748,8 +4748,8 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
 
     # Read CSV data
     df = blackgem_rated_orphans()
-    # df = df.sort_values(by=['yes_no', 'runcat_id'], ascending=False)
-    df = df.sort_values(by=['probabilities'], ascending=False)
+    df = df.sort_values(by=['yes_no', 'runcat_id'], ascending=False)
+    # df = df.sort_values(by=['probabilities'], ascending=False)
     # df = df.sort_values(by=['yes_no'], ascending=False)
 
     ## Round values for displaying
@@ -4767,7 +4767,7 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
     df['std_max_sml']   = round(df['std_max'],7)
     df['std_frc_sml']   = round(df['std_frc'],2)
     df['std_ang_sml']   = round(df['std_ang'],2)
-    df['probabilities'] = round(df['probabilities'],3)
+    # df['probabilities'] = round(df['probabilities'],3)
 
 
     getRowStyle = {
@@ -4816,14 +4816,14 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
                 # {'headerName': 'Separation', 'field': 'det_sep_sml',    'minWidth': 75, 'maxWidth': 75},
 
                 {'headerName': 'std_max', 'field': 'std_max_sml',    'minWidth': 125, 'maxWidth': 125},
-                {'headerName': 'Prob.', 'field': 'probabilities',    'minWidth': 75, 'maxWidth': 75},
+                # {'headerName': 'Prob.', 'field': 'probabilities',    'minWidth': 75, 'maxWidth': 75},
                 {'headerName': 'std_frc', 'field': 'std_frc_sml',    'minWidth': 75, 'maxWidth': 75},
                 {'headerName': 'std_ang', 'field': 'std_ang_sml',    'minWidth': 75, 'maxWidth': 75},
 
                 {'headerName': 'Interest', 'field': 'yes_no',       'minWidth': 90, 'maxWidth': 90},
                 {'headerName': 'Notes', 'field': 'notes',               'minWidth': 75},
-                {'headerName': 'TNS?', 'field': 'tns_classification',               'minWidth': 75, 'maxWidth': 100},
-                {'headerName': 'TNS Name', 'field': 'tns_name',               'minWidth': 75, 'maxWidth': 100},
+                # {'headerName': 'TNS?', 'field': 'tns_classification',               'minWidth': 75, 'maxWidth': 100},
+                # {'headerName': 'TNS Name', 'field': 'tns_name',               'minWidth': 75, 'maxWidth': 100},
 
 
             ],
