@@ -2076,6 +2076,8 @@ def NightView(request, obs_date):
     obs_date = str(obs_date)
 
     context = get_any_nights_context(obs_date)
+    
+    time_list.append(time.time())
 
     df_orphans = get_nightly_orphans(obs_date)
 
