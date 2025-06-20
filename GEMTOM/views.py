@@ -3081,9 +3081,18 @@ def format_to_json(source):
 ##  --- TNS functions for GEMTOM ---
 def get_tns_from_ra_dec(ra, dec, radius):
 
-    search_obj          = [("ra", str(ra)), ("dec", str(dec)), ("radius", str(radius)), ("units", "arcsec"), ("objname", ""),
-                       ("objname_exact_match", 0), ("internal_name", ""),
-                       ("internal_name_exact_match", 0), ("objid", ""), ("public_timestamp", "")]
+    search_obj          = [
+        ("ra", str(ra)),
+        ("dec", str(dec)),
+        ("radius", str(radius)),
+        ("units", "arcsec"),
+        ("objname", ""),
+        ("objname_exact_match", 0),
+        ("internal_name", ""),
+        ("internal_name_exact_match", 0),
+        ("objid", ""),
+        ("public_timestamp", "")
+    ]
 
     response = search(search_obj)
     try:
@@ -3697,8 +3706,11 @@ def delayed_search_for_TNS(request):
 
     ## TNS:
     print("Starting TNS Query...")
-    search_radius = 10
+    search_radius = 5
     tns_data = get_tns_from_ra_dec(ra, dec, search_radius)
+    # print("\n\nTNS data:\n")
+    # print(tns_data)
+    # print("\n\n")
 
     if tns_data == "Too many requests!":
         message = '<div style="color:black"><em>Too many TNS requests. Please check later.</em></div>'
@@ -3715,15 +3727,32 @@ def delayed_search_for_TNS(request):
 
     if tns_reply_length == 0:
         message = '<div style="color:lightgrey"><em>No TNS Object within 10 arcseconds.</em></div>'
+
     else:
-        tns_name = str(tns_reply[0]["prefix"] + " " + tns_reply[0]["objname"])
+
+        ## If multiple objects, find which is closest
+        if tns_reply_length == 1:
+            tns_index = 0
+        if tns_reply_length > 1:
+            tns_sep = []
+            for i in range(tns_reply_length):
+                tns_object_data     = get_ra_dec_from_tns(tns_reply[i]["objname"])
+                bgem_object_radec   = SkyCoord(float(ra)*u.deg, float(dec)*u.deg, frame='icrs')
+                this_object_ra      = tns_object_data["data"]["radeg"]
+                this_object_dec     = tns_object_data["data"]["decdeg"]
+                this_object_radec   = SkyCoord(this_object_ra*u.deg, this_object_dec*u.deg, frame='icrs')
+                tns_sep.append(bgem_object_radec.separation(this_object_radec).arcsecond)
+            tns_index = tns_sep.index(min(tns_sep))
+
+
+        tns_name = str(tns_reply[0]["prefix"] + " " + tns_reply[tns_index]["objname"])
 
         message = 'TNS Object within 10 arcseconds!<br>'
-        message += '<b><a href=https://www.wis-tns.org/object/' + tns_reply[0]["objname"] + ' target="_blank">' + tns_reply[0]["prefix"] + ' ' + tns_reply[0]["objname"] + '</a></b><br>'
+        message += '<b><a href=https://www.wis-tns.org/object/' + tns_reply[tns_index]["objname"] + ' target="_blank">' + tns_reply[tns_index]["prefix"] + ' ' + tns_reply[tns_index]["objname"] + '</a></b><br>'
 
         ## Find Separation
         print("Getting object data...")
-        tns_object_data     = get_ra_dec_from_tns(tns_reply[0]["objname"])
+        tns_object_data     = get_ra_dec_from_tns(tns_reply[tns_index]["objname"])
         bgem_object_radec   = SkyCoord(float(ra)*u.deg, float(dec)*u.deg, frame='icrs')
         this_object_ra      = tns_object_data["data"]["radeg"]
         this_object_dec     = tns_object_data["data"]["decdeg"]
@@ -4717,7 +4746,8 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
 
     # Read CSV data
     df = blackgem_rated_orphans()
-    df = df.sort_values(by=['yes_no', 'runcat_id'], ascending=False)
+    # df = df.sort_values(by=['yes_no', 'runcat_id'], ascending=False)
+    df = df.sort_values(by=['probabilities'], ascending=False)
     # df = df.sort_values(by=['yes_no'], ascending=False)
 
     ## Round values for displaying
@@ -4725,16 +4755,17 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
     df['dec_sml']       = round(df['dec'],3)
     # df['ra_std_sml']        = round(df['ra_std']*360*60,4)
     # df['dec_std_sml']       = round(df['dec_std']*360*60,4)
-    df['det_sep_sml']       = round(df['det_sep'],2)
-    df['qavg_sml']     = round(df['q_avg'],2)
-    df['uavg_sml']     = round(df['u_avg'],2)
-    df['iavg_sml']     = round(df['i_avg'],2)
-    df['qrbavg_sml']     = round(df['q_rb_avg'],2)
-    df['urbavg_sml']     = round(df['u_rb_avg'],2)
-    df['irbavg_sml']     = round(df['i_rb_avg'],2)
-    df['std_max_sml']     = round(df['std_max'],7)
-    df['std_frc_sml']     = round(df['std_frc'],2)
-    df['std_ang_sml']     = round(df['std_ang'],2)
+    df['det_sep_sml']   = round(df['det_sep'],2)
+    df['qavg_sml']      = round(df['q_avg'],2)
+    df['uavg_sml']      = round(df['u_avg'],2)
+    df['iavg_sml']      = round(df['i_avg'],2)
+    df['qrbavg_sml']    = round(df['q_rb_avg'],2)
+    df['urbavg_sml']    = round(df['u_rb_avg'],2)
+    df['irbavg_sml']    = round(df['i_rb_avg'],2)
+    df['std_max_sml']   = round(df['std_max'],7)
+    df['std_frc_sml']   = round(df['std_frc'],2)
+    df['std_ang_sml']   = round(df['std_ang'],2)
+    df['probabilities'] = round(df['probabilities'],3)
 
 
     getRowStyle = {
@@ -4783,12 +4814,14 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
                 # {'headerName': 'Separation', 'field': 'det_sep_sml',    'minWidth': 75, 'maxWidth': 75},
 
                 {'headerName': 'std_max', 'field': 'std_max_sml',    'minWidth': 125, 'maxWidth': 125},
-                # {'headerName': 'std_min', 'field': 'std_min',    'minWidth': 75, 'maxWidth': 75},
+                {'headerName': 'Prob.', 'field': 'probabilities',    'minWidth': 75, 'maxWidth': 75},
                 {'headerName': 'std_frc', 'field': 'std_frc_sml',    'minWidth': 75, 'maxWidth': 75},
                 {'headerName': 'std_ang', 'field': 'std_ang_sml',    'minWidth': 75, 'maxWidth': 75},
 
                 {'headerName': 'Interest', 'field': 'yes_no',       'minWidth': 90, 'maxWidth': 90},
                 {'headerName': 'Notes', 'field': 'notes',               'minWidth': 75},
+                {'headerName': 'TNS?', 'field': 'tns_classification',               'minWidth': 75, 'maxWidth': 100},
+                {'headerName': 'TNS Name', 'field': 'tns_name',               'minWidth': 75, 'maxWidth': 100},
 
 
             ],
@@ -7228,17 +7261,17 @@ def add_to_watchlist(request):
         if limit == 98.0:
             messages.success(
                 request,
-                'Watchlist Updated! Any future detections of this source will be sent to ' + user_email + '.'
+                'Watchlist updated! Any future detections of this source will be sent to ' + user_email + '.'
             )
         else:
             messages.success(
                 request,
-                'Watchlist Updated! Any future detections of this source above ' + str(limit) + ' mag will be sent to ' + user_email + '.'
+                'Watchlist updated! Any future detections of this source above ' + str(limit) + ' mag will be sent to ' + user_email + '.'
             )
     else:
         messages.success(
             request,
-            'Watchlist Updated! ' + user_email + ' has been unsubscribed from this target.'
+            'Watchlist updated! ' + user_email + ' has been unsubscribed from this target.'
         )
 
 

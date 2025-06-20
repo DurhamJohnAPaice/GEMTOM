@@ -52,6 +52,15 @@ A list of the main features that have been requested and I intend to work on.
             <li>Get the Detections on Sky plot on the Orphaned Transients page</li>
             <li>Improve the SQL query finding the Orphaned Transients</li>
         </ul>
+
+        <h5>Telescope Communication</h5>
+        <ul>
+            <li>Make a downloadable CSV file of all the targets for a set run</li>
+            <li>Possible: Auto-create a NOT-specific file that can be read by Semester</li>
+            <li>Connect GEMTOM to Mookodi for automatic observations</li>
+            <li>Make some custom submission method for SALT</li>
+            <li>Remove observations from the schedule when they're done</li>
+        </ul>
     <br>
 
     <!-- <li>
@@ -62,11 +71,13 @@ A list of the main features that have been requested and I intend to work on.
 
         <h5>Miscellaneous Features and Bugfixes:</h5>
         <ul>
-            <li>Targets: Add a 'To Classify' classification.</li>
+            <li>Look into: Forced Photometry with SLURM</li>
+            <li>Automatically add targets to a group if they're above some magnitude threshold</li>
             <li>Targets: Include a way to add a target to a group from the Target page itself.</li>
             <li>Have the url_to_GEMTOM and name_to_GEMTOM functions redirect to the new Target pages with a message, rather than the main Target page without a message.</li>
             <li>Data: Fix sources with plus signs being converted to spaces when created/data is saved.</li>
             <li>Meta: Connect GEMTOM to the Full Source Database (when it has the full source data)</li>
+            <li>Transients/Targets: Add Galactic lat/long to Transient and Target pages</li>
             <li>Transients: Remove 99mag values from the lightcurves</li>
             <li>Transients: Submit multiple TNS/Gaia/RA Decs to be searched</li>
             <li>Transients: Interpret HMS as well as Deg.</li>
@@ -142,7 +153,9 @@ A list of the main features that have been requested and I intend to work on.
         <li><h6>Miscellaneous features</h6></li>
         <ul>
             <li>'Classification' panel on the Target pages now shows (and auto-selects) the target's current classification.</li>
+            <li>Added a 'To Classify' classification.</li>
             <li>NOIRLab's Astro Data Lab is now linked on Transient and Target pages, for any targets outside of the usual deep all-sky surveys.</li>
+            <li>Transients: Reduced TNS Search to only 5 arcseconds, and made sure that it only displays the closest.</li>
         </ul>
     </ul>
 
