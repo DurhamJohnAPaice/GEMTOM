@@ -375,8 +375,13 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 
 
 def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
+    print("\n\n\n")
+    print(df_bgem_lightcurve)
+    print(df_bgem_lightcurve.index)
+    print("\n\n\n")
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df_bgem_lightcurve['x.ra_psf_d'], y=df_bgem_lightcurve['x.dec_psf_d'], mode='markers', name='Line and Marker', marker_color="LightSeaGreen"))
+    # fig.add_trace(go.Scatter(x=df_bgem_lightcurve['x.ra_psf_d'], y=df_bgem_lightcurve['x.dec_psf_d'], mode='markers', name='Line and Marker', marker_color="LightSeaGreen"))
+    fig.add_trace(go.Scatter(x=df_bgem_lightcurve['x.ra_psf_d'], y=df_bgem_lightcurve['x.dec_psf_d'], mode='markers', name='Line and Marker', marker_color=df_bgem_lightcurve.index, marker_colorscale=["cyan", "magenta"]))
     fig.update_xaxes(autorange="reversed")
     mid_x = ra
     mid_y = dec
@@ -2729,10 +2734,12 @@ def get_recent_blackgem_transients(days_since_last_update):
         # print(data["runcat_id"].iloc[0:5])
         # print(df_dates["runcat_id"].iloc[0:5])
 
-        df_dates['first_obs'] = df_dates['first_obs'].dt.strftime('%Y-%m-%d')
-        df_dates['last_obs'] = df_dates['last_obs'].dt.strftime('%Y-%m-%d')
+        if len(df_dates) > 0:
 
-        data = pd.merge(data, df_dates, on="runcat_id", how="left")
+            df_dates['first_obs'] = df_dates['first_obs'].dt.strftime('%Y-%m-%d')
+            df_dates['last_obs'] = df_dates['last_obs'].dt.strftime('%Y-%m-%d')
+
+            data = pd.merge(data, df_dates, on="runcat_id", how="left")
         # data["last_obs"] = date_column
 
 
