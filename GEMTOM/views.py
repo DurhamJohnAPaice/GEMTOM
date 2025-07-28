@@ -386,8 +386,8 @@ def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
     mid_x = ra
     mid_y = dec
     c = SkyCoord(mid_x, mid_y, frame='icrs', unit='deg')
-    min_circle = c.directional_offset_by(45  * u.deg, 1.414 * 5 * u.arcsecond)
-    max_circle = c.directional_offset_by(225 * u.deg, 1.414 * 5 * u.arcsecond)
+    min_circle = c.directional_offset_by(45  * u.deg, 1 / np.cos(abs(np.deg2rad(dec))) * u.arcsecond)
+    max_circle = c.directional_offset_by(225 * u.deg, 1 / np.cos(abs(np.deg2rad(dec))) * u.arcsecond)
     # print("Circles")
     # print(min_circle)
     # print(max_circle)
@@ -407,8 +407,10 @@ def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
         x0=circle_x0, y0=circle_y0, x1=circle_x1, y1=circle_y1,
         line_color="red",
     )
-    fig.update_layout(width=320, height=250,
-        margin=dict(t=10, b=10, l=10, r=30),  # Set margins to reduce whitespace
+    fig.update_layout(width=350, height=295,
+        minreducedwidth=250,
+        minreducedheight=245,
+        margin=dict(t=10, b=40, l=10, r=30),  # Set margins to reduce whitespace
     )
 
     return fig
@@ -3409,12 +3411,12 @@ def BGEM_ID_View(request, bgem_id):
                         {'headerName': 'a.xtrsrc', 'field':  'xtrsrc', 'cellRenderer': 'markdown'},
                         {'headerName': 'i.filter', 'field': 'filter'},
                         {'headerName': 'i.date_obs', 'field':  'date_obs'},
+                        {'headerName': 'x.mag_zogy', 'field':  'mag_zogy',
+                            "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
                         {'headerName': 'x.ra_psf_d', 'field':  'ra_psf_d',
                             "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
                         {'headerName': 'x.dec_psf_d', 'field':  'dec_psf_d',
                             "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
-                        {'headerName': 'x.mag_zogy', 'field':  'mag_zogy',
-                            "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
                         {'headerName': 'x.magerr_zogy', 'field':  'magerr_zogy',
                             "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
                         {'headerName': 'i.mjd_obs', 'field':  'mjd',

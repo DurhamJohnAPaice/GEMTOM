@@ -180,10 +180,10 @@ On this page, you can find the data for a specific BlackGEM transient.
 
 <div class="row">
 
-    <div class="col-md-4" style="border-right:thin solid #dddddd;">
+    <div class="col-md-5" style="border-right:thin solid #dddddd;">
 
         <h5>Location on Sky</h5>
-        <em style="color:red;">Circle of diameter 10 arcseconds</em>
+        <em style="color:red;">Circle of radius 2 arcseconds</em>
         <!-- Render the Plotly graph -->
         {{ location_on_sky|safe }}
         <br>
@@ -191,7 +191,7 @@ On this page, you can find the data for a specific BlackGEM transient.
         <!-- include Aladin Lite CSS file in the head section of your page -->
         <link rel="stylesheet" href="//aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.css" />
         <!-- insert this snippet where you want Aladin Lite viewer to appear and after the loading of jQuery -->
-        <div id="aladin-lite-div" style="width:300px;height:300px;"></div>
+        <div id="aladin-lite-div" style="width:350px;height:350px;"></div>
         <div id="chart-form-div" style="width:300px;">
           <form id="chart-form">
             <div class="form-group mt-1 mb-1">
@@ -315,10 +315,12 @@ On this page, you can find the data for a specific BlackGEM transient.
               aladin.addOverlay(layer);
               layer.add(A.polyline([compassNorthArm, compassCenter, compassEastArm]));
               layer.add(A.polyline([scaleBarStart, scaleBarEnd]));
-              layer.add(A.circle(targetRa, targetDec, scaleBarLength / (60*60*10)));
+              // layer.add(A.circle(targetRa, targetDec, scaleBarLength / (60*60*25)));
+              layer.add(A.circle(targetRa, targetDec, scaleBar.sizeAsDegrees/5));
               layer.add(A.circle(targetRa, targetDec, fovDegrees / 300));
               layer.add(new Text(scaleBarStartPix[0] + scaleBarLength / 2, scaleBarStartPix[1] - scaleBarTextSpacing, scaleBar.label, {color: color}));
               layer.add(new Text(compassNorthArmPix[0], compassNorthArmPix[1] - compassTextSpacing, 'N', {color: color}));
+              layer.add(new Text(compassEastArmPix[0] - compassTextSpacing, compassEastArmPix[1], 'E', {color: color, align: 'end', baseline: 'middle'}));
               layer.add(new Text(compassEastArmPix[0] - compassTextSpacing, compassEastArmPix[1], 'E', {color: color, align: 'end', baseline: 'middle'}));
             }
 
@@ -381,13 +383,13 @@ On this page, you can find the data for a specific BlackGEM transient.
 
     </div>
 
-    <div class="col-md-8">
+    <div class="col-md-7">
 
         <h5>Detections</h5>
 
 
         <div class="dash-container">
-            {% plotly_app name="EachObservation" ratio=0.55 %}
+            {% plotly_app name="EachObservation" ratio=0.65 %}
         </div>
 
         <h5>Full Observation Data</h5>
