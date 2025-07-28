@@ -63,6 +63,7 @@ from PIL import Image, ImageDraw
 from plotly.offline import plot
 from urllib.request import urlretrieve
 from astroquery.gaia import Gaia
+from astroquery.vizier import Vizier
 
 ## For the ToO Forms
 from .forms import *
@@ -3704,6 +3705,54 @@ def BGEM_ID_View(request, bgem_id):
 
     return render(request, "transient/index.html", context)
 
+def delayed_search_for_Vizier(request):
+
+    print("Delayed Search for Vizier called!")
+
+    ra = request.GET.get('ra')
+    dec = request.GET.get('dec')
+    ra = float(ra)
+    dec = float(dec)
+
+    # Define search coordinates (e.g., center of interest)
+    target_coord = SkyCoord(ra=ra*u.deg, dec=dec*u.deg, frame='icrs')
+
+    # Define search radius
+    search_radius = 1.5 * u.arcsec
+
+    result = Vizier().query_region(target_coord, radius=search_radius)
+
+    if len(result)-1 == 1:  message = "Target is in " + str(len(result)-1) + " VizieR catalog<br>"
+    else:                   message = "Target is in " + str(len(result)-1) + " VizieR catalogs<br>"
+
+    ## Find specific catalogs
+
+    GSC = False
+    AAVSO = False
+    for i in range(len(result)):
+        # print(result[i]._meta["name"])
+        # print(result[i]._meta)
+        if result[i]._meta["name"] == "I/353/gsc242":
+            GSC = True
+        if result[i]._meta["name"] == "B/vsx/vsx":
+            AAVSO = True
+
+
+    if len(result)-1 > 0:
+
+        if GSC: message += "<a style='color:mediumaquamarine'><em>GSC</em></a>"
+        else: message += "<a style='color:lightgrey'><em>GSC</em></a>"
+
+        message += "<a style='color:lightgrey'><em> • </em></a>"
+
+        if AAVSO: message += "<a style='color:mediumaquamarine'><em>AAVSO</em></a>"
+        else: message += "<a style='color:lightgrey'><em>AAVSO</em></a>"
+
+        message += '<br><a style="margin:5px" class="btn btn-outline-primary" href="https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-c=' + str(ra) + '%20' + str(dec) + '&-c.u=arcsec&-c.r=1.5&-c.eq=J2000&-c.geom=r&-out.max=50&-out.add=_r" target="_blank">Query VizieR</a><br>'
+
+    print("Returning Vizier response.")
+    return JsonResponse({'message': message})
+
 
 def delayed_search_for_TNS(request):
 
@@ -3758,8 +3807,8 @@ def delayed_search_for_TNS(request):
 
         tns_name = str(tns_reply[0]["prefix"] + " " + tns_reply[tns_index]["objname"])
 
-        message = 'TNS Object within 10 arcseconds!<br>'
-        message += '<b><a href=https://www.wis-tns.org/object/' + tns_reply[tns_index]["objname"] + ' target="_blank">' + tns_reply[tns_index]["prefix"] + ' ' + tns_reply[tns_index]["objname"] + '</a></b><br>'
+        message = 'Closeby TNS Object! • '
+        message += '<b><a href=https://www.wis-tns.org/object/' + tns_reply[tns_index]["objname"] + ' target="_blank">' + tns_reply[tns_index]["prefix"] + ' ' + tns_reply[tns_index]["objname"] + '</a></b> • '
 
         ## Find Separation
         print("Getting object data...")
@@ -3771,10 +3820,8 @@ def delayed_search_for_TNS(request):
         this_object_sep     = bgem_object_radec.separation(this_object_radec).arcsecond
         # print(this_object_sep)
 
-        message += '<a style="color:grey"><em>Separation: %.1f arcseconds</em></a><br>'%this_object_sep
+        message += '<a style="color:grey"><em>Sep: %.1f arcsec</em></a><br>'%this_object_sep
 
-        message += '<a style="margin:5px" class="btn btn-outline-success" href="https://gemtom.blackgem.org/name_to_GEMTOM/' + bgem_id + '/' + tns_name + \
-            '/"  target="_blank">Add to GEMTOM with TNS</a><br>'
         # message += '<form method="post" action="name_to_GEMTOM/' + bgem_id + '/' + tns_name + \
             # '/" class="image-form"><button type="submit" class="btn btn-outline-success">Add to GEMTOM with TNS</button></form><br>'
 
@@ -3785,6 +3832,8 @@ def delayed_search_for_TNS(request):
             message += '<a style="color:darkorange"><em>BlackGEM data not in TNS!</em></a><br>'
         # print("tns_flag_bgem:", tns_flag_bgem)
 
+        message += '<a style="margin:5px" class="btn btn-outline-success" href="https://gemtom.blackgem.org/name_to_GEMTOM/' + bgem_id + '/' + tns_name + \
+            '/"  target="_blank">Add to GEMTOM with TNS</a><br>'
 
     print("Returning TNS response.")
     return JsonResponse({'message': message})

@@ -53,15 +53,25 @@
     const bgem_id = "{{ bgem_id|escapejs }}";
 
     // Get base URL from Django
-    const baseUrl = "{% url 'delayed_search_for_TNS' %}";
+    const baseUrl1 = "{% url 'delayed_search_for_TNS' %}";
+    const baseUrl2 = "{% url 'delayed_search_for_Vizier' %}";
 
     // Add query params
-    const url = `${baseUrl}?ra=${ra}&dec=${dec}&bgemid=${bgem_id}`;
+    const url1 = `${baseUrl1}?ra=${ra}&dec=${dec}&bgemid=${bgem_id}`;
+    const url2 = `${baseUrl2}?ra=${ra}&dec=${dec}`;
 
-    fetch(url)
+    fetch(url1)
         .then(response => response.json())
         .then(data => {
             document.getElementById('refreshable-tns').innerHTML = data.message;
+        })
+        .catch(error => console.error('Error:', error))
+
+
+    fetch(url2)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('refreshable-vizier').innerHTML = data.message;
         })
         .catch(error => console.error('Error:', error))
 </script>
@@ -140,18 +150,35 @@ On this page, you can find the data for a specific BlackGEM transient.
       <a class="btn btn-outline-primary" href="https://www.legacysurvey.org/viewer?ra={{ ra }}&dec={{ dec }}&zoom=15&mark={{ ra }},{{ dec }}" target="_blank">DESI</a>
 </div> -->
 
-
-<div align="center">
-    <div class="row" style="margin-top:10px">
-        <div class="col-md-4"></div>
-        <div class="col-md-4" style="border:thin solid lightgrey; padding:10px;">
-            <div id="refreshable-tns" style="">
-                <div class="loading" style="color:lightgrey"><em>Searching TNS for nearby objects</em><br></div>
+<div class="row" style="padding:5px;">
+    <div class="col-md-6">
+        <div align="center">
+            <div class="row" style="margin-top:10px">
+                <div class="col-md-1"></div>
+                <div class="col-md-10" style="border:thin solid lightgrey; padding:10px;">
+                    <div id="refreshable-tns" style="">
+                        <div class="loading" style="color:lightgrey"><em>Searching TNS for nearby objects</em><br></div>
+                    </div>
+                </div>
+                <div class="col-md-1"></div>
             </div>
         </div>
-        <div class="col-md-4"></div>
+    </div>
+    <div class="col-md-6">
+        <div align="center">
+            <div class="row" style="margin-top:10px">
+                <div class="col-md-1"></div>
+                <div class="col-md-10" style="border:thin solid lightgrey; padding:10px;">
+                    <div id="refreshable-vizier" style="">
+                        <div class="loading" style="color:lightgrey"><em>Searching Vizier catalogs</em><br></div>
+                    </div>
+                </div>
+                <div class="col-md-1"></div>
+            </div>
+        </div>
     </div>
 </div>
+
 
 <hr>
 
