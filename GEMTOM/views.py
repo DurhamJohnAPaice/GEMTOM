@@ -2152,6 +2152,24 @@ def NightView(request, obs_date):
         # aaa_orphans_std_min = df_orphans.std_min
         # print(df_orphans.std_min)
 
+        # real_bogus_color = df_orphans["real_bogus_probabilities"]
+        mediumaquamarine_rgb = tuple(int("0ACC8D"[i:i+2], 16) for i in (0, 2, 4))
+        darkorange_rgb = tuple(int("E8840C"[i:i+2], 16) for i in (0, 2, 4))
+        lightgrey_rgb = tuple(int("D3D3D3"[i:i+2], 16) for i in (0, 2, 4))
+        # real_bogus_blue = df_orphans["real_bogus_probabilities"]*(mediumaquamarine_rgb[2]-lightgrey_rgb[2])+lightgrey_rgb[2]
+        real_bogus_red  = df_orphans["real_bogus_probabilities"]*(mediumaquamarine_rgb[0]-lightgrey_rgb[0])+lightgrey_rgb[0]
+        real_bogus_grn  = df_orphans["real_bogus_probabilities"]*(mediumaquamarine_rgb[1]-lightgrey_rgb[1])+lightgrey_rgb[1]
+        real_bogus_blu  = df_orphans["real_bogus_probabilities"]*(mediumaquamarine_rgb[2]-lightgrey_rgb[2])+lightgrey_rgb[2]
+        asteroid_red  = df_orphans["asteroid_probabilities"]*(darkorange_rgb[0]-lightgrey_rgb[0])+lightgrey_rgb[0]
+        asteroid_grn  = df_orphans["asteroid_probabilities"]*(darkorange_rgb[1]-lightgrey_rgb[1])+lightgrey_rgb[1]
+        asteroid_blu  = df_orphans["asteroid_probabilities"]*(darkorange_rgb[2]-lightgrey_rgb[2])+lightgrey_rgb[2]
+        diff_spike_red  = df_orphans["diff_spike_probabilities"]*(darkorange_rgb[0]-lightgrey_rgb[0])+lightgrey_rgb[0]
+        diff_spike_grn  = df_orphans["diff_spike_probabilities"]*(darkorange_rgb[1]-lightgrey_rgb[1])+lightgrey_rgb[1]
+        diff_spike_blu  = df_orphans["diff_spike_probabilities"]*(darkorange_rgb[2]-lightgrey_rgb[2])+lightgrey_rgb[2]
+        df_orphans["real_bogus_color"] = [hex(int(x))[2:]+hex(int(y))[2:]+hex(int(z))[2:] for x,y,z in zip(real_bogus_red, real_bogus_grn, real_bogus_blu)]
+        df_orphans["asteroid_color"] = [hex(int(x))[2:]+hex(int(y))[2:]+hex(int(z))[2:] for x,y,z in zip(asteroid_red, asteroid_grn, asteroid_blu)]
+        df_orphans["diff_spike_color"] = [hex(int(x))[2:]+hex(int(y))[2:]+hex(int(z))[2:] for x,y,z in zip(diff_spike_red, diff_spike_grn, diff_spike_blu)]
+
 
         context['orphans'] = zip(
             list(df_orphans.runcat_id),
@@ -2173,10 +2191,16 @@ def NightView(request, obs_date):
             ['%.3f'%x for x in df_orphans["real_bogus_probabilities"]],
             ['%.3f'%x for x in df_orphans["asteroid_probabilities"]],
             ['%.3f'%x for x in df_orphans["diff_spike_probabilities"]],
+            [x for x in df_orphans.real_bogus_color],
+            [x for x in df_orphans.asteroid_color],
+            [x for x in df_orphans.diff_spike_color],
             [x for x in df_orphans.yes_no],
             [x for x in df_orphans.notes],
         )
 
+        # print(df_orphans["real_bogus_color"])
+        # print("BARKBARKBARK")
+        # print(["color: "+x for x in df_orphans.real_bogus_color])
 
         context['orphans_sources_length'] = len(df_orphans)
         if len(df_orphans) == 1:

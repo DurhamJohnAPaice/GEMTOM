@@ -181,6 +181,7 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
 
   <br>
 
+
   <!-- Tab panes -->
   <div class="tab-content">
 
@@ -211,21 +212,21 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
                         (Angle)</th> -->
                     <th style="border-left:thin solid #dddddd">
                         Real/Bogus<br>
-                        Asteroid<br>
-                        Diff. Spike</th>
+                        <em>Asteroid</em><br>
+                        <em>Diff. Spike</em></th>
                     <th style="border-left:thin solid #dddddd">Real?</th>
                     <th>Notes</th>
                     <th></th>
                 </thead>
                 <tbody>
                     {% if orphans %}
-                        {% for bgem_id, ra, dec, q_min, q_rb_avg, u_min, u_rb_avg, i_min, i_rb_avg, std_max, std_min, std_frc, std_ang, det_sep, real_bogus_probabilities, asteroid_probabilities, diff_spike_probabilities, yes_no, notes in orphans %}
+                        {% for bgem_id, ra, dec, q_min, q_rb_avg, u_min, u_rb_avg, i_min, i_rb_avg, std_max, std_min, std_frc, std_ang, det_sep, real_bogus_probabilities, asteroid_probabilities, diff_spike_probabilities, real_bogus_color, asteroid_color, diff_spike_color, yes_no, notes in orphans %}
                                 {% if yes_no == "No" %}
                                     <tr style="color: #D5D5D5;">
                                 {% elif yes_no == "Yes" %}
                                     <tr style="color: green;">
                                 {% else %}
-                                    <tr style="color: black;">
+                                    <tr style="color: {{ real_bogus_color }};">
                                 {% endif %}
                                 <td class="description"><a href="/transients/{{ bgem_id }}">{{ bgem_id }}</a> </td>
                                 <td class="description">{{ ra }}<br>{{ dec }}</td>
@@ -252,7 +253,34 @@ BlackGEM recorded pictures of {{ extragalactic_sources_length }} possible extrag
                                 <!-- <td class="description">{{ std_max }}</td> -->
                                 <!-- <td class="description">{{ std_frc }}</td> -->
                                 <!-- <td class="description">{{ std_ang }}</td> -->
-                                <td class="description">{{ real_bogus_probabilities }}<br>{{ asteroid_probabilities }}<br>{{ diff_spike_probabilities }}</td>
+                                <td class="description">
+
+                                    {% if yes_no == "No" %}
+                                        <a style="color: #D5D5D5;">
+                                    {% elif yes_no == "Yes" %}
+                                        <a style="color: green;">
+                                    {% else %}
+                                        <a style="color: #{{ real_bogus_color }}">
+                                    {% endif %}
+                                    {{ real_bogus_probabilities }}</a><br>
+
+                                    {% if yes_no == "No" %}
+                                        <a style="color: #D5D5D5;">
+                                    {% elif yes_no == "Yes" %}
+                                        <a style="color: green;">
+                                    {% else %}
+                                        <a style="color: #{{ asteroid_color }}">
+                                    {% endif %}
+                                    <em>{{ asteroid_probabilities }}</em><br>
+
+                                    {% if yes_no == "No" %}
+                                        <a style="color: #D5D5D5;">
+                                    {% elif yes_no == "Yes" %}
+                                        <a style="color: green;">
+                                    {% else %}
+                                        <a style="color: #{{ diff_spike_color }}">
+                                    {% endif %}
+                                    <em>{{ diff_spike_probabilities }}</em></td>
                                 <td class="description">{{ yes_no }}</td>
                                 <td class="description">{{ notes }}</td>
                                 <td class="description">
