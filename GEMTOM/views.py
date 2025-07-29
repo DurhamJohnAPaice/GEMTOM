@@ -2135,7 +2135,9 @@ def NightView(request, obs_date):
         if "probabilities" not in df_orphans.columns:
             df_orphans['probabilities'] = [0 for x in df_orphans.det_sep]
 
+        nan_fix = False
         if "real_bogus_probabilities" not in df_orphans.columns:
+            nan_fix = True
             df_orphans['real_bogus_probabilities']  = df_orphans['probabilities']
             df_orphans['asteroid_probabilities']    = [0 for x in df_orphans.det_sep]
             df_orphans['diff_spike_probabilities']  = [0 for x in df_orphans.det_sep]
@@ -2170,9 +2172,10 @@ def NightView(request, obs_date):
         df_orphans["asteroid_color"] = [hex(int(x))[2:]+hex(int(y))[2:]+hex(int(z))[2:] for x,y,z in zip(asteroid_red, asteroid_grn, asteroid_blu)]
         df_orphans["diff_spike_color"] = [hex(int(x))[2:]+hex(int(y))[2:]+hex(int(z))[2:] for x,y,z in zip(diff_spike_red, diff_spike_grn, diff_spike_blu)]
 
-        df_orphans['real_bogus_probabilities']  = df_orphans['probabilities']
-        df_orphans['asteroid_probabilities']    = [np.nan for x in df_orphans.det_sep]
-        df_orphans['diff_spike_probabilities']  = [np.nan for x in df_orphans.det_sep]
+        if nan_fix:
+            df_orphans['real_bogus_probabilities']  = df_orphans['probabilities']
+            df_orphans['asteroid_probabilities']    = [np.nan for x in df_orphans.det_sep]
+            df_orphans['diff_spike_probabilities']  = [np.nan for x in df_orphans.det_sep]
 
         context['orphans'] = zip(
             list(df_orphans.runcat_id),
