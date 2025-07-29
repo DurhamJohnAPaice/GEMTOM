@@ -2135,7 +2135,12 @@ def NightView(request, obs_date):
         if "probabilities" not in df_orphans.columns:
             df_orphans['probabilities'] = [np.nan for x in df_orphans.det_sep]
 
-        df_orphans = df_orphans.sort_values(by=['probabilities'], ascending=False)
+        if "real_bogus_probabilities" not in df_orphans.columns:
+            df_orphans['real_bogus_probabilities']  = df_orphans['probabilities']
+            df_orphans['asteroid_probabilities']    = [np.nan for x in df_orphans.det_sep]
+            df_orphans['diff_spike_probabilities']  = [np.nan for x in df_orphans.det_sep]
+
+        df_orphans = df_orphans.sort_values(by=['real_bogus_probabilities'], ascending=False)
 
 
         # df_orphans.std_min = df_orphans.std_min.fillna(value=np.nan)
@@ -2165,7 +2170,9 @@ def NightView(request, obs_date):
             ['%.3g'%x for x in df_orphans.std_frc],
             ['%.4g'%x for x in df_orphans.angle_eigs],
             ['%.4s'%x for x in df_orphans.std_ang],
-            ['%.3f'%x for x in df_orphans.probabilities],
+            ['%.3f'%x for x in df_orphans["real_bogus_probabilities"]],
+            ['%.3f'%x for x in df_orphans["asteroid_probabilities"]],
+            ['%.3f'%x for x in df_orphans["diff_spike_probabilities"]],
             [x for x in df_orphans.yes_no],
             [x for x in df_orphans.notes],
         )
