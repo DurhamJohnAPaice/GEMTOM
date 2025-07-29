@@ -2154,7 +2154,7 @@ def NightView(request, obs_date):
 
         # real_bogus_color = df_orphans["real_bogus_probabilities"]
         mediumaquamarine_rgb = tuple(int("099C6C"[i:i+2], 16) for i in (0, 2, 4))
-        darkorange_rgb = tuple(int("E8840C"[i:i+2], 16) for i in (0, 2, 4))
+        darkorange_rgb = tuple(int("E88410"[i:i+2], 16) for i in (0, 2, 4))
         lightgrey_rgb = tuple(int("D3D3D3"[i:i+2], 16) for i in (0, 2, 4))
         # real_bogus_blue = df_orphans["real_bogus_probabilities"]*(mediumaquamarine_rgb[2]-lightgrey_rgb[2])+lightgrey_rgb[2]
         real_bogus_red  = df_orphans["real_bogus_probabilities"]*(mediumaquamarine_rgb[0]-lightgrey_rgb[0])+lightgrey_rgb[0]

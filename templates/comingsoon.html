@@ -126,6 +126,42 @@ A list of the main features that have been requested and I intend to work on.
 <h3>Version Changelogs</h3>
 <br>
 <div style="color:lightgrey">---------------------------------------</div>
+<h4>GEMTOM v0.4 - In the Forest of the Bright</h4>
+<br>
+<ul>
+    <h5>New Features</h5>
+    <ul>
+        <li><h6>Asteroid and Diffraction Spike Classifiers</h6></li>
+        <ul>
+            <li>The "Orphans" tab on the History pages now features two extra classifiers, for Asteroid or a Diffraction Spike probability.</li>
+            <li>These are also coloured based on their value, to give at-a-glance information on new targets.</li>
+        </ul>
+        <br>
+        <li><h6>Transient Pages</h6></li>
+        <ul>
+            <li>Transient pages now include a box that auto-queries Vizier for nearby catalogs. Currently, it shows if the Guide Star Catalog or AAVSO are amongst them - let me know if you want any particular catalogs highlighted.</li>
+            <li>Minor changes made to the TNS query box to reduce vertical space.</li>
+            <li>Reduced TNS Search to only 5 arcseconds, and made sure that it only displays possible matches.</li>
+            <li>'Location on Sky' plot now includes a colourbar for the detections set to the index of that detection, with the same colours as the history plot. This should help with identifying asteroids.</li>
+            <li>Reduced the red circle from 5 arcseconds radius to 2 arcseconds radius (the typical distance that new detections are associated).</li>
+        </ul>
+        <br>
+        <li><h6>Miscellaneous features</h6></li>
+        <ul>
+            <li></li>
+        </ul>
+    </ul>
+
+    <br>
+    <h5>Bugfixes</h5>
+    <ul>
+        <!-- <li></li> -->
+        <li>Transients: Fixed the error where the circle in the Aladin skyview desyncs if you zoom.</li>
+        <!-- <li></li> -->
+    </ul>
+</ul>
+<br>
+<div style="color:lightgrey">---------------------------------------</div>
 <h4>GEMTOM v0.3 - You've got mail!</h4>
 <br>
 <ul>
@@ -150,29 +186,12 @@ A list of the main features that have been requested and I intend to work on.
             <li>For the transient pages, the TNS call sometimes took several seconds. This call has now been split off to happen <em>after</em> the page has loaded to avoid this.</li>
         </ul>
         <br>
-        <li><h6>Transient Pages</h6></li>
-        <ul>
-            <li>Transient pages now include a box that auto-queries Vizier for nearby catalogs. Currently, it shows if the Guide Star Catalog or AAVSO are amongst them - let me know if you want any particular catalogs highlighted.</li>
-            <li>Minor changes made to the TNS query box to reduce vertical space.</li>
-            <li>Reduced TNS Search to only 5 arcseconds, and made sure that it only displays the closest.</li>
-            <li>'Location on Sky' plot now includes a colourbar for the detections set to the index of that detection, with the same colours as the history plot. This should help with identifying asteroids.</li>
-            <li>Reduced the red circle from 5 arcseconds radius to 2 arcseconds radius (the typical distance that new detections are associated).</li>
-        </ul>
-        <br>
         <li><h6>Miscellaneous features</h6></li>
         <ul>
             <li>'Classification' panel on the Target pages now shows (and auto-selects) the target's current classification.</li>
             <li>Added a 'To Classify' classification.</li>
             <li>NOIRLab's Astro Data Lab is now linked on Transient and Target pages, for any targets outside of the usual deep all-sky surveys.</li>
         </ul>
-    </ul>
-
-    <br>
-    <h5>Bugfixes</h5>
-    <ul>
-        <!-- <li></li> -->
-        <li>Transients: Fixed the error where the circle in the Aladin skyview desyncs if you zoom.</li>
-        <!-- <li></li> -->
     </ul>
 </ul>
 <br>
