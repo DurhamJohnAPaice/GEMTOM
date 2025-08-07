@@ -90,10 +90,10 @@ class PhotometryProcessor(DataProcessor):
             s           *= len(data)
             data["source"] = s
 
-        if 'limit' not in data.colnames:
-            s           = ['']
-            s           *= len(data)
-            data["limit"] = s
+        # if 'limit' not in data.colnames:
+        #     s           = [None]
+        #     s           *= len(data)
+        #     data["limit"] = s
 
         for datum in data:
             ## If the Magnitude value is invalid, just skip the whole datum.

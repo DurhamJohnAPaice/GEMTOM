@@ -52,6 +52,7 @@ A list of the main features that have been requested and I intend to work on.
             <li>Get the Detections on Sky plot on the Orphaned Transients page</li>
             <li>Improve the SQL query finding the Orphaned Transients</li>
             <li>Auto-search TNS for new orphans, and update as TNS sources.</li>
+            <li>Add in RA/Dec to asteroid classifier, and consider what other parameters would be good for non-R/B classifiers.</li>
         </ul>
 
         <h5>Telescope Communication</h5>
@@ -72,6 +73,7 @@ A list of the main features that have been requested and I intend to work on.
 
         <h5>Miscellaneous Features and Bugfixes:</h5>
         <ul>
+            <li>Create a 'BlackGEM Discoveries' page!</li>
             <li>Look into: Forced Photometry with SLURM</li>
             <li>Automatically add targets to a group if they're above some magnitude threshold</li>
             <li>Targets: Include a way to add a target to a group from the Target page itself.</li>
@@ -106,6 +108,7 @@ A list of the main features that have been requested and I intend to work on.
             <li>Find a way to have certain parts of pages load after the page itself,
                 e.g. TNS queries, lightcurves, etc., to speed up loading; similar to the Transients page.</li>
             <li>Lightcurves: Click on datum to go to detection of that datum</li>
+            <li>Targets: Solve the issue where a data file that errors takes down the whole page</li>
             <!-- <li></li>
             <li></li>
             <li></li> -->
@@ -133,8 +136,8 @@ A list of the main features that have been requested and I intend to work on.
     <ul>
         <li><h6>Asteroid and Diffraction Spike Classifiers</h6></li>
         <ul>
-            <li>The "Orphans" tab on the History pages now features two extra classifiers, for Asteroid or a Diffraction Spike probability.</li>
-            <li>These are also coloured based on their value, to give at-a-glance information on new targets.</li>
+            <li>The "Orphans" tab on the History pages now features two extra classifiers: Asteroid and Diffraction Spike probabilities.</li>
+            <li>These are also coloured based on their value, to give at-a-glance information on new targets!</li>
         </ul>
         <br>
         <li><h6>Transient Pages</h6></li>
@@ -157,6 +160,7 @@ A list of the main features that have been requested and I intend to work on.
     <ul>
         <!-- <li></li> -->
         <li>Transients: Fixed the error where the circle in the Aladin skyview desyncs if you zoom.</li>
+        <li>Targets: Fixed an error associated with the creation of a limiting magnitude column in uploaded photometry data when one isn't already present. The code no longer does this; please raise an issue if this causes any future problems!</li>
         <!-- <li></li> -->
     </ul>
 </ul>
