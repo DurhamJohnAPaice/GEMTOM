@@ -1,0 +1,27 @@
+{% extends 'tom_common/base.html' %}
+{% block content %}
+<!-- {%load plotly_dash%} -->
+<head>
+<meta charset="utf-8" />   <!--It is necessary to use the UTF-8 encoding with plotly graphics to get e.g. negative signs to render correctly -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-grid.css">
+<link rel="stylesheet" href="https://unpkg.com/@ag-grid-community/styles/ag-theme-balham.css">
+</head>
+{% load plotly_dash %}
+
+<p>
+Here you can find a list of BlackGEM's discoveries that have been reported to TNS.
+<br>
+<br>
+BlackGEM is credited as the discoverer of {{ number_of_discoveries }} objects!
+</p>
+<hr>
+
+
+
+<div class="dash-container">
+    {% plotly_app name="discoveries_table" ratio=0.5 %}
+</div>
+
+{% endblock %}

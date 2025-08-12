@@ -389,6 +389,17 @@ def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
     c = SkyCoord(mid_x, mid_y, frame='icrs', unit='deg')
     min_circle = c.directional_offset_by(45  * u.deg, 1 / np.cos(abs(np.deg2rad(dec))) * u.arcsecond)
     max_circle = c.directional_offset_by(225 * u.deg, 1 / np.cos(abs(np.deg2rad(dec))) * u.arcsecond)
+
+    ## Make blank circle to ensure aspect ratio
+    lightcurve_ras = np.array(df_bgem_lightcurve['x.ra_psf_d']) * u.deg
+    lightcurve_decs = np.array(df_bgem_lightcurve['x.dec_psf_d']) * u.deg
+    lightcurve_radecs   = SkyCoord(lightcurve_ras, lightcurve_decs, frame='icrs')
+    lightcurve_seps     = c.separation(lightcurve_radecs)
+    max_separation = np.max(lightcurve_seps*1.2).to(u.arcsecond)
+    min_blank_circle = c.directional_offset_by(45  * u.deg, max_separation / np.cos(abs(np.deg2rad(dec))))
+    max_blank_circle = c.directional_offset_by(225 * u.deg, max_separation / np.cos(abs(np.deg2rad(dec))))
+
+
     # print("Circles")
     # print(min_circle)
     # print(max_circle)
@@ -400,13 +411,26 @@ def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
     circle_x1 = max_circle.ra.value
     circle_y1 = max_circle.dec.value
 
+    blank_circle_x0 = min_blank_circle.ra.value
+    blank_circle_y0 = min_blank_circle.dec.value
+    blank_circle_x1 = max_blank_circle.ra.value
+    blank_circle_y1 = max_blank_circle.dec.value
+
     if circle_x0 < 1 and circle_x1 > 359:
         circle_x1 -= 360
+
+    if blank_circle_x0 < 1 and blank_circle_x1 > 359:
+        blank_circle_x1 -= 360
 
     fig.add_shape(type="circle",
         xref="x", yref="y",
         x0=circle_x0, y0=circle_y0, x1=circle_x1, y1=circle_y1,
         line_color="red",
+    )
+    fig.add_shape(type="circle",
+        xref="x", yref="y",
+        x0=blank_circle_x0, y0=blank_circle_y0, x1=blank_circle_x1, y1=blank_circle_y1,
+        line_color="white", layer="below", opacity=0
     )
     fig.update_layout(width=350, height=295,
         minreducedwidth=250,
@@ -415,6 +439,151 @@ def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
     )
 
     return fig
+
+
+class DiscoveriesView(TemplateView):
+    template_name = 'discoveries.html'
+
+    def create_blackgem_tns_discoveries_table():
+
+        df_tns = pd.read_csv("./data/tns_public_objects.csv")
+        df_blackgem = df_tns[df_tns["reporting_group"] == "BlackGEM"]
+        df_blackgem_table = df_blackgem[["name_prefix", "name", "ra", "declination", "discoverydate", "reporters", "Discovery_ADS_bibcode"]]
+
+        iau_name = df_blackgem["internal_names"]
+
+        def first_only(name):
+            if ',' in name: return name.split(",")[0]
+            else:           return name
+
+        iau_name = iau_name.apply(first_only)
+
+        df_blackgem_table["iau_name"] = iau_name
+
+        creds_user_file = "../../.bg_follow_user_john_creds"
+        creds_db_file = "../../.bg_follow_transientsdb_creds"
+
+        # Instantiate the BlackGEM object
+        bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+
+        qu = """\
+            SELECT r.id
+                  ,r.iau_name
+                  ,MAX(i."mjd-obs")
+              FROM extractedsource x
+                  ,image i
+                  ,runcat r
+             WHERE x.image = i.id
+               AND x.id = r.id
+               AND r.iau_name IN %(iau_names)s
+             GROUP BY r.iau_name, r.id;
+        """
+
+
+        params = {'iau_names' : tuple(list(iau_name))}
+        # params = {'iau_names' : tuple(list(iau_name)[0:2])}
+
+        query = qu % (params)
+
+        print("Running Query...")
+        l_results = bg.run_query(query)
+
+        df_iau = pd.DataFrame(l_results, columns=['runcat_id','iau_name','last_obs'])
+
+        df_blackgem_table = df_blackgem_table.sort_values(by=['iau_name']).reset_index(drop=True)
+        df_iau = df_iau.sort_values(by=['iau_name']).reset_index(drop=True)
+
+        df_blackgem_table = pd.concat([df_blackgem_table,df_iau], axis=1, join="inner")
+
+        return df_blackgem_table
+
+
+    try:
+
+        df_blackgem_table = create_blackgem_tns_discoveries_table()
+
+        df_blackgem_table['name'] = df_blackgem_table['name'].apply(lambda x: f'[{str(x)}](https://www.wis-tns.org/object/{str(x)})')
+        df_blackgem_table['runcat_id'] = df_blackgem_table['runcat_id'].apply(lambda x: f'[{str(x)}](https://gemtom.blackgem.org/transients/{str(x)})')
+        df_blackgem_table['Discovery_ADS_bibcode'] = df_blackgem_table['Discovery_ADS_bibcode'].apply(lambda x: f'[{str(x)}](https://ui.adsabs.harvard.edu/abs/{str(x)}/abstract)')
+
+    except Exception as e:
+        print(e)
+        df_blackgem_table = pd.DataFrame(data={
+            'name_prefix':[],
+            'name':[],
+            'ra':[],
+            'declination':[],
+            'discoverydate':[],
+            'reporters':[],
+            'Discovery_ADS_bibcode':[],
+            'runcat_id':[],
+            'iau_name':[],
+        })
+
+    app = DjangoDash("discoveries_table")
+
+    getRowStyle = {
+        "styleConditions": [
+            {
+                "condition": "params.data.limiting_mag > 0",
+                "style": {"color": "lightgrey"},
+            },
+        ],
+        "defaultStyle": {"color": "black"},
+    }
+
+    ## Define the layout of the Dash app
+    app.layout = html.Div([
+        dag.AgGrid(
+            id='observation-grid',
+            rowData=df_blackgem_table.to_dict('records'),
+            columnDefs=[
+                        {'headerName': 'Pre', 'field':  'name_prefix'},
+                        {'headerName': 'Name', 'field': 'name', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
+                        {'headerName': 'Runcat ID', 'field': 'runcat_id', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
+                        # {'headerName': 'IAU Name', 'field': 'iau_name', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
+                        {'headerName': 'RA', 'field': 'ra',
+                            "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
+                        {'headerName': 'Dec', 'field': 'declination',
+                            "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
+                        {'headerName': 'Discovery Date', 'field': 'discoverydate'},
+                        {'headerName': 'Reporters', 'field': 'reporters'},
+                        {'headerName': 'Discovery ADS bibcode', 'field': 'Discovery_ADS_bibcode', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
+            ],
+            getRowStyle=getRowStyle,
+            defaultColDef={
+                'sortable': True,
+                'filter': True,
+                'resizable': True,
+                'editable': False,
+            },
+            columnSize="autoSize",
+            dashGridOptions={
+                "skipHeaderOnAutoSize": True,
+                "rowSelection": "single",
+                "enableCellTextSelection": True,
+            },
+            style={'height': '500px', 'width': '100%'},  # Set explicit height for the grid
+            # className='ag-theme-balham'  # Add a theme for better appearance
+            className='ag-theme-alpine'  # Add a theme for better appearance
+        ),
+        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
+        html.Div(id='output-div'),  # Div to display the information
+    ], style={'height': '500px', 'width': '100%'}
+    )
+
+    # 'number_of_discoveries': len(df_blackgem_table)
+
+    context = {'number_of_discoveries': len(df_blackgem_table)}
+    print(context)
+    def get_context_data(self, **kwargs):
+        df_tns = pd.read_csv("./data/tns_public_objects.csv")
+        df_blackgem = df_tns[df_tns["reporting_group"] == "BlackGEM"]
+        return {
+            'number_of_discoveries' : len(df_blackgem),
+            'targets' : Target.objects.all()
+        }
+    # return render(request, "discoveries.html", context)
 
 class ComingSoonView(TemplateView):
     template_name = 'comingsoon.html'
@@ -3446,7 +3615,7 @@ def BGEM_ID_View(request, bgem_id):
             #             {'headerName': '2', 'field': 'x.dec_psf_d'},
             # ],
             columnDefs=[
-                        {'headerName': 'a.xtrsrc', 'field':  'xtrsrc', 'cellRenderer': 'markdown'},
+                        {'headerName': 'a.xtrsrc', 'field':  'xtrsrc', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
                         {'headerName': 'i.filter', 'field': 'filter'},
                         {'headerName': 'i.date_obs', 'field':  'date_obs'},
                         {'headerName': 'x.mag_zogy', 'field':  'mag_zogy',
@@ -3471,6 +3640,7 @@ def BGEM_ID_View(request, bgem_id):
             dashGridOptions={
                 "skipHeaderOnAutoSize": True,
                 "rowSelection": "single",
+                "enableCellTextSelection": True,
             },
             style={'height': '350px', 'width': '100%'},  # Set explicit height for the grid
             className='ag-theme-balham'  # Add a theme for better appearance
@@ -3493,7 +3663,7 @@ def BGEM_ID_View(request, bgem_id):
             #             {'headerName': '2', 'field': 'x.dec_psf_d'},
             # ],
             columnDefs=[
-                        {'headerName': 'a.xtrsrc', 'field':  'xtrsrc', 'cellRenderer': 'markdown'},
+                        {'headerName': 'a.xtrsrc', 'field':  'xtrsrc', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
                         {'headerName': 'i.filter', 'field': 'filter'},
                         {'headerName': 'i.date_obs', 'field':  'date_obs'},
                         {'headerName': 'x.ra_psf_d', 'field':  'ra_psf_d',
@@ -3520,6 +3690,7 @@ def BGEM_ID_View(request, bgem_id):
             dashGridOptions={
                 "skipHeaderOnAutoSize": True,
                 "rowSelection": "single",
+                "enableCellTextSelection": True,
             },
             style={'height': '300px', 'width': '100%'},  # Set explicit height for the grid
             className='ag-theme-balham'  # Add a theme for better appearance
@@ -5160,7 +5331,7 @@ class OrphanedTransientsView(LoginRequiredMixin, TemplateView):
             id='observation-grid',
             rowData=df_new.to_dict('records'),
             columnDefs=[
-                        {'headerName': 'a.xtrsrc', 'field':  'xtrsrc', 'cellRenderer': 'markdown'},
+                        {'headerName': 'a.xtrsrc', 'field':  'xtrsrc', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
                         {'headerName': 'MJD', 'field':  'mjd',
                             "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
                         {'headerName': 'Filter', 'field': 'filter'},
