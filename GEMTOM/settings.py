@@ -337,7 +337,8 @@ TOM_FACILITY_CLASSES = [
     # 'tom_observations.facilities.gemini.GEMFacility',
     # 'tom_observations.facilities.soar.SOARFacility',
     'GEMTOM.notfacility.NOTFacility',
-    'GEMTOM.mookodifacility.MookodiFacility'
+    'GEMTOM.mookodifacility.MookodiFacility',
+    'GEMTOM.saltfacility.SALTFacility',
 
 ]
 

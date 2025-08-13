@@ -10,15 +10,32 @@
 </head>
 {% load plotly_dash %}
 
+<div align="center">
+
 <p>
 Here you can find a list of BlackGEM's discoveries that have been reported to TNS.
 <br>
 <br>
-BlackGEM is credited as the discoverer of {{ number_of_discoveries }} objects!
+<!-- BlackGEM has discovered {{ number_of_discoveries }} objects in TNS, and has contributed data to {{ number_of_contributions }} others! -->
+
+
+  <div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-3" style="border:thin solid lightgrey; padding:10px;">
+      BlackGEM TNS Discoveries:
+      <h1 style="color:teal;">{{ number_of_discoveries }}</h1>
+    </div>
+    <div class="col-md-1"></div>
+    <div class="col-md-1"></div>
+    <div class="col-md-3" style="border:thin solid lightgrey; padding:10px;">
+      BlackGEM TNS Contributions:
+      <h1 style="color:orange;">{{ number_of_contributions }}</h1>
+    </div>
+    <div class="col-md-2"></div>
+  </div>
+</div>
 </p>
 <hr>
-
-
 
 <div class="dash-container">
     {% plotly_app name="discoveries_table" ratio=0.5 %}

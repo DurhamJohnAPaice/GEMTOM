@@ -446,7 +446,8 @@ class DiscoveriesView(TemplateView):
 
     def create_blackgem_tns_discoveries_table():
 
-        df_tns = pd.read_csv("./data/tns_public_objects.csv")
+        df_tns = pd.read_csv("./data/tns_public_objects.csv", skiprows=1)
+        print(df_tns.columns)
         df_blackgem = df_tns[df_tns["reporting_group"] == "BlackGEM"]
         df_blackgem_table = df_blackgem[["name_prefix", "name", "ra", "declination", "discoverydate", "reporters", "Discovery_ADS_bibcode"]]
 
@@ -467,46 +468,79 @@ class DiscoveriesView(TemplateView):
         bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
 
         qu = """\
-            SELECT r.id
-                  ,r.iau_name
-                  ,MAX(i."mjd-obs")
-              FROM extractedsource x
-                  ,image i
-                  ,runcat r
-             WHERE x.image = i.id
-               AND x.id = r.id
-               AND r.iau_name IN %(iau_names)s
-             GROUP BY r.iau_name, r.id;
+            SELECT id,
+                   iau_name
+            FROM runcat
+           WHERE iau_name IN %(iau_names)s
+        """
+        params = {'iau_names' : tuple(list(iau_name))}
+        query = qu % (params)
+        print("Running Query 1...")
+        l_results = bg.run_query(query)
+        df_iau_1 = pd.DataFrame(l_results, columns=['id','iau_name'])
+
+        qu = """\
+            SELECT runcat, mag_zogy, mjd
+            FROM (
+                SELECT a.runcat,
+                       x.mag_zogy,
+                       i."mjd-obs" AS mjd,
+                       ROW_NUMBER() OVER (PARTITION BY a.runcat ORDER BY i."mjd-obs" DESC) AS rn
+                FROM assoc a
+                JOIN extractedsource x ON a.xtrsrc = x.id
+                JOIN image i ON x.image = i.id
+               WHERE a.runcat IN %(id_list)s
+                 AND x.mag_zogy < 99
+            ) sub
+            WHERE rn = 1;
         """
 
-
-        params = {'iau_names' : tuple(list(iau_name))}
-        # params = {'iau_names' : tuple(list(iau_name)[0:2])}
-
+        params = {'id_list' : tuple(list(df_iau_1["id"]))}
         query = qu % (params)
-
-        print("Running Query...")
+        print("Running Query 2...")
         l_results = bg.run_query(query)
+        df_iau_2 = pd.DataFrame(l_results, columns=['id','latest_mag','last_obs'])
 
-        df_iau = pd.DataFrame(l_results, columns=['runcat_id','iau_name','last_obs'])
-
-        df_blackgem_table = df_blackgem_table.sort_values(by=['iau_name']).reset_index(drop=True)
+        df_iau = pd.merge(df_iau_1, df_iau_2, on="id")
         df_iau = df_iau.sort_values(by=['iau_name']).reset_index(drop=True)
 
-        df_blackgem_table = pd.concat([df_blackgem_table,df_iau], axis=1, join="inner")
+        result = pd.merge(df_blackgem_table, df_iau, on="iau_name")
 
-        return df_blackgem_table
+        result = result.sort_values(by=['discoverydate'], ascending=False).reset_index(drop=True)
+
+        return result
 
 
     try:
 
-        df_blackgem_table = create_blackgem_tns_discoveries_table()
+        ## Retrieve, or Make and Save the file
+        today_date = date.today()
+        today_date = today_date.strftime("%Y%m%d")
+
+        last_seven_days = [(date.today() - timedelta(x)).strftime("%Y%m%d") for x in range(1,8)]
+        last_seven_files = ["./data/blackgem_tns_discoveries_" + x + ".csv" for x in last_seven_days]
+
+        todays_file = "./data/blackgem_tns_discoveries_" + today_date + ".csv"
+
+        if os.path.exists(todays_file):
+            df_blackgem_table = pd.read_csv(todays_file)
+        else:
+            df_blackgem_table = create_blackgem_tns_discoveries_table()
+            df_blackgem_table.to_csv(todays_file, index=False)
+            for file in last_seven_files:
+                if os.path.exists(file):
+                    os.remove(file)
 
         df_blackgem_table['name'] = df_blackgem_table['name'].apply(lambda x: f'[{str(x)}](https://www.wis-tns.org/object/{str(x)})')
-        df_blackgem_table['runcat_id'] = df_blackgem_table['runcat_id'].apply(lambda x: f'[{str(x)}](https://gemtom.blackgem.org/transients/{str(x)})')
-        df_blackgem_table['Discovery_ADS_bibcode'] = df_blackgem_table['Discovery_ADS_bibcode'].apply(lambda x: f'[{str(x)}](https://ui.adsabs.harvard.edu/abs/{str(x)}/abstract)')
+        df_blackgem_table['id'] = df_blackgem_table['id'].apply(lambda x: f'[{str(x)}](https://gemtom.blackgem.org/transients/{str(x)})')
+        df_blackgem_table['discoverydate'] = [str(x).split(" ")[0] for x in df_blackgem_table['discoverydate']]
+        df_blackgem_table['Discovery_ADS_bibcode'] = df_blackgem_table['Discovery_ADS_bibcode'].apply(lambda x: f'[ADS](https://ui.adsabs.harvard.edu/abs/{str(x)}/abstract)')
+
+        df_blackgem_table['last_obs'] = Time(df_blackgem_table['last_obs'], format='mjd').iso
+        df_blackgem_table['last_obs'] = [x.split(" ")[0] for x in df_blackgem_table['last_obs']]
 
     except Exception as e:
+        print("Error!")
         print(e)
         df_blackgem_table = pd.DataFrame(data={
             'name_prefix':[],
@@ -516,7 +550,7 @@ class DiscoveriesView(TemplateView):
             'discoverydate':[],
             'reporters':[],
             'Discovery_ADS_bibcode':[],
-            'runcat_id':[],
+            'id':[],
             'iau_name':[],
         })
 
@@ -538,17 +572,20 @@ class DiscoveriesView(TemplateView):
             id='observation-grid',
             rowData=df_blackgem_table.to_dict('records'),
             columnDefs=[
-                        {'headerName': 'Pre', 'field':  'name_prefix'},
+                        {'headerName': 'Pre', 'field':  'name_prefix', 'maxWidth' : 110},
                         {'headerName': 'Name', 'field': 'name', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
-                        {'headerName': 'Runcat ID', 'field': 'runcat_id', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
+                        {'headerName': 'Runcat ID', 'field': 'id', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
                         # {'headerName': 'IAU Name', 'field': 'iau_name', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
                         {'headerName': 'RA', 'field': 'ra',
-                            "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
+                            "valueFormatter": {"function": "d3.format('.2f')(params.value)"}},
                         {'headerName': 'Dec', 'field': 'declination',
-                            "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
-                        {'headerName': 'Discovery Date', 'field': 'discoverydate'},
-                        {'headerName': 'Reporters', 'field': 'reporters'},
-                        {'headerName': 'Discovery ADS bibcode', 'field': 'Discovery_ADS_bibcode', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
+                            "valueFormatter": {"function": "d3.format('.2f')(params.value)"}},
+                        {'headerName': 'Latest Mag', 'field': 'latest_mag',
+                            "valueFormatter": {"function": "d3.format('.1f')(params.value)"}},
+                        {'headerName': 'Latest Obs', 'field': 'last_obs'},
+                        {'headerName': 'Discovery', 'field': 'discoverydate'},
+                        {'headerName': 'Reporters', 'field': 'reporters'},#, 'suppressSizeToFit': True},
+                        {'headerName': 'ADS', 'field': 'Discovery_ADS_bibcode', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
             ],
             getRowStyle=getRowStyle,
             defaultColDef={
@@ -557,6 +594,7 @@ class DiscoveriesView(TemplateView):
                 'resizable': True,
                 'editable': False,
             },
+            # columnSize="sizeToFit",
             columnSize="autoSize",
             dashGridOptions={
                 "skipHeaderOnAutoSize": True,
@@ -577,10 +615,17 @@ class DiscoveriesView(TemplateView):
     context = {'number_of_discoveries': len(df_blackgem_table)}
     print(context)
     def get_context_data(self, **kwargs):
-        df_tns = pd.read_csv("./data/tns_public_objects.csv")
+        df_tns = pd.read_csv("./data/tns_public_objects.csv", skiprows=1)
+
+        ## Find contributed sources
+        df_bgem_contrib = df_tns[df_tns["reporting_group"] != "BlackGEM"]
+        df_bgem_contrib = df_bgem_contrib.dropna(subset=['internal_names'])
+        df_bgem_contrib = df_bgem_contrib[df_bgem_contrib["internal_names"].str.contains("BGEM")]
+
         df_blackgem = df_tns[df_tns["reporting_group"] == "BlackGEM"]
         return {
             'number_of_discoveries' : len(df_blackgem),
+            'number_of_contributions' : len(df_bgem_contrib),
             'targets' : Target.objects.all()
         }
     # return render(request, "discoveries.html", context)
@@ -5463,6 +5508,11 @@ def fetch_random_data(n):
         'Mag': range(n, n*2)
     })
     return df
+
+def mjd_to_datetime(mjd):
+    t = Time(mjd, format='mjd')
+
+    return t.iso
 
 def datetime_to_mjd(date):
     '''
