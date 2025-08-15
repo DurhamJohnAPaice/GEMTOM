@@ -92,7 +92,7 @@ urlpatterns = [
     # path('Observations/', observation_view.as_view(), name='Observations'),
     path('set_observed/', set_observed, name='set_observed'),
     path('delete_observation/', delete_observation, name='delete_observation'),
-    path('Observations/', submit_observation, name='Observations'),
+    path('observations/', submit_observation, name='observations'),
 
     path('EmailTest/', email_test_page, name='EmailTest'),
     path('send_email_test/', send_email_test, name='send_email_test'),

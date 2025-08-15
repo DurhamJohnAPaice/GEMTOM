@@ -444,88 +444,7 @@ def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
 class DiscoveriesView(TemplateView):
     template_name = 'discoveries.html'
 
-    # def create_blackgem_tns_discoveries_table(discoveries_filename):
-    #
-    #     df_tns = pd.read_csv("./data/tns_public_objects.csv", skiprows=1)
-    #     print(df_tns.columns)
-    #     df_blackgem = df_tns[df_tns["reporting_group"] == "BlackGEM"]
-    #     df_blackgem_table = df_blackgem[["name_prefix", "name", "ra", "declination", "discoverydate", "reporters", "Discovery_ADS_bibcode"]]
-    #
-    #     iau_name = df_blackgem["internal_names"]
-    #
-    #     def first_only(name):
-    #         if ',' in name: return name.split(",")[0]
-    #         else:           return name
-    #
-    #     iau_name = iau_name.apply(first_only)
-    #
-    #     df_blackgem_table["iau_name"] = iau_name
-    #
-    #     creds_user_file = "../../.bg_follow_user_john_creds"
-    #     creds_db_file = "../../.bg_follow_transientsdb_creds"
-    #
-    #     # Instantiate the BlackGEM object
-    #     bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
-    #
-    #     qu = """\
-    #         SELECT id,
-    #                iau_name
-    #         FROM runcat
-    #        WHERE iau_name IN %(iau_names)s
-    #     """
-    #     params = {'iau_names' : tuple(list(iau_name))}
-    #     query = qu % (params)
-    #     print("Running Query 1...")
-    #     l_results = bg.run_query(query)
-    #     df_iau_1 = pd.DataFrame(l_results, columns=['id','iau_name'])
-    #
-    #     qu = """\
-    #         SELECT runcat, mag_zogy, mjd
-    #         FROM (
-    #             SELECT a.runcat,
-    #                    x.mag_zogy,
-    #                    i."mjd-obs" AS mjd,
-    #                    ROW_NUMBER() OVER (PARTITION BY a.runcat ORDER BY i."mjd-obs" DESC) AS rn
-    #             FROM assoc a
-    #             JOIN extractedsource x ON a.xtrsrc = x.id
-    #             JOIN image i ON x.image = i.id
-    #            WHERE a.runcat IN %(id_list)s
-    #              AND x.mag_zogy < 99
-    #         ) sub
-    #         WHERE rn = 1;
-    #     """
-    #
-    #     params = {'id_list' : tuple(list(df_iau_1["id"]))}
-    #     query = qu % (params)
-    #     print("Running Query 2...")
-    #     l_results = bg.run_query(query)
-    #     df_iau_2 = pd.DataFrame(l_results, columns=['id','latest_mag','last_obs'])
-    #
-    #     df_iau = pd.merge(df_iau_1, df_iau_2, on="id")
-    #     df_iau = df_iau.sort_values(by=['iau_name']).reset_index(drop=True)
-    #
-    #     result = pd.merge(df_blackgem_table, df_iau, on="iau_name")
-    #
-    #     result = result.sort_values(by=['discoverydate'], ascending=False).reset_index(drop=True)
-    #
-    #     if len(result) > 0:
-    #         result.to_csv(discoveries_filename, index=False)
-    #
-    #     return
-
     discoveries_filename = "./data/blackgem_tns_discoveries.csv"
-
-    # if not os.path.exists(discoveries_filename):
-    #     create_blackgem_tns_discoveries_table(discoveries_filename)
-    #
-    # else:
-    #     file_time = Time(os.path.getmtime(discoveries_filename), format='unix')
-    #     now_time = Time.now()
-    #     discoveries_days_since_update = (Time.now() - file_time).value
-    #
-    #     if discoveries_days_since_update > 0.5:
-    #         print("Discoveries Table out of date.")
-    #         create_blackgem_tns_discoveries_table(discoveries_filename)
 
     try:
         df_blackgem_table = pd.read_csv(discoveries_filename)
@@ -630,9 +549,7 @@ class DiscoveriesView(TemplateView):
         df_bgem_sn_discoveries = df_bgem_discoveries[df_bgem_discoveries["name_prefix"] == "SN"]
 
 
-
         fig = go.Figure()
-
 
         fig.add_trace(go.Scatter(
                     name            = "TNS Discoveries",
@@ -649,11 +566,11 @@ class DiscoveriesView(TemplateView):
                     line            = dict(color='darkorange'),
         ))
         fig.add_trace(go.Scatter(
-                    name            = "Confirmed Supernovae Discoveries",
+                    name            = "Confirmed Supernovae",
                     x               = pd.to_datetime(df_bgem_sn_discoveries['discoverydate']),
                     y               = np.arange(1, len(df_bgem_sn_discoveries)+1),
                     mode            = 'lines',
-                    line            = dict(color='red'),
+                    line            = dict(color='darkred'),
         ))
         fig.add_vline(x=datetime(2024,10,1).timestamp() * 1000,
                 line_width=1, line_dash="dash", line_color="grey",
@@ -682,6 +599,7 @@ class DiscoveriesView(TemplateView):
 
         context['number_of_discoveries'] = len(df_bgem_discoveries)
         context['number_of_contributions'] = len(df_bgem_contrib)
+        context['number_of_supernovae'] = len(df_bgem_sn_discoveries)
         context['targets'] = Target.objects.all()
         context['cumulative_graph'] = cumulative_graph
         context['testing'] = 'Test successful!'
@@ -7099,11 +7017,11 @@ def set_observed(request):
     obs_data.to_csv(data_file, index=False)
 
     ## Are we looking at a certain night?
-    if night and block_num: return redirect('/Observations/?show_night=' + night + '&show_block=' + block_num)
-    elif night: return redirect('/Observations/?show_night=' + night)
-    elif block_num: return redirect('/Observations/?show_block=' + block_num)
+    if night and block_num: return redirect('/observations/?show_night=' + night + '&show_block=' + block_num)
+    elif night: return redirect('/observations/?show_night=' + night)
+    elif block_num: return redirect('/observations/?show_block=' + block_num)
     else:
-        return redirect('/Observations/')
+        return redirect('/observations/')
 
 @login_required
 def delete_observation(request):
@@ -7126,11 +7044,11 @@ def delete_observation(request):
     obs_data.to_csv(data_file, index=False)
 
     ## Are we looking at a certain night?
-    if night and block_num: return redirect('/Observations/?show_night=' + night + '&show_block=' + block_num)
-    elif night:             return redirect('/Observations/?show_night=' + night)
-    elif block_num:         return redirect('/Observations/?show_block=' + block_num)
+    if night and block_num: return redirect('/observations/?show_night=' + night + '&show_block=' + block_num)
+    elif night:             return redirect('/observations/?show_night=' + night)
+    elif block_num:         return redirect('/observations/?show_block=' + block_num)
     else:
-        return redirect('/Observations/')
+        return redirect('/observations/')
 
 
 def df_to_lists(obs_data):
@@ -7224,7 +7142,7 @@ def submit_observation(request):
             "df"    : df_lists,
             "message" : [""],
             "nights" : nights,
-            "Observations" : list(observations),
+            "observations" : list(observations),
     }
 
 
@@ -7293,7 +7211,7 @@ def submit_observation(request):
         context["show_block"] = show_block
 
         return render(request, "observations.html", context)
-        # return redirect('/Observations/')
+        # return redirect('/observations/')
 
 
     elif 'ra' in request.GET:
@@ -7463,7 +7381,7 @@ def submit_observation(request):
 
 
         # return render(request, "observations.html", context)
-        return redirect('/Observations/')
+        return redirect('/observations/')
 
     else:
         print("No Request submitted.")

@@ -22,7 +22,7 @@ we've inputted into the system, because a tutorial told me to.
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Observation Form</title>
 </head>
-<form method="get" action="{% url 'Observations' %}">
+<form method="get" action="{% url 'observations' %}">
     <input type="hidden" name="submitter" value="{{ user.first_name }} {{ user.last_name }}">
     <input type="hidden" name="gemtom_id" value="0">
     <div class="row">
@@ -69,7 +69,7 @@ we've inputted into the system, because a tutorial told me to.
     </div>
 </form>
 
-<!-- <form method="get" action="{% url 'Observations' %}">
+<!-- <form method="get" action="{% url 'observations' %}">
     <div class="row">
         <div class="col-md-10">
             <div style="padding:5px">

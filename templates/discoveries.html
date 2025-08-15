@@ -20,20 +20,23 @@ Here you can find a list of BlackGEM's discoveries that have been reported to TN
 
 
   <div class="row">
-    <div class="col-md-2"></div>
-    <div class="col-md-3" style="border:thin solid lightgrey; padding:10px;">
-      BlackGEM TNS Discoveries:
-      <h1 style="color:teal;">{{ number_of_discoveries }}</h1>
-    </div>
-    <div class="col-md-1"></div>
-    <div class="col-md-1"></div>
-    <div class="col-md-3" style="border:thin solid lightgrey; padding:10px;">
+    <div class="col-md-3" style="border:thin solid lightgrey; padding:10px; margin:10px;">
       BlackGEM TNS Contributions:
       <h1 style="color:orange;">{{ number_of_contributions }}</h1>
     </div>
-    <div class="col-md-2"></div>
+    <div class="col-md-1" style="margin:-20px;"></div>
+    <div class="col-md-4" style="border:thin solid lightgrey; padding:10px; margin:10px;">
+      BlackGEM TNS Discoveries:
+      <h1 style="color:teal;">{{ number_of_discoveries }}</h1>
+    </div>
+    <div class="col-md-1" style="margin:-20px;"></div>
+    <div class="col-md-3" style="border:thin solid lightgrey; padding:10px; margin:10px;">
+      Confirmed BlackGEM Supernovae:
+      <h1 style="color:darkred;">{{ number_of_supernovae }}</h1>
+    </div>
   </div>
 </div>
+<br>
 
 {{ cumulative_graph|safe }}
 
