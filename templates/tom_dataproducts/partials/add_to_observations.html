@@ -7,7 +7,7 @@
 
     <h5>Schedule for Observation:</h5>
 
-    <form method="get" action="{% url 'Observations' %}">
+    <form method="get" action="{% url 'observations' %}">
         <!-- <label for="user_input" style="color:grey"><em>(Try 25030590) &nbsp</em></label> -->
         <input type="hidden" name="submitter" value="{{ user_first_name }} {{ user_last_name }}">
         <input type="hidden" name="name" value="{{ target_name }}">
