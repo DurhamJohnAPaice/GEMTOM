@@ -444,92 +444,91 @@ def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
 class DiscoveriesView(TemplateView):
     template_name = 'discoveries.html'
 
-    def create_blackgem_tns_discoveries_table():
+    # def create_blackgem_tns_discoveries_table(discoveries_filename):
+    #
+    #     df_tns = pd.read_csv("./data/tns_public_objects.csv", skiprows=1)
+    #     print(df_tns.columns)
+    #     df_blackgem = df_tns[df_tns["reporting_group"] == "BlackGEM"]
+    #     df_blackgem_table = df_blackgem[["name_prefix", "name", "ra", "declination", "discoverydate", "reporters", "Discovery_ADS_bibcode"]]
+    #
+    #     iau_name = df_blackgem["internal_names"]
+    #
+    #     def first_only(name):
+    #         if ',' in name: return name.split(",")[0]
+    #         else:           return name
+    #
+    #     iau_name = iau_name.apply(first_only)
+    #
+    #     df_blackgem_table["iau_name"] = iau_name
+    #
+    #     creds_user_file = "../../.bg_follow_user_john_creds"
+    #     creds_db_file = "../../.bg_follow_transientsdb_creds"
+    #
+    #     # Instantiate the BlackGEM object
+    #     bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
+    #
+    #     qu = """\
+    #         SELECT id,
+    #                iau_name
+    #         FROM runcat
+    #        WHERE iau_name IN %(iau_names)s
+    #     """
+    #     params = {'iau_names' : tuple(list(iau_name))}
+    #     query = qu % (params)
+    #     print("Running Query 1...")
+    #     l_results = bg.run_query(query)
+    #     df_iau_1 = pd.DataFrame(l_results, columns=['id','iau_name'])
+    #
+    #     qu = """\
+    #         SELECT runcat, mag_zogy, mjd
+    #         FROM (
+    #             SELECT a.runcat,
+    #                    x.mag_zogy,
+    #                    i."mjd-obs" AS mjd,
+    #                    ROW_NUMBER() OVER (PARTITION BY a.runcat ORDER BY i."mjd-obs" DESC) AS rn
+    #             FROM assoc a
+    #             JOIN extractedsource x ON a.xtrsrc = x.id
+    #             JOIN image i ON x.image = i.id
+    #            WHERE a.runcat IN %(id_list)s
+    #              AND x.mag_zogy < 99
+    #         ) sub
+    #         WHERE rn = 1;
+    #     """
+    #
+    #     params = {'id_list' : tuple(list(df_iau_1["id"]))}
+    #     query = qu % (params)
+    #     print("Running Query 2...")
+    #     l_results = bg.run_query(query)
+    #     df_iau_2 = pd.DataFrame(l_results, columns=['id','latest_mag','last_obs'])
+    #
+    #     df_iau = pd.merge(df_iau_1, df_iau_2, on="id")
+    #     df_iau = df_iau.sort_values(by=['iau_name']).reset_index(drop=True)
+    #
+    #     result = pd.merge(df_blackgem_table, df_iau, on="iau_name")
+    #
+    #     result = result.sort_values(by=['discoverydate'], ascending=False).reset_index(drop=True)
+    #
+    #     if len(result) > 0:
+    #         result.to_csv(discoveries_filename, index=False)
+    #
+    #     return
 
-        df_tns = pd.read_csv("./data/tns_public_objects.csv", skiprows=1)
-        print(df_tns.columns)
-        df_blackgem = df_tns[df_tns["reporting_group"] == "BlackGEM"]
-        df_blackgem_table = df_blackgem[["name_prefix", "name", "ra", "declination", "discoverydate", "reporters", "Discovery_ADS_bibcode"]]
+    discoveries_filename = "./data/blackgem_tns_discoveries.csv"
 
-        iau_name = df_blackgem["internal_names"]
-
-        def first_only(name):
-            if ',' in name: return name.split(",")[0]
-            else:           return name
-
-        iau_name = iau_name.apply(first_only)
-
-        df_blackgem_table["iau_name"] = iau_name
-
-        creds_user_file = "../../.bg_follow_user_john_creds"
-        creds_db_file = "../../.bg_follow_transientsdb_creds"
-
-        # Instantiate the BlackGEM object
-        bg = BlackGEM(creds_user_file=creds_user_file, creds_db_file=creds_db_file)
-
-        qu = """\
-            SELECT id,
-                   iau_name
-            FROM runcat
-           WHERE iau_name IN %(iau_names)s
-        """
-        params = {'iau_names' : tuple(list(iau_name))}
-        query = qu % (params)
-        print("Running Query 1...")
-        l_results = bg.run_query(query)
-        df_iau_1 = pd.DataFrame(l_results, columns=['id','iau_name'])
-
-        qu = """\
-            SELECT runcat, mag_zogy, mjd
-            FROM (
-                SELECT a.runcat,
-                       x.mag_zogy,
-                       i."mjd-obs" AS mjd,
-                       ROW_NUMBER() OVER (PARTITION BY a.runcat ORDER BY i."mjd-obs" DESC) AS rn
-                FROM assoc a
-                JOIN extractedsource x ON a.xtrsrc = x.id
-                JOIN image i ON x.image = i.id
-               WHERE a.runcat IN %(id_list)s
-                 AND x.mag_zogy < 99
-            ) sub
-            WHERE rn = 1;
-        """
-
-        params = {'id_list' : tuple(list(df_iau_1["id"]))}
-        query = qu % (params)
-        print("Running Query 2...")
-        l_results = bg.run_query(query)
-        df_iau_2 = pd.DataFrame(l_results, columns=['id','latest_mag','last_obs'])
-
-        df_iau = pd.merge(df_iau_1, df_iau_2, on="id")
-        df_iau = df_iau.sort_values(by=['iau_name']).reset_index(drop=True)
-
-        result = pd.merge(df_blackgem_table, df_iau, on="iau_name")
-
-        result = result.sort_values(by=['discoverydate'], ascending=False).reset_index(drop=True)
-
-        return result
-
+    # if not os.path.exists(discoveries_filename):
+    #     create_blackgem_tns_discoveries_table(discoveries_filename)
+    #
+    # else:
+    #     file_time = Time(os.path.getmtime(discoveries_filename), format='unix')
+    #     now_time = Time.now()
+    #     discoveries_days_since_update = (Time.now() - file_time).value
+    #
+    #     if discoveries_days_since_update > 0.5:
+    #         print("Discoveries Table out of date.")
+    #         create_blackgem_tns_discoveries_table(discoveries_filename)
 
     try:
-
-        ## Retrieve, or Make and Save the file
-        today_date = date.today()
-        today_date = today_date.strftime("%Y%m%d")
-
-        last_seven_days = [(date.today() - timedelta(x)).strftime("%Y%m%d") for x in range(1,8)]
-        last_seven_files = ["./data/blackgem_tns_discoveries_" + x + ".csv" for x in last_seven_days]
-
-        todays_file = "./data/blackgem_tns_discoveries_" + today_date + ".csv"
-
-        if os.path.exists(todays_file):
-            df_blackgem_table = pd.read_csv(todays_file)
-        else:
-            df_blackgem_table = create_blackgem_tns_discoveries_table()
-            df_blackgem_table.to_csv(todays_file, index=False)
-            for file in last_seven_files:
-                if os.path.exists(file):
-                    os.remove(file)
+        df_blackgem_table = pd.read_csv(discoveries_filename)
 
         df_blackgem_table['name'] = df_blackgem_table['name'].apply(lambda x: f'[{str(x)}](https://www.wis-tns.org/object/{str(x)})')
         df_blackgem_table['id'] = df_blackgem_table['id'].apply(lambda x: f'[{str(x)}](https://gemtom.blackgem.org/transients/{str(x)})')
@@ -540,8 +539,9 @@ class DiscoveriesView(TemplateView):
         df_blackgem_table['last_obs'] = [x.split(" ")[0] for x in df_blackgem_table['last_obs']]
 
     except Exception as e:
-        print("Error!")
+        print("Error! Discoveries table not read.")
         print(e)
+
         df_blackgem_table = pd.DataFrame(data={
             'name_prefix':[],
             'name':[],
@@ -553,6 +553,7 @@ class DiscoveriesView(TemplateView):
             'id':[],
             'iau_name':[],
         })
+
 
     app = DjangoDash("discoveries_table")
 
@@ -632,6 +633,7 @@ class DiscoveriesView(TemplateView):
 
         fig = go.Figure()
 
+
         fig.add_trace(go.Scatter(
                     name            = "TNS Discoveries",
                     x               = pd.to_datetime(df_bgem_discoveries['discoverydate']),
@@ -653,11 +655,13 @@ class DiscoveriesView(TemplateView):
                     mode            = 'lines',
                     line            = dict(color='red'),
         ))
-        # fig.add_vline(x=mjd_now, line_width=1, line_dash="dash", line_color="grey",
-        #         annotation_text="Now ",
-        #         annotation_position="bottom left",
-        #         annotation_font_color = "grey",
-        #         annotation_textangle = 90,)
+        fig.add_vline(x=datetime(2024,10,1).timestamp() * 1000,
+                line_width=1, line_dash="dash", line_color="grey",
+                annotation_text=" GEMTOM Released",
+                annotation_position="top left",
+                annotation_font_color = "grey",
+                annotation_textangle = 90,
+        )
 
         fig.update_layout(
             width=1200,
@@ -668,7 +672,7 @@ class DiscoveriesView(TemplateView):
             yaxis_title="Cumulative Number",)
 
         fig.update_xaxes(
-            range=(1677024000000, df_tns['discoverydate'].iloc[-1]),
+            range=(datetime(2023,2,1), df_tns['discoverydate'].iloc[-1]),
         )
 
         cumulative_graph = plot(fig, output_type='div')
