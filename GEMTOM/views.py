@@ -533,7 +533,7 @@ class DiscoveriesView(TemplateView):
 
         df_blackgem_table['name'] = df_blackgem_table['name'].apply(lambda x: f'[{str(x)}](https://www.wis-tns.org/object/{str(x)})')
         df_blackgem_table['id'] = df_blackgem_table['id'].apply(lambda x: f'[{str(x)}](https://gemtom.blackgem.org/transients/{str(x)})')
-        df_blackgem_table['discoverydate'] = [str(x).split(" ")[0] for x in df_blackgem_table['discoverydate']]
+        df_blackgem_table['discoveryday'] = [str(x).split(" ")[0] for x in df_blackgem_table['discoverydate']]
         df_blackgem_table['Discovery_ADS_bibcode'] = df_blackgem_table['Discovery_ADS_bibcode'].apply(lambda x: f'[ADS](https://ui.adsabs.harvard.edu/abs/{str(x)}/abstract)')
 
         df_blackgem_table['last_obs'] = Time(df_blackgem_table['last_obs'], format='mjd').iso
@@ -547,7 +547,7 @@ class DiscoveriesView(TemplateView):
             'name':[],
             'ra':[],
             'declination':[],
-            'discoverydate':[],
+            'discoveryday':[],
             'reporters':[],
             'Discovery_ADS_bibcode':[],
             'id':[],
@@ -583,7 +583,7 @@ class DiscoveriesView(TemplateView):
                         {'headerName': 'Latest Mag', 'field': 'latest_mag',
                             "valueFormatter": {"function": "d3.format('.1f')(params.value)"}},
                         {'headerName': 'Latest Obs', 'field': 'last_obs'},
-                        {'headerName': 'Discovery', 'field': 'discoverydate'},
+                        {'headerName': 'Discovery', 'field': 'discoveryday'},
                         {'headerName': 'Reporters', 'field': 'reporters'},#, 'suppressSizeToFit': True},
                         {'headerName': 'ADS', 'field': 'Discovery_ADS_bibcode', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
             ],
@@ -610,24 +610,79 @@ class DiscoveriesView(TemplateView):
     ], style={'height': '500px', 'width': '100%'}
     )
 
+
+
+
     # 'number_of_discoveries': len(df_blackgem_table)
 
-    context = {'number_of_discoveries': len(df_blackgem_table)}
-    print(context)
+    # print(context)
     def get_context_data(self, **kwargs):
         df_tns = pd.read_csv("./data/tns_public_objects.csv", skiprows=1)
+        df_tns = df_tns.sort_values(by=['discoverydate']).reset_index(drop=True)
 
         ## Find contributed sources
         df_bgem_contrib = df_tns[df_tns["reporting_group"] != "BlackGEM"]
         df_bgem_contrib = df_bgem_contrib.dropna(subset=['internal_names'])
         df_bgem_contrib = df_bgem_contrib[df_bgem_contrib["internal_names"].str.contains("BGEM")]
 
-        df_blackgem = df_tns[df_tns["reporting_group"] == "BlackGEM"]
-        return {
-            'number_of_discoveries' : len(df_blackgem),
-            'number_of_contributions' : len(df_bgem_contrib),
-            'targets' : Target.objects.all()
-        }
+        df_bgem_discoveries = df_tns[df_tns["reporting_group"] == "BlackGEM"]
+        df_bgem_sn_discoveries = df_bgem_discoveries[df_bgem_discoveries["name_prefix"] == "SN"]
+
+
+
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+                    name            = "TNS Discoveries",
+                    x               = pd.to_datetime(df_bgem_discoveries['discoverydate']),
+                    y               = np.arange(1, len(df_bgem_discoveries)+1),
+                    mode            = 'lines',
+                    line            = dict(color='teal'),
+        ))
+        fig.add_trace(go.Scatter(
+                    name            = "TNS Contributions",
+                    x               = pd.to_datetime(df_bgem_contrib['discoverydate']),
+                    y               = np.arange(1, len(df_bgem_contrib)+1),
+                    mode            = 'lines',
+                    line            = dict(color='darkorange'),
+        ))
+        fig.add_trace(go.Scatter(
+                    name            = "Confirmed Supernovae Discoveries",
+                    x               = pd.to_datetime(df_bgem_sn_discoveries['discoverydate']),
+                    y               = np.arange(1, len(df_bgem_sn_discoveries)+1),
+                    mode            = 'lines',
+                    line            = dict(color='red'),
+        ))
+        # fig.add_vline(x=mjd_now, line_width=1, line_dash="dash", line_color="grey",
+        #         annotation_text="Now ",
+        #         annotation_position="bottom left",
+        #         annotation_font_color = "grey",
+        #         annotation_textangle = 90,)
+
+        fig.update_layout(
+            width=1200,
+            height=400,
+            hovermode="x",
+            margin=dict(t=0, b=50, l=2, r=2),  # Set margins to reduce whitespace
+            xaxis_title="Discovery Date",
+            yaxis_title="Cumulative Number",)
+
+        fig.update_xaxes(
+            range=(1677024000000, df_tns['discoverydate'].iloc[-1]),
+        )
+
+        cumulative_graph = plot(fig, output_type='div')
+
+
+        context = super().get_context_data(**kwargs)
+
+        context['number_of_discoveries'] = len(df_bgem_discoveries)
+        context['number_of_contributions'] = len(df_bgem_contrib)
+        context['targets'] = Target.objects.all()
+        context['cumulative_graph'] = cumulative_graph
+        context['testing'] = 'Test successful!'
+
+        return context
     # return render(request, "discoveries.html", context)
 
 class ComingSoonView(TemplateView):
@@ -2945,6 +3000,7 @@ def get_recent_blackgem_transients(days_since_last_update):
         # print(transients_filename)
         try:
             data = pd.read_csv(transients_filename)
+            print("Transients read.")
         except Exception as e:
             ## If it doesn't exist, assume BlackGEM didn't observe any transients that night.
             print("No transients on ", obs_date, ":", sep="")

@@ -36,8 +36,8 @@
       <!-- {% if request.GET.type == 'Sidereal' %} -->
       <!-- {% endif %} -->
 
-      <td>{{ target.ra|truncate_number }}</td>
-      <td>{{ target.dec|truncate_number }}</td>
+      <td>{{ target.ra }}</td>
+      <td>{{ target.dec }}</td>
       <td>{{ target.observationrecord_set.count }}</td>
       <td>{{ target.dataproduct_set.count }}</td>
     </tr>
