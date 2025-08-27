@@ -2109,6 +2109,24 @@ def download_possible_CVs(request):
     return response
 
 
+def download_rated_orphans(request):
+
+    df_orphans = blackgem_rated_orphans()
+
+    # Convert DataFrame to CSV string
+    csv_string = df_orphans.to_csv(index=False)
+
+    obs_date = date.today()
+    obs_date = obs_date.strftime("%Y%m%d")
+
+    # Create the HttpResponse object with appropriate headers for CSV.
+    response = HttpResponse(csv_string, content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="GEMTOM_Rated_Orphans_' + obs_date + '.csv"'
+
+    # Return the response which prompts the download
+    return response
+
+
 def scatter_plot_view(request):
 
     import plotly.io as pio

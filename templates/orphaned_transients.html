@@ -14,6 +14,12 @@
 On this page, you can search for information on all rated orphaned transients.<br>
 Click on an entry below to see more about the target.
 </p>
+
+
+<form method="post" action="{% url 'download_rated_orphans' %}" class="image-form">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-outline-primary">Download Rated Orphans</button>
+</form>
 <hr>
 
 <head>
