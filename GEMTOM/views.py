@@ -441,6 +441,162 @@ def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
     return fig
 
 
+
+
+## =============================================================================
+## -------------------- Code for the Target Watchlist Page ---------------------
+
+# class WatchlistView(TemplateView):
+def Watchlist_View(request):
+
+    context = {
+        "testing" : 'Test successful!',
+        # "targets" : targets,
+        # "target_names" : [target.name for target in targets],
+    }
+
+    template_name = 'target_watchlist.html'
+
+    df_targets = pd.DataFrame(list(Target.objects.all().values()))
+    # target_2 = Target.targetextra_set.all()
+
+    # --- Now handle extras ---
+    # Suppose you want keywords like "redshift", "priority", "magnitude"
+    desired_extras = ['BlackGEM ID']
+
+    # Query extras for those keywords
+    extras = TargetExtra.objects.filter(key__in=desired_extras).values(
+        'target_id', 'key', 'value'
+    )
+
+    extras_df = pd.DataFrame(list(extras))
+
+    # Pivot so each key becomes a column
+    extras_pivot = extras_df.pivot(index='target_id', columns='key', values='value').reset_index()
+
+    # Merge with main df
+    df_targets = df_targets.merge(extras_pivot, left_on='id', right_on='target_id', how='left')
+
+    # Drop the duplicate id if you like
+    df_targets = df_targets.drop(columns=['target_id'])
+
+    df_targets.to_csv("./data/target_watchlist_ids.csv", index=False)
+
+    # print(df_targets)
+    # 'number_of_discoveries': len(df_blackgem_table)
+
+    app = DjangoDash("watchlist_table")
+
+    print(df_targets.columns)
+
+    getRowStyle = {
+        "styleConditions": [
+            {
+                "condition": "params.data.limiting_mag > 0",
+                "style": {"color": "lightgrey"},
+            },
+        ],
+        "defaultStyle": {"color": "black"},
+    }
+
+    bg = authenticate_blackgem()
+
+    qu = """\
+        SELECT runcat, mag_zogy, mjd, filter
+        FROM (
+            SELECT a.runcat,
+                   x.mag_zogy,
+                   i."mjd-obs" AS mjd,
+                   i.filter AS filter,
+                   ROW_NUMBER() OVER (PARTITION BY a.runcat ORDER BY i."mjd-obs" DESC) AS rn
+            FROM assoc a
+            JOIN extractedsource x ON a.xtrsrc = x.id
+            JOIN image i ON x.image = i.id
+           WHERE a.runcat IN %(id_list)s
+             AND x.mag_zogy < 99
+        ) sub
+        WHERE rn = 1;
+    """
+
+    clean_ID_list = [x for x in df_targets["BlackGEM ID"] if str(x) != 'nan']
+    clean_ID_list = [x for x in clean_ID_list if len(x) != 0]
+
+    # print(clean_ID_list)
+
+    params = {'id_list' : tuple(clean_ID_list)}
+    query = qu % (params)
+    print("Running Query 2...")
+    l_results = bg.run_query(query)
+
+    df_targets_2 = pd.DataFrame(l_results, columns=['BlackGEM ID','latest_mag','last_obs','filter'])
+
+    # print(df_targets)
+    # print(df_targets_2)
+    df_targets["BlackGEM ID"]   = [str(x) for x in df_targets["BlackGEM ID"]]
+    df_targets_2["BlackGEM ID"] = [str(x) for x in df_targets_2["BlackGEM ID"]]
+
+    df_targets = pd.merge(df_targets, df_targets_2, on="BlackGEM ID")#, how="left")
+
+    df_targets = df_targets.sort_values(by=['last_obs'], ascending=False).reset_index(drop=True)
+
+    df_targets['BlackGEM ID'] = df_targets['BlackGEM ID'].fillna(0)
+
+    df_targets['GEMTOM_Link'] = df_targets['id'].apply(lambda x: f'[Target Page](https://gemtom.blackgem.org/targets/{str(x)}/)')
+    df_targets['BGEM_ID_Link'] = df_targets['BlackGEM ID'].apply(
+        lambda x: f'[{str(x)}](https://gemtom.blackgem.org/transients/{str(x)}/)' if x != 0 else x
+    )
+    df_targets['last_obs'] = Time(df_targets['last_obs'], format='mjd').iso
+    df_targets['last_obs'] = [x.split(" ")[0] for x in df_targets['last_obs']]
+
+
+    ## Define the layout of the Dash app
+    app.layout = html.Div([
+        dag.AgGrid(
+            id='observation-grid',
+            rowData=df_targets.to_dict('records'),
+            columnDefs=[
+                        {'headerName': 'GEMTOM', 'field': 'GEMTOM_Link', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
+                        {'headerName': 'BGEM ID', 'field': 'BGEM_ID_Link', 'cellRenderer': 'markdown', "linkTarget":"_blank", 'minWidth' : 110},
+                        {'headerName': 'Name', 'field': 'name'},
+                        {'headerName': 'RA', 'field': 'ra',
+                            "valueFormatter": {"function": "d3.format('.2f')(params.value)"}},
+                        {'headerName': 'Dec', 'field': 'dec',
+                            "valueFormatter": {"function": "d3.format('.2f')(params.value)"}},
+                        {'headerName': 'Mag', 'field': 'latest_mag',
+                            "valueFormatter": {"function": "d3.format('.1f')(params.value)"}},
+                        {'headerName': 'Filter', 'field': 'filter', 'minWidth' : 90},
+                        {'headerName': 'Latest Obs', 'field': 'last_obs'},
+            ],
+            getRowStyle=getRowStyle,
+            defaultColDef={
+                'sortable': True,
+                'filter': True,
+                'resizable': True,
+                'editable': False,
+            },
+            # columnSize="sizeToFit",
+            columnSize="autoSize",
+            dashGridOptions={
+                "skipHeaderOnAutoSize": True,
+                "rowSelection": "single",
+                "enableCellTextSelection": True,
+            },
+            style={'height': '500px', 'width': '100%'},  # Set explicit height for the grid
+            # className='ag-theme-balham'  # Add a theme for better appearance
+            className='ag-theme-alpine'  # Add a theme for better appearance
+        ),
+        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
+        html.Div(id='output-div'),  # Div to display the information
+    ], style={'height': '500px', 'width': '100%'}
+    )
+
+    return render(request, "target_watchlist.html", context)
+
+
+
+## =============================================================================
+## ---------------------- Code for the Discoveries Page ------------------------
+
 class DiscoveriesView(TemplateView):
     template_name = 'discoveries.html'
 
@@ -1025,6 +1181,259 @@ def update_classification(request):
 #         update_target_field(target_name, field_name, field_value)
 #
 #         return redirect(form.get('referrer', '/'))
+
+
+
+## Extra code for just my secret history page:
+
+
+
+@login_required
+def SecretOrphans(request):
+    '''
+    Finds and displays data for my singular month:
+    '''
+    template_name = 'secretorphans.html'
+
+    print("Starting SecretOrphans...")
+    time_list = []
+    time_list.append(time.time())
+
+    context = {
+        "obs_date"                      : "FakeDate",
+    }
+
+    time_list.append(time.time())
+
+    df_orphans = pd.read_csv("./data/orphans_20250701_to_20250731.csv")
+    ## Cut out the terrible ones
+    df_orphans = df_orphans[df_orphans["real_bogus_probabilities"]>0.4]
+
+    time_list.append(time.time())
+
+    rated_orphans = False
+    try:
+        df_orphans_all = pd.read_csv("./data/history_transients/rated_orphans.csv")
+        rated_orphans = True
+
+    except:
+        print("'Rated Orphans' file not present. Please create!")
+
+    if df_orphans is not None:
+        if rated_orphans:
+            yes_no_list = []
+            notes_list = []
+
+            for runcat_id in df_orphans.runcat_id:
+                if runcat_id in list(df_orphans_all.runcat_id):
+                    index = df_orphans_all.index[df_orphans_all['runcat_id'] == int(runcat_id)]
+
+                    yes_no_list.append(df_orphans_all['yes_no'].values[index][0])
+                    notes_list.append(df_orphans_all['notes'].values[index][0])
+                else:
+                    yes_no_list.append("")
+                    notes_list.append("")
+
+            df_orphans['yes_no'] = yes_no_list
+            df_orphans['notes'] = notes_list
+
+        else:
+            df_orphans['yes_no'] = [""]*len(df_orphans)
+            df_orphans['notes']  = [""]*len(df_orphans)
+
+        df_orphans = df_orphans.sort_values(by=['i_rb_avg'], ascending=False)
+        df_orphans = df_orphans.sort_values(by=['u_rb_avg'], ascending=False)
+        df_orphans = df_orphans.sort_values(by=['q_rb_avg'], ascending=False)
+        df_orphans = df_orphans.fillna('')
+
+        if "std_max" not in df_orphans.columns:
+            df_orphans['std_max'] = [np.nan for x in df_orphans.det_sep]
+            df_orphans['std_min'] = [np.nan for x in df_orphans.det_sep]
+            df_orphans['std_frc'] = [np.nan for x in df_orphans.det_sep]
+            df_orphans['std_ang'] = [np.nan for x in df_orphans.det_sep]
+
+        if "probabilities" not in df_orphans.columns:
+            df_orphans['probabilities'] = [0 for x in df_orphans.det_sep]
+
+        nan_fix = False
+        if "real_bogus_probabilities" not in df_orphans.columns:
+            nan_fix = True
+            df_orphans['real_bogus_probabilities']  = df_orphans['probabilities']
+            df_orphans['asteroid_probabilities']    = [0 for x in df_orphans.det_sep]
+            df_orphans['diff_spike_probabilities']  = [0 for x in df_orphans.det_sep]
+
+        df_orphans = df_orphans.sort_values(by=['real_bogus_probabilities'], ascending=False)
+        df_orphans = df_orphans.sort_values(by=['yes_no', 'real_bogus_probabilities'], ascending=[True, False])
+
+
+        # df_orphans.std_min = df_orphans.std_min.fillna(value=np.nan)
+        df_orphans.std_min = df_orphans.std_min.replace('', np.nan)
+        # df_orphans.std_frc = df_orphans.std_min.fillna(value=np.nan)
+        df_orphans.std_frc = df_orphans.std_frc.replace('', np.nan)
+        # print(df_orphans['std_min'][2:5])
+        # print(type(df_orphans['std_min'][3]))
+        # aaa_orphans_std_min = df_orphans.std_min
+        # print(df_orphans.std_min)
+
+        # real_bogus_color = df_orphans["real_bogus_probabilities"]
+        mediumaquamarine_rgb = tuple(int("099C6C"[i:i+2], 16) for i in (0, 2, 4))
+        darkorange_rgb = tuple(int("E88410"[i:i+2], 16) for i in (0, 2, 4))
+        lightgrey_rgb = tuple(int("D3D3D3"[i:i+2], 16) for i in (0, 2, 4))
+        # real_bogus_blue = df_orphans["real_bogus_probabilities"]*(mediumaquamarine_rgb[2]-lightgrey_rgb[2])+lightgrey_rgb[2]
+        real_bogus_red  = df_orphans["real_bogus_probabilities"]*(mediumaquamarine_rgb[0]-lightgrey_rgb[0])+lightgrey_rgb[0]
+        real_bogus_grn  = df_orphans["real_bogus_probabilities"]*(mediumaquamarine_rgb[1]-lightgrey_rgb[1])+lightgrey_rgb[1]
+        real_bogus_blu  = df_orphans["real_bogus_probabilities"]*(mediumaquamarine_rgb[2]-lightgrey_rgb[2])+lightgrey_rgb[2]
+        asteroid_red  = df_orphans["asteroid_probabilities"]*(darkorange_rgb[0]-lightgrey_rgb[0])+lightgrey_rgb[0]
+        asteroid_grn  = df_orphans["asteroid_probabilities"]*(darkorange_rgb[1]-lightgrey_rgb[1])+lightgrey_rgb[1]
+        asteroid_blu  = df_orphans["asteroid_probabilities"]*(darkorange_rgb[2]-lightgrey_rgb[2])+lightgrey_rgb[2]
+        diff_spike_red  = df_orphans["diff_spike_probabilities"]*(darkorange_rgb[0]-lightgrey_rgb[0])+lightgrey_rgb[0]
+        diff_spike_grn  = df_orphans["diff_spike_probabilities"]*(darkorange_rgb[1]-lightgrey_rgb[1])+lightgrey_rgb[1]
+        diff_spike_blu  = df_orphans["diff_spike_probabilities"]*(darkorange_rgb[2]-lightgrey_rgb[2])+lightgrey_rgb[2]
+        df_orphans["real_bogus_color"] = [hex(int(x))[2:]+hex(int(y))[2:]+hex(int(z))[2:] for x,y,z in zip(real_bogus_red, real_bogus_grn, real_bogus_blu)]
+        df_orphans["asteroid_color"] = [hex(int(x))[2:]+hex(int(y))[2:]+hex(int(z))[2:] for x,y,z in zip(asteroid_red, asteroid_grn, asteroid_blu)]
+        df_orphans["diff_spike_color"] = [hex(int(x))[2:]+hex(int(y))[2:]+hex(int(z))[2:] for x,y,z in zip(diff_spike_red, diff_spike_grn, diff_spike_blu)]
+
+        if nan_fix:
+            df_orphans['real_bogus_probabilities']  = df_orphans['probabilities']
+            df_orphans['asteroid_probabilities']    = [np.nan for x in df_orphans.det_sep]
+            df_orphans['diff_spike_probabilities']  = [np.nan for x in df_orphans.det_sep]
+
+        context['orphans'] = zip(
+            list(df_orphans.runcat_id),
+            ['%.3f'%x for x in df_orphans.ra_psf],
+            ['%.3f'%x for x in df_orphans.dec_psf],
+            # ['%.3g'%x for x in df_orphans.ra_std],
+            # ['%.3g'%x for x in df_orphans.dec_std],
+            ['%.5s'%x for x in df_orphans.q_min],
+            ['%.4s'%x for x in df_orphans.q_rb_avg],
+            ['%.5s'%x for x in df_orphans.u_min],
+            ['%.4s'%x for x in df_orphans.u_rb_avg],
+            ['%.5s'%x for x in df_orphans.i_min],
+            ['%.4s'%x for x in df_orphans.i_rb_avg],
+            ['%.3g'%(x*60*60) for x in df_orphans.std_max],
+            ['%.3g'%(x*60*60) for x in df_orphans.std_min],
+            ['%.3g'%x for x in df_orphans.std_frc],
+            ['%.4g'%x for x in df_orphans.angle_eigs],
+            ['%.4s'%x for x in df_orphans.std_ang],
+            ['%.3f'%x for x in df_orphans["real_bogus_probabilities"]],
+            ['%.3f'%x for x in df_orphans["asteroid_probabilities"]],
+            ['%.3f'%x for x in df_orphans["diff_spike_probabilities"]],
+            [x for x in df_orphans.real_bogus_color],
+            [x for x in df_orphans.asteroid_color],
+            [x for x in df_orphans.diff_spike_color],
+            [x for x in df_orphans.yes_no],
+            [x for x in df_orphans.notes],
+        )
+
+        # print(df_orphans["real_bogus_color"])
+        # print("BARKBARKBARK")
+        # print(["color: "+x for x in df_orphans.real_bogus_color])
+
+        context['orphans_sources_length'] = len(df_orphans)
+        if len(df_orphans) == 1:
+            context['orphans_sources_plural'] = ""
+        else:
+            context['orphans_sources_plural'] = "s"
+
+    else:
+        context['orphans'] = ""
+        context['orphans_sources_length'] = 0
+        context['orphans_sources_plural'] = "s"
+        # context['orphans_bool'] = False
+
+    time_list.append(time.time())
+
+    if 'history_daily_text_1' in context:
+        if field_stats[0] == 0 and "No" not in context['history_daily_text_1']:
+            context['blackhub'] = False
+        else:
+            context['blackhub'] = True
+    else:
+        context['blackhub'] = True
+
+    time_list.append(time.time())
+    print("NightView Times:")
+    for i in range(len(time_list)-1):
+        print("t"+str(i)+"->t"+str(i+1)+": "+str(time_list[i+1]-time_list[i]))
+
+
+    return render(request, template_name, context)
+
+
+def secret_rate_target(request):
+    '''
+    Rates a target as interesting or not
+    '''
+
+    id = request.POST.get('id')
+    yes_no = request.POST.get('yes_no')
+    notes = request.POST.get('notes')
+
+    time_list = []
+    time_list.append(time.time())
+    # name = iau_name_from_bgem_id(id)
+
+    # df_orphans = pd.read_csv("./data/history_transients/"+obs_date+"_orphans.csv")
+    rated_orphans_exists = True
+    try:
+        df_orphans = pd.read_csv("./data/history_transients/rated_orphans.csv")
+    except:
+        rated_orphans_exists = False
+        print("'Rated orphans' file not present. Please create!")
+
+    time_list.append(time.time())
+    if rated_orphans_exists:
+        index_list = df_orphans.index[df_orphans['runcat_id'] == int(id)]
+
+        if len(index_list) == 0:
+            df_this_night = pd.read_csv("./data/orphans_20250701_to_20250731.csv")
+            this_index = df_this_night.index[df_this_night['runcat_id'] == int(id)][0]
+            print(df_this_night.loc[this_index,"runcat_id"])
+            # df_orphans = pd.concat([df_orphans, df_this_night.iloc[this_index]]).reset_index(drop=True)
+            index = len(df_orphans)
+            df_orphans.loc[index] = df_this_night.iloc[this_index]
+            print(df_orphans.loc[index,"runcat_id"])
+
+        else:
+            index = index_list[0]
+
+        time_list.append(time.time())
+        if "yes_no" not in df_orphans.columns:
+            df_orphans["yes_no"] = [None]*len(df_orphans)
+        if "notes" not in df_orphans.columns:
+            df_orphans["notes"] = [None]*len(df_orphans)
+
+        time_list.append(time.time())
+        df_orphans.loc[index,"yes_no"] = yes_no
+        if len(notes) > 0:
+            df_orphans.loc[index,"notes"] = notes
+        for column_name in df_orphans.columns:
+            if 'Unnamed' in column_name:
+                df_orphans = df_orphans.drop(column_name, axis=1)
+        time_list.append(time.time())
+        df_orphans.to_csv("./data/history_transients/rated_orphans.csv")
+        time_list.append(time.time())
+        print("\n\n")
+        print(df_orphans)
+        print(yes_no)
+        print(id)
+        print(df_orphans.runcat_id)
+        print(index)
+        print(df_orphans.iloc[index])
+        print("\n\n")
+
+    # add_to_GEMTOM(id, name, ra, dec)
+
+    # return redirect(reverse('tom_targets:list'))
+
+    time_list.append(time.time())
+
+    print("rate_target Times:")
+    for i in range(len(time_list)-1):
+        print("t"+str(i)+"->t"+str(i+1)+": "+str(time_list[i+1]-time_list[i]))
+    print("")
+
+    return redirect('/SecretOrphans/')
 
 
 
@@ -2710,6 +3119,7 @@ def true_rate_target(id, yes_no, notes, obs_date):
 
 
     return redirect('/history/' + obs_date + "/")
+
 
 ## =============================================================================
 ## ----------------------- Codes for the Transients page -----------------------
@@ -6706,6 +7116,8 @@ def UpdateBlackGEMFunc(target_name, target_id, target_blackgemid):
                 self.request,
                 'Error while fetching BlackGEM data; ' + str(iffe2)
             )
+
+
 
 
 

@@ -81,6 +81,11 @@ urlpatterns = [
 
     path('discoveries/', DiscoveriesView.as_view(), name='discoveries'),
 
+    path('watchlist/', Watchlist_View, name='watchlist'),
+
+    path('SecretOrphans/', SecretOrphans, name='SecretOrphans'),
+    path('secret_rate_target/', secret_rate_target, name='secret_rate_target'),
+
     path('telescope_time/', ToOView.as_view(), name='telescope_time'),
     path('delete_telescopetime/', delete_telescopetime, name='delete_telescopetime'),
 
