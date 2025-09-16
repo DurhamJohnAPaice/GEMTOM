@@ -502,8 +502,10 @@ def Watchlist_View(request):
     bg = authenticate_blackgem()
 
 
+    targets_check = False
     if os.path.exists("./data/target_watchlist_latestmags.csv"):
         df_targets_all = pd.read_csv("./data/target_watchlist_latestmags.csv")
+        targets_check = True
     else:
         print("Waiting for mags! Please run BG_Update_Watchlist.py!")
 
@@ -554,7 +556,7 @@ def Watchlist_View(request):
         # df_targets_all['last_obs'] = Time(df_targets_all['last_obs'], format='mjd').iso
         # df_targets_all['last_obs'] = [x.split(" ")[0] for x in df_targets_all['last_obs']]
 
-    if df_targets_all:
+    if targets_check:
         ## Define the layout of the Dash app
         app.layout = html.Div([
             dag.AgGrid(
