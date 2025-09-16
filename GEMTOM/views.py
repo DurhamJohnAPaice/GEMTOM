@@ -558,6 +558,9 @@ def Watchlist_View(request):
         # df_targets_all['last_obs'] = [x.split(" ")[0] for x in df_targets_all['last_obs']]
 
     if targets_check:
+
+        context["num_targets"] = len(df_targets_all)
+
         ## Define the layout of the Dash app
         app.layout = html.Div([
             dag.AgGrid(
