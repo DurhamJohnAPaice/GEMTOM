@@ -1,6 +1,25 @@
 {% extends 'tom_common/base.html' %}
 {% block content %}
 
+<div style="border:thin solid lightgrey; padding:30px; margin:50px;">
+<h5>Update: End of Funding</h5>
+Note that from this point onwards, my funding at the University of Durham has ended. As such, I will not be able to dedicate my time to working on GEMTOM.
+<br>
+<br>
+I am currently seeking funding elsewhere, but there are no guarantees, except that there will be an interim period where there will be no dedicated work done on the software.
+<br>
+<br>
+That said, I am committed to keeping GEMTOM up and running! You can always email me at <b>johnapaice@gmail.com</b> if there are any issues, and I will prioritise uptime as much as I am able.
+<br>
+<br>
+If you have any other questions, ideas, offers to help run GEMTOM, or opportunities for more funding, please let me know. It has been a pleasure to work on this software, and I hope that it will continue into the future!
+<br>
+<br>
+- John Paice
+<br>
+</div>
+<br>
+
 <h2>Coming Soon</h2>
 
 A list of the main features that have been requested and I intend to work on.
@@ -52,9 +71,9 @@ A list of the main features that have been requested and I intend to work on.
             <li>Get the Detections on Sky plot on the Orphaned Transients page</li>
             <li>Improve the SQL query finding the Orphaned Transients</li>
             <li>Auto-search TNS for new orphans, and update as TNS sources.</li>
-            <li>Add in RA/Dec to asteroid classifier, and consider what other parameters would be good for non-R/B classifiers.</li>
         </ul>
 
+    <br>
         <h5>Telescope Communication</h5>
         <ul>
             <li>Make a downloadable CSV file of all the targets for a set run</li>
@@ -73,7 +92,6 @@ A list of the main features that have been requested and I intend to work on.
 
         <h5>Miscellaneous Features and Bugfixes:</h5>
         <ul>
-            <li>Create a 'BlackGEM Discoveries' page!</li>
             <li>Look into: Forced Photometry with SLURM</li>
             <li>Automatically add targets to a group if they're above some magnitude threshold</li>
             <li>Targets: Include a way to add a target to a group from the Target page itself.</li>
@@ -128,6 +146,34 @@ A list of the main features that have been requested and I intend to work on.
 <hr>
 <br>
 <h3>Version Changelogs</h3>
+<br>
+<div style="color:lightgrey">---------------------------------------</div>
+<h4>GEMTOM v0.6 - Three Eyes on the Skies</h4>
+<br>
+<ul>
+    <h5>New Features</h5>
+    <ul>
+        <li><h6>Watchlist Page</h6></li>
+        <ul>
+            <li>You can now access the <a href=https://gemtom.blackgem.org/watchlist/>Watchlist</a> page to see which of the targets GEMTOM is watching have been observed most recently.</li>
+            <li>Each entry links to both its target page and the overall Transient page, and you can filter by name, RA, Dec, date, filter, and magnitude.</li>
+            <!-- <li></li> -->
+        </ul>
+        <br>
+        <li><h6>Miscellaneous features</h6></li>
+        <ul>
+            <!-- <li></li> -->
+        </ul>
+    </ul>
+
+    <br>
+    <h5>Bugfixes</h5>
+    <ul>
+        <!-- <li></li> -->
+        <!-- <li></li> -->
+    </ul>
+       <!-- <li></li> -->
+</ul>
 <br>
 <div style="color:lightgrey">---------------------------------------</div>
 <h4>GEMTOM v0.5 - Discovery</h4>

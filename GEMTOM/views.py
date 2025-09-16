@@ -447,6 +447,7 @@ def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
 ## -------------------- Code for the Target Watchlist Page ---------------------
 
 # class WatchlistView(TemplateView):
+@login_required
 def Watchlist_View(request):
 
     context = {
