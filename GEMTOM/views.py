@@ -501,94 +501,100 @@ def Watchlist_View(request):
 
     bg = authenticate_blackgem()
 
-    qu = """\
-        SELECT runcat, mag_zogy, mjd, filter
-        FROM (
-            SELECT a.runcat,
-                   x.mag_zogy,
-                   i."mjd-obs" AS mjd,
-                   i.filter AS filter,
-                   ROW_NUMBER() OVER (PARTITION BY a.runcat ORDER BY i."mjd-obs" DESC) AS rn
-            FROM assoc a
-            JOIN extractedsource x ON a.xtrsrc = x.id
-            JOIN image i ON x.image = i.id
-           WHERE a.runcat IN %(id_list)s
-             AND x.mag_zogy < 99
-        ) sub
-        WHERE rn = 1;
-    """
 
-    clean_ID_list = [x for x in df_targets["BlackGEM ID"] if str(x) != 'nan']
-    clean_ID_list = [x for x in clean_ID_list if len(x) != 0]
+    if os.path.exists("./data/target_watchlist_latestmags.csv"):
+        df_targets_all = pd.read_csv("./data/target_watchlist_latestmags.csv")
+    else:
+        print("Waiting for mags! Please run BG_Update_Watchlist.py!")
 
-    # print(clean_ID_list)
+        # qu = """\
+        #     SELECT runcat, mag_zogy, mjd, filter
+        #     FROM (
+        #         SELECT a.runcat,
+        #                x.mag_zogy,
+        #                i."mjd-obs" AS mjd,
+        #                i.filter AS filter,
+        #                ROW_NUMBER() OVER (PARTITION BY a.runcat ORDER BY i."mjd-obs" DESC) AS rn
+        #         FROM assoc a
+        #         JOIN extractedsource x ON a.xtrsrc = x.id
+        #         JOIN image i ON x.image = i.id
+        #        WHERE a.runcat IN %(id_list)s
+        #          AND x.mag_zogy < 99
+        #     ) sub
+        #     WHERE rn = 1;
+        # """
+        #
+        # clean_ID_list = [x for x in df_targets["BlackGEM ID"] if str(x) != 'nan']
+        # clean_ID_list = [x for x in clean_ID_list if len(x) != 0]
+        #
+        # # print(clean_ID_list)
+        #
+        # params = {'id_list' : tuple(clean_ID_list)}
+        # query = qu % (params)
+        # print("Running Query 2...")
+        # l_results = bg.run_query(query)
+        #
+        # df_targets_2 = pd.DataFrame(l_results, columns=['BlackGEM ID','latest_mag','last_obs','filter'])
+        #
+        # # print(df_targets)
+        # # print(df_targets_2)
+        # df_targets["BlackGEM ID"]   = [str(x) for x in df_targets["BlackGEM ID"]]
+        # df_targets_2["BlackGEM ID"] = [str(x) for x in df_targets_2["BlackGEM ID"]]
+        #
+        # df_targets_all = pd.merge(df_targets, df_targets_2, on="BlackGEM ID")#, how="left")
+        #
+        # df_targets_all = df_targets_all.sort_values(by=['last_obs'], ascending=False).reset_index(drop=True)
+        #
+        # df_targets_all['BlackGEM ID'] = df_targets_all['BlackGEM ID'].fillna(0)
+        #
+        # df_targets_all['GEMTOM_Link'] = df_targets_all['id'].apply(lambda x: f'[Target Page](https://gemtom.blackgem.org/targets/{str(x)}/)')
+        # df_targets_all['BGEM_ID_Link'] = df_targets_all['BlackGEM ID'].apply(
+        #     lambda x: f'[{str(x)}](https://gemtom.blackgem.org/transients/{str(x)}/)' if x != 0 else x
+        # )
+        # df_targets_all['last_obs'] = Time(df_targets_all['last_obs'], format='mjd').iso
+        # df_targets_all['last_obs'] = [x.split(" ")[0] for x in df_targets_all['last_obs']]
 
-    params = {'id_list' : tuple(clean_ID_list)}
-    query = qu % (params)
-    print("Running Query 2...")
-    l_results = bg.run_query(query)
-
-    df_targets_2 = pd.DataFrame(l_results, columns=['BlackGEM ID','latest_mag','last_obs','filter'])
-
-    # print(df_targets)
-    # print(df_targets_2)
-    df_targets["BlackGEM ID"]   = [str(x) for x in df_targets["BlackGEM ID"]]
-    df_targets_2["BlackGEM ID"] = [str(x) for x in df_targets_2["BlackGEM ID"]]
-
-    df_targets = pd.merge(df_targets, df_targets_2, on="BlackGEM ID")#, how="left")
-
-    df_targets = df_targets.sort_values(by=['last_obs'], ascending=False).reset_index(drop=True)
-
-    df_targets['BlackGEM ID'] = df_targets['BlackGEM ID'].fillna(0)
-
-    df_targets['GEMTOM_Link'] = df_targets['id'].apply(lambda x: f'[Target Page](https://gemtom.blackgem.org/targets/{str(x)}/)')
-    df_targets['BGEM_ID_Link'] = df_targets['BlackGEM ID'].apply(
-        lambda x: f'[{str(x)}](https://gemtom.blackgem.org/transients/{str(x)}/)' if x != 0 else x
-    )
-    df_targets['last_obs'] = Time(df_targets['last_obs'], format='mjd').iso
-    df_targets['last_obs'] = [x.split(" ")[0] for x in df_targets['last_obs']]
-
-
-    ## Define the layout of the Dash app
-    app.layout = html.Div([
-        dag.AgGrid(
-            id='observation-grid',
-            rowData=df_targets.to_dict('records'),
-            columnDefs=[
-                        {'headerName': 'GEMTOM', 'field': 'GEMTOM_Link', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
-                        {'headerName': 'BGEM ID', 'field': 'BGEM_ID_Link', 'cellRenderer': 'markdown', "linkTarget":"_blank", 'minWidth' : 110},
-                        {'headerName': 'Name', 'field': 'name'},
-                        {'headerName': 'RA', 'field': 'ra',
-                            "valueFormatter": {"function": "d3.format('.2f')(params.value)"}},
-                        {'headerName': 'Dec', 'field': 'dec',
-                            "valueFormatter": {"function": "d3.format('.2f')(params.value)"}},
-                        {'headerName': 'Mag', 'field': 'latest_mag',
-                            "valueFormatter": {"function": "d3.format('.1f')(params.value)"}},
-                        {'headerName': 'Filter', 'field': 'filter', 'minWidth' : 90},
-                        {'headerName': 'Latest Obs', 'field': 'last_obs'},
-            ],
-            getRowStyle=getRowStyle,
-            defaultColDef={
-                'sortable': True,
-                'filter': True,
-                'resizable': True,
-                'editable': False,
-            },
-            # columnSize="sizeToFit",
-            columnSize="autoSize",
-            dashGridOptions={
-                "skipHeaderOnAutoSize": True,
-                "rowSelection": "single",
-                "enableCellTextSelection": True,
-            },
-            style={'height': '500px', 'width': '100%'},  # Set explicit height for the grid
-            # className='ag-theme-balham'  # Add a theme for better appearance
-            className='ag-theme-alpine'  # Add a theme for better appearance
-        ),
-        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
-        html.Div(id='output-div'),  # Div to display the information
-    ], style={'height': '500px', 'width': '100%'}
-    )
+    if df_targets_all:
+        ## Define the layout of the Dash app
+        app.layout = html.Div([
+            dag.AgGrid(
+                id='observation-grid',
+                rowData=df_targets_all.to_dict('records'),
+                columnDefs=[
+                            {'headerName': 'GEMTOM', 'field': 'GEMTOM_Link', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
+                            {'headerName': 'BGEM ID', 'field': 'BGEM_ID_Link', 'cellRenderer': 'markdown', "linkTarget":"_blank", 'minWidth' : 110},
+                            {'headerName': 'Name', 'field': 'name'},
+                            {'headerName': 'RA', 'field': 'ra',
+                                "valueFormatter": {"function": "d3.format('.2f')(params.value)"}},
+                            {'headerName': 'Dec', 'field': 'dec',
+                                "valueFormatter": {"function": "d3.format('.2f')(params.value)"}},
+                            {'headerName': 'Mag', 'field': 'latest_mag',
+                                "valueFormatter": {"function": "d3.format('.1f')(params.value)"}},
+                            {'headerName': 'Filter', 'field': 'filter', 'minWidth' : 90},
+                            {'headerName': 'Latest Obs', 'field': 'last_obs'},
+                ],
+                getRowStyle=getRowStyle,
+                defaultColDef={
+                    'sortable': True,
+                    'filter': True,
+                    'resizable': True,
+                    'editable': False,
+                },
+                # columnSize="sizeToFit",
+                columnSize="autoSize",
+                dashGridOptions={
+                    "skipHeaderOnAutoSize": True,
+                    "rowSelection": "single",
+                    "enableCellTextSelection": True,
+                },
+                style={'height': '500px', 'width': '100%'},  # Set explicit height for the grid
+                # className='ag-theme-balham'  # Add a theme for better appearance
+                className='ag-theme-alpine'  # Add a theme for better appearance
+            ),
+            dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
+            html.Div(id='output-div'),  # Div to display the information
+        ], style={'height': '500px', 'width': '100%'}
+        )
 
     return render(request, "target_watchlist.html", context)
 
