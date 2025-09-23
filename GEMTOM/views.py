@@ -606,175 +606,6 @@ def Watchlist_View(request):
 
 
 
-## =============================================================================
-## ---------------------- Code for the Discoveries Page ------------------------
-
-class DiscoveriesView(TemplateView):
-    template_name = 'discoveries.html'
-
-    discoveries_filename = "./data/blackgem_tns_discoveries.csv"
-
-    try:
-        df_blackgem_table = pd.read_csv(discoveries_filename)
-
-        df_blackgem_table['name'] = df_blackgem_table['name'].apply(lambda x: f'[{str(x)}](https://www.wis-tns.org/object/{str(x)})')
-        df_blackgem_table['id'] = df_blackgem_table['id'].apply(lambda x: f'[{str(x)}](https://gemtom.blackgem.org/transients/{str(x)})')
-        df_blackgem_table['discoveryday'] = [str(x).split(" ")[0] for x in df_blackgem_table['discoverydate']]
-        df_blackgem_table['Discovery_ADS_bibcode'] = df_blackgem_table['Discovery_ADS_bibcode'].apply(lambda x: f'[ADS](https://ui.adsabs.harvard.edu/abs/{str(x)}/abstract)')
-
-        df_blackgem_table['last_obs'] = Time(df_blackgem_table['last_obs'], format='mjd').iso
-        df_blackgem_table['last_obs'] = [x.split(" ")[0] for x in df_blackgem_table['last_obs']]
-
-    except Exception as e:
-        print("Error! Discoveries table not read.")
-        print(e)
-
-        df_blackgem_table = pd.DataFrame(data={
-            'name_prefix':[],
-            'name':[],
-            'ra':[],
-            'declination':[],
-            'discoveryday':[],
-            'reporters':[],
-            'Discovery_ADS_bibcode':[],
-            'id':[],
-            'iau_name':[],
-        })
-
-
-    app = DjangoDash("discoveries_table")
-
-    getRowStyle = {
-        "styleConditions": [
-            {
-                "condition": "params.data.limiting_mag > 0",
-                "style": {"color": "lightgrey"},
-            },
-        ],
-        "defaultStyle": {"color": "black"},
-    }
-
-    ## Define the layout of the Dash app
-    app.layout = html.Div([
-        dag.AgGrid(
-            id='observation-grid',
-            rowData=df_blackgem_table.to_dict('records'),
-            columnDefs=[
-                        {'headerName': 'Pre', 'field':  'name_prefix', 'maxWidth' : 110},
-                        {'headerName': 'Name', 'field': 'name', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
-                        {'headerName': 'Runcat ID', 'field': 'id', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
-                        # {'headerName': 'IAU Name', 'field': 'iau_name', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
-                        {'headerName': 'RA', 'field': 'ra',
-                            "valueFormatter": {"function": "d3.format('.2f')(params.value)"}},
-                        {'headerName': 'Dec', 'field': 'declination',
-                            "valueFormatter": {"function": "d3.format('.2f')(params.value)"}},
-                        {'headerName': 'Latest Mag', 'field': 'latest_mag',
-                            "valueFormatter": {"function": "d3.format('.1f')(params.value)"}},
-                        {'headerName': 'Latest Obs', 'field': 'last_obs'},
-                        {'headerName': 'Discovery', 'field': 'discoveryday'},
-                        {'headerName': 'Reporters', 'field': 'reporters'},#, 'suppressSizeToFit': True},
-                        {'headerName': 'ADS', 'field': 'Discovery_ADS_bibcode', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
-            ],
-            getRowStyle=getRowStyle,
-            defaultColDef={
-                'sortable': True,
-                'filter': True,
-                'resizable': True,
-                'editable': False,
-            },
-            # columnSize="sizeToFit",
-            columnSize="autoSize",
-            dashGridOptions={
-                "skipHeaderOnAutoSize": True,
-                "rowSelection": "single",
-                "enableCellTextSelection": True,
-            },
-            style={'height': '500px', 'width': '100%'},  # Set explicit height for the grid
-            # className='ag-theme-balham'  # Add a theme for better appearance
-            className='ag-theme-alpine'  # Add a theme for better appearance
-        ),
-        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
-        html.Div(id='output-div'),  # Div to display the information
-    ], style={'height': '500px', 'width': '100%'}
-    )
-
-
-
-
-    # 'number_of_discoveries': len(df_blackgem_table)
-
-    # print(context)
-    def get_context_data(self, **kwargs):
-        df_tns = pd.read_csv("./data/tns_public_objects.csv", skiprows=1)
-        df_tns = df_tns.sort_values(by=['discoverydate']).reset_index(drop=True)
-
-        ## Find contributed sources
-        df_bgem_contrib = df_tns[df_tns["reporting_group"] != "BlackGEM"]
-        df_bgem_contrib = df_bgem_contrib.dropna(subset=['internal_names'])
-        df_bgem_contrib = df_bgem_contrib[df_bgem_contrib["internal_names"].str.contains("BGEM")]
-
-        df_bgem_discoveries = df_tns[df_tns["reporting_group"] == "BlackGEM"]
-        df_bgem_sn_discoveries = df_bgem_discoveries[df_bgem_discoveries["name_prefix"] == "SN"]
-
-
-        fig = go.Figure()
-
-        fig.add_trace(go.Scatter(
-                    name            = "TNS Discoveries",
-                    x               = pd.to_datetime(df_bgem_discoveries['discoverydate']),
-                    y               = np.arange(1, len(df_bgem_discoveries)+1),
-                    mode            = 'lines',
-                    line            = dict(color='teal'),
-        ))
-        fig.add_trace(go.Scatter(
-                    name            = "TNS Contributions",
-                    x               = pd.to_datetime(df_bgem_contrib['discoverydate']),
-                    y               = np.arange(1, len(df_bgem_contrib)+1),
-                    mode            = 'lines',
-                    line            = dict(color='darkorange'),
-        ))
-        fig.add_trace(go.Scatter(
-                    name            = "Confirmed Supernovae",
-                    x               = pd.to_datetime(df_bgem_sn_discoveries['discoverydate']),
-                    y               = np.arange(1, len(df_bgem_sn_discoveries)+1),
-                    mode            = 'lines',
-                    line            = dict(color='darkred'),
-        ))
-        fig.add_vline(x=datetime(2024,10,1).timestamp() * 1000,
-                line_width=1, line_dash="dash", line_color="grey",
-                annotation_text=" GEMTOM Released",
-                annotation_position="top left",
-                annotation_font_color = "grey",
-                annotation_textangle = 90,
-        )
-
-        fig.update_layout(
-            width=1200,
-            height=400,
-            hovermode="x",
-            margin=dict(t=0, b=50, l=2, r=2),  # Set margins to reduce whitespace
-            xaxis_title="Discovery Date",
-            yaxis_title="Cumulative Number",)
-
-        fig.update_xaxes(
-            range=(datetime(2023,2,1), df_tns['discoverydate'].iloc[-1]),
-        )
-
-        cumulative_graph = plot(fig, output_type='div')
-
-
-        context = super().get_context_data(**kwargs)
-
-        context['number_of_discoveries'] = len(df_bgem_discoveries)
-        context['number_of_contributions'] = len(df_bgem_contrib)
-        context['number_of_supernovae'] = len(df_bgem_sn_discoveries)
-        context['targets'] = Target.objects.all()
-        context['cumulative_graph'] = cumulative_graph
-        context['testing'] = 'Test successful!'
-
-        return context
-    # return render(request, "discoveries.html", context)
-
 class ComingSoonView(TemplateView):
     template_name = 'comingsoon.html'
 
@@ -3742,6 +3573,18 @@ def search(search_obj):
 
     return response
 
+
+def fetch_latest_TNS():
+    search_url = "https://www.wis-tns.org/system/files/tns_public_objects/tns_public_objects.csv.zip"
+    tns_marker = set_bot_tns_marker()
+    headers = {'User-Agent': tns_marker}
+    json_file = OrderedDict()
+    search_data = {'api_key': TNS_API_KEY, 'data': json.dumps(json_file)}
+    response = requests.post(search_url, headers = headers, data = search_data)
+    # print("TNS API Key:", TNS_API_KEY)
+
+    return response
+
 def get(get_obj):
     get_url = url_tns_api + "/object"
     tns_marker = set_bot_tns_marker()
@@ -5450,6 +5293,183 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
 
         return
 
+
+
+## =============================================================================
+## ---------------------- Code for the Discoveries Page ------------------------
+
+class DiscoveriesView(TemplateView):
+    template_name = 'discoveries.html'
+
+    discoveries_filename = "./data/blackgem_tns_discoveries.csv"
+
+    try:
+        df_blackgem_table = pd.read_csv(discoveries_filename)
+
+        df_blackgem_table['name'] = df_blackgem_table['name'].apply(lambda x: f'[{str(x)}](https://www.wis-tns.org/object/{str(x)})')
+        df_blackgem_table['id'] = df_blackgem_table['id'].apply(lambda x: f'[{str(x)}](https://gemtom.blackgem.org/transients/{str(x)})')
+        df_blackgem_table['discoveryday'] = [str(x).split(" ")[0] for x in df_blackgem_table['discoverydate']]
+        df_blackgem_table['Discovery_ADS_bibcode'] = df_blackgem_table['Discovery_ADS_bibcode'].apply(lambda x: f'[ADS](https://ui.adsabs.harvard.edu/abs/{str(x)}/abstract)')
+
+        df_blackgem_table['last_obs'] = Time(df_blackgem_table['last_obs'], format='mjd').iso
+        df_blackgem_table['last_obs'] = [x.split(" ")[0] for x in df_blackgem_table['last_obs']]
+
+    except Exception as e:
+        print("Error! Discoveries table not read.")
+        print(e)
+
+        df_blackgem_table = pd.DataFrame(data={
+            'name_prefix':[],
+            'name':[],
+            'ra':[],
+            'declination':[],
+            'discoveryday':[],
+            'reporters':[],
+            'Discovery_ADS_bibcode':[],
+            'id':[],
+            'iau_name':[],
+        })
+
+
+    app = DjangoDash("discoveries_table")
+
+    getRowStyle = {
+        "styleConditions": [
+            {
+                "condition": "params.data.limiting_mag > 0",
+                "style": {"color": "lightgrey"},
+            },
+        ],
+        "defaultStyle": {"color": "black"},
+    }
+
+    ## Define the layout of the Dash app
+    app.layout = html.Div([
+        dag.AgGrid(
+            id='observation-grid',
+            rowData=df_blackgem_table.to_dict('records'),
+            columnDefs=[
+                        {'headerName': 'Pre', 'field':  'name_prefix', 'maxWidth' : 110},
+                        {'headerName': 'Name', 'field': 'name', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
+                        {'headerName': 'Runcat ID', 'field': 'id', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
+                        # {'headerName': 'IAU Name', 'field': 'iau_name', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
+                        {'headerName': 'RA', 'field': 'ra',
+                            "valueFormatter": {"function": "d3.format('.2f')(params.value)"}},
+                        {'headerName': 'Dec', 'field': 'declination',
+                            "valueFormatter": {"function": "d3.format('.2f')(params.value)"}},
+                        {'headerName': 'Latest Mag', 'field': 'latest_mag',
+                            "valueFormatter": {"function": "d3.format('.1f')(params.value)"}},
+                        {'headerName': 'Latest Obs', 'field': 'last_obs'},
+                        {'headerName': 'Discovery', 'field': 'discoveryday'},
+                        {'headerName': 'Reporters', 'field': 'reporters'},#, 'suppressSizeToFit': True},
+                        {'headerName': 'ADS', 'field': 'Discovery_ADS_bibcode', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
+            ],
+            getRowStyle=getRowStyle,
+            defaultColDef={
+                'sortable': True,
+                'filter': True,
+                'resizable': True,
+                'editable': False,
+            },
+            # columnSize="sizeToFit",
+            columnSize="autoSize",
+            dashGridOptions={
+                "skipHeaderOnAutoSize": True,
+                "rowSelection": "single",
+                "enableCellTextSelection": True,
+            },
+            style={'height': '500px', 'width': '100%'},  # Set explicit height for the grid
+            # className='ag-theme-balham'  # Add a theme for better appearance
+            className='ag-theme-alpine'  # Add a theme for better appearance
+        ),
+        dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
+        html.Div(id='output-div'),  # Div to display the information
+    ], style={'height': '500px', 'width': '100%'}
+    )
+
+
+
+
+    # 'number_of_discoveries': len(df_blackgem_table)
+
+    # print(context)
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        tns_latest_filepath = "./data/tns_latest.csv"
+
+        if not os.path.exists(tns_latest_filepath):
+            print("Warning: No TNS data. Save TNS data in " + tns_latest_filepath)
+        else:
+            df_tns = pd.read_csv(tns_latest_filepath)
+            df_tns = df_tns.sort_values(by=['discoverydate']).reset_index(drop=True)
+
+            ## Find contributed sources
+            df_bgem_contrib = df_tns[df_tns["reporting_group"] != "BlackGEM"]
+            df_bgem_contrib = df_bgem_contrib.dropna(subset=['internal_names'])
+            df_bgem_contrib = df_bgem_contrib[df_bgem_contrib["internal_names"].str.contains("BGEM")]
+
+            df_bgem_discoveries = df_tns[df_tns["reporting_group"] == "BlackGEM"]
+            df_bgem_sn_discoveries = df_bgem_discoveries[df_bgem_discoveries["name_prefix"] == "SN"]
+
+
+            fig = go.Figure()
+
+            fig.add_trace(go.Scatter(
+                        name            = "TNS Discoveries",
+                        x               = pd.to_datetime(df_bgem_discoveries['discoverydate']),
+                        y               = np.arange(1, len(df_bgem_discoveries)+1),
+                        mode            = 'lines',
+                        line            = dict(color='teal'),
+            ))
+            fig.add_trace(go.Scatter(
+                        name            = "TNS Contributions",
+                        x               = pd.to_datetime(df_bgem_contrib['discoverydate']),
+                        y               = np.arange(1, len(df_bgem_contrib)+1),
+                        mode            = 'lines',
+                        line            = dict(color='darkorange'),
+            ))
+            fig.add_trace(go.Scatter(
+                        name            = "Confirmed Supernovae",
+                        x               = pd.to_datetime(df_bgem_sn_discoveries['discoverydate']),
+                        y               = np.arange(1, len(df_bgem_sn_discoveries)+1),
+                        mode            = 'lines',
+                        line            = dict(color='darkred'),
+            ))
+            fig.add_vline(x=datetime(2024,10,1).timestamp() * 1000,
+                    line_width=1, line_dash="dash", line_color="grey",
+                    annotation_text=" GEMTOM Released",
+                    annotation_position="top left",
+                    annotation_font_color = "grey",
+                    annotation_textangle = 90,
+            )
+
+            fig.update_layout(
+                width=1200,
+                height=400,
+                hovermode="x",
+                margin=dict(t=0, b=50, l=2, r=2),  # Set margins to reduce whitespace
+                xaxis_title="Discovery Date",
+                yaxis_title="Cumulative Number",)
+
+            fig.update_xaxes(
+                range=(datetime(2023,2,1), df_tns['discoverydate'].iloc[-1]),
+            )
+
+            cumulative_graph = plot(fig, output_type='div')
+
+
+
+            context['number_of_discoveries'] = len(df_bgem_discoveries)
+            context['number_of_contributions'] = len(df_bgem_contrib)
+            context['number_of_supernovae'] = len(df_bgem_sn_discoveries)
+            context['targets'] = Target.objects.all()
+            context['cumulative_graph'] = cumulative_graph
+            context['testing'] = 'Test successful!'
+
+        return context
+    # return render(request, "discoveries.html", context)
 
 
 ## =============================================================================
