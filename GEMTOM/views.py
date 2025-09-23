@@ -5398,20 +5398,27 @@ class DiscoveriesView(TemplateView):
         context = super().get_context_data(**kwargs)
 
         tns_latest_filepath = "./data/tns_latest.csv"
+        df_bgem_contrib_filepath = "./data/bgem_tns_contributions.csv"
+        df_bgem_discoveries_filepath = "./data/bgem_tns_discoveries.csv"
+        df_bgem_sn_discoveries_filepath = "./data/bgem_tns_sn_discoveries.csv"
 
-        if not os.path.exists(tns_latest_filepath):
+        if not os.path.exists(df_bgem_contrib_filepath):
             print("Warning: No TNS data. Save TNS data in " + tns_latest_filepath)
         else:
-            df_tns = pd.read_csv(tns_latest_filepath)
-            df_tns = df_tns.sort_values(by=['discoverydate']).reset_index(drop=True)
+            # df_tns = pd.read_csv(tns_latest_filepath)
+            # df_tns = df_tns.sort_values(by=['discoverydate']).reset_index(drop=True)
+            #
+            # ## Find contributed sources
+            # df_bgem_contrib = df_tns[df_tns["reporting_group"] != "BlackGEM"]
+            # df_bgem_contrib = df_bgem_contrib.dropna(subset=['internal_names'])
+            # df_bgem_contrib = df_bgem_contrib[df_bgem_contrib["internal_names"].str.contains("BGEM")]
+            #
+            # df_bgem_discoveries = df_tns[df_tns["reporting_group"] == "BlackGEM"]
+            # df_bgem_sn_discoveries = df_bgem_discoveries[df_bgem_discoveries["name_prefix"] == "SN"]
 
-            ## Find contributed sources
-            df_bgem_contrib = df_tns[df_tns["reporting_group"] != "BlackGEM"]
-            df_bgem_contrib = df_bgem_contrib.dropna(subset=['internal_names'])
-            df_bgem_contrib = df_bgem_contrib[df_bgem_contrib["internal_names"].str.contains("BGEM")]
-
-            df_bgem_discoveries = df_tns[df_tns["reporting_group"] == "BlackGEM"]
-            df_bgem_sn_discoveries = df_bgem_discoveries[df_bgem_discoveries["name_prefix"] == "SN"]
+            df_bgem_contrib = pd.read_csv(df_bgem_contrib_filepath)
+            df_bgem_discoveries = pd.read_csv(df_bgem_discoveries_filepath)
+            df_bgem_sn_discoveries = pd.read_csv(df_bgem_sn_discoveries_filepath)
 
 
             fig = go.Figure()
@@ -5453,8 +5460,10 @@ class DiscoveriesView(TemplateView):
                 xaxis_title="Discovery Date",
                 yaxis_title="Cumulative Number",)
 
+            max_time = max([df_bgem_contrib['discoverydate'].iloc[-1], df_bgem_discoveries['discoverydate'].iloc[-1], df_bgem_sn_discoveries['discoverydate'].iloc[-1]])
+
             fig.update_xaxes(
-                range=(datetime(2023,2,1), df_tns['discoverydate'].iloc[-1]),
+                range=(datetime(2023,2,1), max_time),
             )
 
             cumulative_graph = plot(fig, output_type='div')

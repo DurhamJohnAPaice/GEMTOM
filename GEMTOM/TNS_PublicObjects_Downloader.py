@@ -34,8 +34,21 @@ response = requests.post(url, headers=headers)
 z = zipfile.ZipFile(io.BytesIO(response.content))
 
 with z.open(z.namelist()[0]) as f:
-    df = pd.read_csv(f, skiprows=1)
+    df_tns = pd.read_csv(f, skiprows=1)
+
+df_tns = df_tns.sort_values(by=['discoverydate']).reset_index(drop=True)
+
+## Find contributed sources
+df_bgem_contrib = df_tns[df_tns["reporting_group"] != "BlackGEM"]
+df_bgem_contrib = df_bgem_contrib.dropna(subset=['internal_names'])
+df_bgem_contrib = df_bgem_contrib[df_bgem_contrib["internal_names"].str.contains("BGEM")]
+
+df_bgem_discoveries = df_tns[df_tns["reporting_group"] == "BlackGEM"]
+df_bgem_sn_discoveries = df_bgem_discoveries[df_bgem_discoveries["name_prefix"] == "SN"]
 
 # save to CSV
 # df.to_csv("../Documents/Data/BG_files/tns_latest.csv", index=False)
-df.to_csv("./GEMTOM/GEMTOM/data/tns_latest.csv", index=False)
+df_tns.to_csv("./GEMTOM/GEMTOM/data/tns_latest.csv", index=False)
+df_bgem_contrib.to_csv("./GEMTOM/GEMTOM/data/bgem_tns_contributions.csv", index=False)
+df_bgem_discoveries.to_csv("./GEMTOM/GEMTOM/data/bgem_tns_discoveries.csv", index=False)
+df_bgem_sn_discoveries.to_csv("./GEMTOM/GEMTOM/data/bgem_tns_sn_discoveries.csv", index=False)
