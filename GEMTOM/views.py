@@ -4762,8 +4762,10 @@ def search_skytiles_from_RA_Dec(ra,dec):
     l_columns, l_results = tc.nearest_skytiles(ra, dec, 1.35*1.41)
     df_nearest_fields = pd.DataFrame(l_results, columns=l_columns)
 
+    message = ["- - -"]
+
     if len(df_nearest_fields) == 0:
-        message = ["RA/Dec is not in any BlackGEM fields."]
+        message.append("RA/Dec is not in any BlackGEM fields.")
         return message
 
     df_nearest_fields["status"] = "Green"
@@ -4788,32 +4790,40 @@ def search_skytiles_from_RA_Dec(ra,dec):
     df_observations = df_observations.sort_values(by=['"mjd-obs"'], ascending=False).reset_index(drop=True)
 
     if len(df_observations) == 0:
-        message = ["RA/Dec is in the following BlackGEM fields:"]
+        message.append("RA/Dec is in the following BlackGEM fields:")
         message.append(list(df_nearest_fields["field_id"]))
         message.append("but it has not yet been observed.")
         return message
 
-    if df_observations['status'].iloc[0] == "Green":
-        message = ["RA/Dec was last observed on " + str(df_observations['"date-obs"'].iloc[0])[:-7]]
+    if df_observations['status'].iloc[0] == "Green" or df_observations['status'].iloc[0] == "Yellow":
+        message.append("RA/Dec was last observed on " + str(df_observations['"date-obs"'].iloc[0])[:-7])
         days_ago = (datetime.today()-df_observations['"date-obs"'].iloc[0]).days + 1
         if days_ago == 1: message.append("(Last night!)")
         else: message.append("(That was " + str(days_ago) + " nights ago)")
 
     else:
-        message = ["RA/Dec may have been observed on " + str(df_observations['"date-obs"'].iloc[0])[:-7] + "; it may be outside the field."]
+
+        message.append(["RA/Dec may have been observed on " + str(df_observations['"date-obs"'].iloc[0])[:-7] + "; it may be outside the field."])
 
         days_ago = (datetime.today()-df_observations['"date-obs"'].iloc[0]).days + 1
         if days_ago == 1: message.append("(Last night!)")
         else: message.append("(That was " + str(days_ago) + " nights ago)")
 
-        message.append("")
+        message.append("- - -")
 
-        df_confirmed_observations = df_observations[df_observations["status"] == "Green"].reset_index(drop=True)
-        message.append("RA/Dec was last definitely observed on " + str(df_confirmed_observations['"date-obs"'].iloc[0])[:-7])
+        # df_confirmed_observations = df_observations[df_observations["status"] == "Green" or df_observations["status"] == "Yellow"].reset_index(drop=True)
+        # df_confirmed_observations = df_observations[df_observations["status"] == "Green"].reset_index(drop=True)
+        df_confirmed_observations= df_observations.loc[df_observations["status"].isin(["Green","Yellow"])].reset_index(drop=True)
+        if len(df_confirmed_observations) > 0:
+            message.append("RA/Dec was last definitely observed on " + str(df_confirmed_observations['"date-obs"'].iloc[0])[:-7])
+            days_ago = (datetime.today()-df_confirmed_observations['"date-obs"'].iloc[0]).days + 1
 
-        days_ago = (datetime.today()-df_confirmed_observations['"date-obs"'].iloc[0]).days + 1
-        if days_ago == 1: message.append("(That was last night!)")
-        else: message.append("(That was " + str(days_ago) + " nights ago)")
+            if days_ago == 1: message.append("(That was last night!)")
+            else: message.append("(That was " + str(days_ago) + " nights ago)")
+
+        else:
+            message.append("RA/Dec has not been definitely observed.")
+
 
     return message
 
