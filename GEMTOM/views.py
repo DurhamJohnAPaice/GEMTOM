@@ -376,10 +376,10 @@ def plot_BGEM_lightcurve(df_bgem_lightcurve, df_limiting_mag):
 
 
 def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
-    print("\n\n\n")
-    print(df_bgem_lightcurve)
-    print(df_bgem_lightcurve.index)
-    print("\n\n\n")
+    # print("\n\n\n")
+    # print(df_bgem_lightcurve)
+    # print(df_bgem_lightcurve.index)
+    # print("\n\n\n")
     fig = go.Figure()
     # fig.add_trace(go.Scatter(x=df_bgem_lightcurve['x.ra_psf_d'], y=df_bgem_lightcurve['x.dec_psf_d'], mode='markers', name='Line and Marker', marker_color="LightSeaGreen"))
     fig.add_trace(go.Scatter(x=df_bgem_lightcurve['x.ra_psf_d'], y=df_bgem_lightcurve['x.dec_psf_d'], mode='markers', name='Line and Marker', marker_color=df_bgem_lightcurve.index, marker_colorscale=["cyan", "magenta"]))
@@ -3787,8 +3787,43 @@ def BGEM_ID_View(request, bgem_id):
     '''
     print("Beginning BGEM ID View...")
 
+
     time_list = []
     time_list.append(time.time())
+
+    ## Get all BlackGEM Target IDs
+
+    df_targets = pd.DataFrame(list(Target.objects.all().values()))
+    print(df_targets)
+    # target_2 = Target.targetextra_set.all()
+
+    # --- Now handle extras ---
+    # Suppose you want keywords like "redshift", "priority", "magnitude"
+    desired_extras = ['BlackGEM ID']
+
+    # Query extras for those keywords
+    extras = TargetExtra.objects.filter(key__in=desired_extras).values(
+        'target_id', 'key', 'value'
+    )
+
+    extras_df = pd.DataFrame(list(extras))
+
+    time_list.append(time.time())
+
+    if str(bgem_id) in extras_df['value'].values:
+        print("Transient is in GEMTOM!")
+        target_num = extras_df["target_id"].values[np.where(extras_df['value'].values == str(bgem_id))]
+        # print(target_num[0])
+        # print(len(target_num))
+        target_details = df_targets[df_targets['id'] == int(target_num[-1])]
+        # print(target_details["name"])
+        transient_in_GEMTOM = target_num[-1]
+        GEMTOM_name = target_details["name"].iloc[0]
+    else:
+        print("Transient is not in GEMTOM...")
+        transient_in_GEMTOM = False
+        GEMTOM_name = False
+
 
     print("Fetching BGEM Lightcurve...")
     df_bgem_lightcurve, df_limiting_mag = get_lightcurve_from_BGEM_ID(bgem_id)
@@ -3870,9 +3905,9 @@ def BGEM_ID_View(request, bgem_id):
         'i.filter'          : "filter",
     })
 
-    print("Standard Deviations:")
-    print(np.std(df_bgem_lightcurve['ra_psf_d']))
-    print(np.std(df_bgem_lightcurve['dec_psf_d']))
+    # print("Standard Deviations:")
+    # print(np.std(df_bgem_lightcurve['ra_psf_d']))
+    # print(np.std(df_bgem_lightcurve['dec_psf_d']))
 
     # df_new = pd.concat([df_bgem_lightcurve,df_limiting_mag]).reset_index(drop=True)
     # print("\n")
@@ -3884,8 +3919,8 @@ def BGEM_ID_View(request, bgem_id):
     # print(df_new)
     # print("\n")
 
-    print(np.std(df_ful['ra_psf_d']))
-    print(np.std(df_ful['dec_psf_d']))
+    # print(np.std(df_ful['ra_psf_d']))
+    # print(np.std(df_ful['dec_psf_d']))
 
     # df_new.style.format({
     #     # 'runcat_id' : make_runcat_clickable,
@@ -4011,190 +4046,22 @@ def BGEM_ID_View(request, bgem_id):
 
     ## TNS:
     print("Starting TNS Query...")
-    # search_radius = 10
-    # tns_data = get_tns_from_ra_dec(ra, dec, search_radius)
-    # print("\ntns_data:")
-    # print(tns_data)
-    # print("^tns_data\n")
-
-    # time_list.append(time.time())
-    # if tns_data == "Too many requests!":
-    #     tns_text = "Too many TNS requests. Please check later."
-    #     tns_list = []
-    # elif tns_data == "Unauthorised!":
-    #     tns_text = "Note: TNS Unauthorised. Please check."
-    #     tns_list = []
-    # elif tns_data == "Website Error":
-    #     tns_text = "TNS site encountered an error. Please try again later."
-    #     tns_list = []
-    # else:
-    #     tns_reply = tns_data["data"]
-    #     tns_reply_length = len(tns_data["data"])
-    #     if tns_reply_length == 0:
-    #         tns_text = "No TNS object found within " + str(search_radius) + " arcseconds."
-    #         tns_list = []
-    #     else:
-    #         tns_text = "TNS results within " + str(search_radius) + " arcseconds"
-    #         tns_list = tns_reply
-
-    # tns_object_names    = []
-    # tns_object_ids      = []
-    # for tns_object in tns_list:
-    #     tns_object_names.append(tns_object["objname"])
-    #     tns_object_ids.append(tns_object["objid"])
-    # # print(tns_object_names)
-    #
-    # # tns_objects_data = []
-    # tns_object_prefix       = []
-    # tns_object_ra           = []
-    # tns_object_dec          = []
-    # tns_object_sep          = []
-    # tns_object_internalname = []
-    # bgem_object_radec       = SkyCoord(ra*u.deg, dec*u.deg, frame='icrs')
-    # for tns_object_name in tns_object_names:
-    #     # tns_object_ra, tns_object_dec = get_ra_dec_from_tns(tns_object_name)
-    #     tns_object_data = get_ra_dec_from_tns(tns_object_name)
-    #     if tns_data == "Too many requests!":
-    #         tns_object_data = "Too many TNS requests. Please check later."
-    #         break
-    #     else:
-    #         # print(tns_object_data)
-    #         # print(tns_object_data["data"])
-    #
-    #         ## Get RA and Dec, and find distance to our current target.
-    #         this_object_ra      = tns_object_data["data"]["radeg"]
-    #         this_object_dec     = tns_object_data["data"]["decdeg"]
-    #         this_object_radec   = SkyCoord(this_object_ra*u.deg, this_object_dec*u.deg, frame='icrs')
-    #         this_object_sep     = bgem_object_radec.separation(this_object_radec)
-    #
-    #         # print(this_object_radec)
-    #         # print(bgem_object_radec)
-    #         # print(this_object_sep.arcsecond)
-    #
-    #         ## Save the individual details
-    #         tns_object_prefix.append(tns_object_data["data"]["name_prefix"])
-    #         tns_object_ra.append(this_object_ra)
-    #         tns_object_dec.append(this_object_dec)
-    #         tns_object_sep.append(this_object_sep.arcsecond)
-    #         tns_object_internalname.append(tns_object_data["data"]["internal_names"])
-    # # print(tns_objects_data)
-    # # print(tns_object_ra)
-    # # print(tns_object_dec)
-    # print(tns_object_sep)
-    # tns_objects_data = zip(tns_object_names, tns_object_ra, tns_object_dec)
-
-    # ## If object is close enough...
-    # close_enough_sep = 40
-    # if tns_object_sep:
-    #     if np.min(tns_object_sep) < close_enough_sep:
-    #         tns_nearby = "TNS Object within " + str(close_enough_sep) + " arcseconds!"
-    #     else:
-    #         tns_nearby = ""
-    # else:
-    #     tns_nearby = ""
-
-    # tns_objects_data = pd.DataFrame({
-    #     'ObjID': tns_object_ids,
-    #     'Prefix': tns_object_prefix,
-    #     'Name': tns_object_names,
-    #     'RA': tns_object_ra,
-    #     'Dec': tns_object_dec,
-    #     'Internal_Name': tns_object_internalname,
-    #     'Separation': tns_object_sep,
-    # })
-    #
-    # tns_objects_potential = tns_objects_data.loc[tns_objects_data['Separation'] < 10]
-    # if len(tns_objects_potential) > 0:
-    #     tns_objects_potential = tns_objects_potential.sort_values(by=['Separation'])
-    #     tns_flag = True
-    #     tns_flag_prefix = tns_objects_potential["Prefix"].iloc[0]
-    #     tns_flag_name = tns_objects_potential["Name"].iloc[0]
-    #     tns_flag_sep = round(tns_objects_potential["Separation"].iloc[0], 2)
-    #     if "BGEM" in tns_objects_potential["Internal_Name"].iloc[0]: tns_flag_bgem = True
-    #     else: tns_flag_bgem = False
-    # else:
-    #     tns_flag = False
-    #     tns_flag_prefix = ""
-    #     tns_flag_name = ""
-    #     tns_flag_sep = ""
-    #     tns_flag_bgem = ""
-    #
-    # time_list.append(time.time())
-
-    # ## --- Find the image ---
-    # print("Getting image...")
-    # print(os.getcwd())
-    # if tns_flag:
-    #     file_name = "../" + get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve,
-    #         tns_objects_potential["RA"].iloc[0], tns_objects_potential["Dec"].iloc[0]
-    #         )
-    # else:
-    #     file_name = "../" + get_transient_image(bgem_id, ra, dec, df_bgem_lightcurve)
-    #
-    # print("Image name:", file_name)
-
-
-
-    # tns_objects_data['Name'] = tns_objects_data['Name'].apply(lambda x: f'[{x}](https://www.wis-tns.org/object/{x})')
-    #
-    # # TNS_object_url = "https://sandbox.wis-tns.org/object/2024ot"
-    #
-    # tns_objects_data = tns_objects_data.sort_values(by=['Separation'])
-    #
-    # ## TNS Dash App
-    # app = DjangoDash('TNS_Sources')
-    # app.layout = html.Div([
-    #     dag.AgGrid(
-    #         id='tns-grid',
-    #         rowData=tns_objects_data.to_dict('records'),
-    #         columnDefs=[
-    #                     {'headerName': 'ObjID',         'field':  'ObjID'},
-    #                     {'headerName': 'Prefix',        'field':  'Prefix'},
-    #                     {'headerName': 'Name', 'field':  'Name', 'cellRenderer': 'markdown'},
-    #                     # {'headerName': 'Name',          'field':  'Name'},
-    #                     {'headerName': 'RA',            'field':  'RA'  },
-    #                     {'headerName': 'Dec',           'field':  'Dec' },
-    #                     {'headerName': 'Internal Name', 'field':  'Internal_Name' },
-    #                     {'headerName': 'Separation (arcsec)',    'field':  'Separation' },
-    #         ],
-    #         defaultColDef={
-    #             'sortable': True,
-    #             'filter': True,
-    #             'resizable': True,
-    #             'editable': True,
-    #         },
-    #         columnSize="autoSize",
-    #         dashGridOptions={
-    #             "skipHeaderOnAutoSize": False,
-    #             "rowSelection": "single",
-    #         },
-    #         style={'height': '200px', 'width': '100%'},  # Set explicit height for the grid
-    #         className='ag-theme-balham'  # Add a theme for better appearance
-    #     ),
-    #     dcc.Store(id='selected-row-data'),  # Store to hold the selected row data
-    #     html.Div(id='output-div'),  # Div to display the information
-    # ], style={'height': '200px', 'width': '100%'}
-    # )
-
-    # print(df_new)
-
-    # ## Render the app
-    # def obs_dash_view(request):
-    #     return render(request, 'transient/index.html')
 
     dec_str = str(dec)
     if dec_str[0] != '-':
         dec_str = '+' + dec_str
 
     context = {
-        "bgem_id"           : bgem_id,
-        "iau_name"          : iau_name,
-        "ra"                : ra,
-        "dec"               : dec_str,
-        "dataframe"         : df_bgem_lightcurve,
-        "columns"           : df_bgem_lightcurve.columns,
-        "location_on_sky"   : location_on_sky,
-        "lightcurve"        : lightcurve,
+        "bgem_id"               : bgem_id,
+        "iau_name"              : iau_name,
+        "ra"                    : ra,
+        "dec"                   : dec_str,
+        "dataframe"             : df_bgem_lightcurve,
+        "columns"               : df_bgem_lightcurve.columns,
+        "location_on_sky"       : location_on_sky,
+        "lightcurve"            : lightcurve,
+        "transient_in_GEMTOM"   : transient_in_GEMTOM,
+        "GEMTOM_name"           : GEMTOM_name,
         # "tns_flag"          : tns_flag,
         # "tns_flag_prefix"   : tns_flag_prefix,
         # "tns_flag_name"     : tns_flag_name,
@@ -4321,9 +4188,6 @@ def delayed_search_for_TNS(request):
 
         tns_name = str(tns_reply[0]["prefix"] + " " + tns_reply[tns_index]["objname"])
 
-        message = 'Closeby TNS Object! • '
-        message += '<b><a href=https://www.wis-tns.org/object/' + tns_reply[tns_index]["objname"] + ' target="_blank">' + tns_reply[tns_index]["prefix"] + ' ' + tns_reply[tns_index]["objname"] + '</a></b> • '
-
         ## Find Separation
         print("Getting object data...")
         tns_object_data     = get_ra_dec_from_tns(tns_reply[tns_index]["objname"])
@@ -4334,7 +4198,10 @@ def delayed_search_for_TNS(request):
         this_object_sep     = bgem_object_radec.separation(this_object_radec).arcsecond
         # print(this_object_sep)
 
-        message += '<a style="color:grey"><em>Sep: %.1f arcsec</em></a><br>'%this_object_sep
+        message = 'Closeby TNS! • '
+        message += '<b><a href=https://www.wis-tns.org/object/' + tns_reply[tns_index]["objname"] + ' target="_blank">' + tns_reply[tns_index]["prefix"] + ' ' + tns_reply[tns_index]["objname"] + '</a></b> • '
+        message += '<a style="color:grey"><em>(%.1f")</em></a><br>'%this_object_sep
+
 
         # message += '<form method="post" action="name_to_GEMTOM/' + bgem_id + '/' + tns_name + \
             # '/" class="image-form"><button type="submit" class="btn btn-outline-success">Add to GEMTOM with TNS</button></form><br>'

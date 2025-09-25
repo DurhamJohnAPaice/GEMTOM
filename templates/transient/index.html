@@ -93,20 +93,25 @@ On this page, you can find the data for a specific BlackGEM transient.
 <!-- <br> -->
 
 <!-- &nbsp; -->
+<hr>
 <div style="padding:5px">
 
 </div>
 
 <div class="row">
-  <div class="col-md-5" style="
-    padding:5px;
+  <div class="col-md-12" style="
+    padding:0px;
     border-left:thin solid #dddddd;
     border-right:thin solid #dddddd;
     text-align:center;
     vertical-align: middle;">
-        <a style="margin:5px" class="btn btn-outline-primary" href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}" target="_blank">BlackView</a>
+        <a style="margin:5px" class="btn btn-outline-primary" href="https://aladin.cds.unistra.fr/AladinLite/?target={{ ra }}{{ dec }}&fov=0.05" target="_blank">Aladin</a>
         <a style="margin:5px" class="btn btn-outline-primary" href="https://blackpearl.blackgem.org/analyze.php" target="_blank">BlackPEARL</a>
-  </div>
+        <a style="margin:5px" class="btn btn-outline-primary" href="https://staging.apps.blackgem.org/transients/blackview/show_runcat?runcatid={{bgem_id}}" target="_blank">BlackView</a>
+        <a style="margin:5px" class="btn btn-outline-primary" href="https://datalab.noirlab.edu/sia.php" target="_blank">NOIRLab</a>
+        <a style="margin:5px" class="btn btn-outline-primary" href="https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ ra }}d{{ dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=10&Radius.unit=arcsec&submit=submit+query&CoordList=" target="_blank">SIMBAD</a>
+        <a style="margin:5px" class="btn btn-outline-primary" href="https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-c={{ ra }}%20{{ dec }}&-c.u=arcsec&-c.r=1.5&-c.eq=J2000&-c.geom=r&-out.max=50&-out.add=_r" target="_blank">VizieR</a>
+  <!-- </div>
   <div class="col-md-2" style="
     padding:5px;
     text-align:center;
@@ -118,40 +123,20 @@ On this page, you can find the data for a specific BlackGEM transient.
         <input type="hidden" name="ra" value="{{ ra }}">
         <input type="hidden" name="dec" value="{{ dec }}">
         <button type="submit" class="btn btn-primary">Add to GEMTOM</button>
-    </form>
+    </form>-->
   </div>
-  <div class="col-md-5" style="
+  <!-- <div class="col-md-5" style="
     padding:5px;
     border-left:thin solid #dddddd;
     border-right:thin solid #dddddd;
     text-align:center;
-    vertical-align: middle;">
-        <a style="margin:5px" class="btn btn-outline-primary" href="https://simbad.u-strasbg.fr/simbad/sim-coo?Coord={{ ra }}d{{ dec }}d&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=10&Radius.unit=arcsec&submit=submit+query&CoordList=" target="_blank">SIMBAD</a>
-        <a style="margin:5px" class="btn btn-outline-primary" href="https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-c={{ ra }}%20{{ dec }}&-c.u=arcsec&-c.r=1.5&-c.eq=J2000&-c.geom=r&-out.max=50&-out.add=_r" target="_blank">VizieR</a>
-        <a style="margin:5px" class="btn btn-outline-primary" href="https://aladin.cds.unistra.fr/AladinLite/?target={{ ra }}{{ dec }}&fov=0.05" target="_blank">Aladin</a>
-        <a style="margin:5px" class="btn btn-outline-primary" href="https://datalab.noirlab.edu/sia.php" target="_blank">NOIRLab</a>
+    vertical-align: middle;"> -->
 
 
 </div>
-  <!-- <div class="col-md-2" style="
-    padding:5px;
-    border-left:thin solid #dddddd;
-    text-align:center;
-    vertical-align: middle;">
-        <a class="btn btn-outline-primary" href="https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-c={{ ra }}%20{{ dec }}&-c.u=arcsec&-c.r=1.5&-c.eq=J2000&-c.geom=r&-out.max=50&-out.add=_r" target="_blank">VizieR</a>
-  </div> -->
-</div>
-
-<!-- <div style="
-  padding:5px;
-  border-left:thin solid #dddddd;
-  text-align:center;
-  vertical-align: middle;">
-      <a class="btn btn-outline-primary" href="https://www.legacysurvey.org/viewer?ra={{ ra }}&dec={{ dec }}&zoom=15&mark={{ ra }},{{ dec }}" target="_blank">DESI</a>
-</div> -->
 
 <div class="row" style="padding:5px;">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div align="center">
             <div class="row" style="margin-top:10px">
                 <div class="col-md-1"></div>
@@ -164,7 +149,40 @@ On this page, you can find the data for a specific BlackGEM transient.
             </div>
         </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-4">
+        <div align="center">
+            <div class="row" style="margin-top:10px">
+                <div class="col-md-1"></div>
+                <div class="col-md-10" style="border:thin solid lightgrey; padding:10px;">
+                    {% if transient_in_GEMTOM %}
+                        Transient in GEMTOM
+                        <div style="color:mediumaquamarine">
+                            <b>{{ GEMTOM_name }}</b>
+                        </div>
+                        <a style="margin:5px" class="btn btn-outline-primary" href="https://gemtom.blackgem.org/targets/{{ transient_in_GEMTOM }}" target="_blank">Target Page</a>
+                        <!-- {{ transient_in_GEMTOM }} -->
+                    {% else %}
+                        <div style="color:darkorange">
+                        <em>Transient not in GEMTOM</em>
+                        </div>
+
+                        <div style="margin:5px">
+                            <form method="post" action="{% url 'history_to_GEMTOM' %}" class="image-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="id" value="{{ bgem_id }}">
+                                <input type="hidden" name="name" value="{{ iau_name }}">
+                                <input type="hidden" name="ra" value="{{ ra }}">
+                                <input type="hidden" name="dec" value="{{ dec }}">
+                                <button type="submit" class="btn btn-primary">Add to GEMTOM</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-1"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
         <div align="center">
             <div class="row" style="margin-top:10px">
                 <div class="col-md-1"></div>

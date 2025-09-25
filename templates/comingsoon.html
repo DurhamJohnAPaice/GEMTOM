@@ -90,28 +90,22 @@ A list of the main features that have been requested and I intend to work on.
     </li>
     <br> -->
 
-        <h5>Miscellaneous Features and Bugfixes:</h5>
+        <h5>Miscellaneous Features:</h5>
         <ul>
+            <li>Transients: Add some way to tell if a target is already in GEMTOM.</li>
             <li>Look into: Forced Photometry with SLURM</li>
             <li>Automatically add targets to a group if they're above some magnitude threshold</li>
             <li>Targets: Include a way to add a target to a group from the Target page itself.</li>
-            <li>Have the url_to_GEMTOM and name_to_GEMTOM functions redirect to the new Target pages with a message, rather than the main Target page without a message.</li>
-            <li>Data: Fix sources with plus signs being converted to spaces when created/data is saved.</li>
             <li>Meta: Connect GEMTOM to the Full Source Database (when it has the full source data)</li>
             <li>Transients/Targets: Add Galactic lat/long to Transient and Target pages</li>
-            <li>Transients: Remove 99mag values from the lightcurves</li>
             <li>Transients: Submit multiple TNS/Gaia/RA Decs to be searched</li>
             <li>Transients: Interpret HMS as well as Deg.</li>
             <li>Transients: Currently, SIMBAD/Vizier searches use the transient's native RA/Dec. Change this so it uses the mean/median RA/Dec.</li>
             <li>Transients: Lookup and add a link to a transient's Portal entry</li>
             <li>Transients: Make a cutout from the Aladin skyview and overlay the detection locations onto it.</li>
-            <li>Transients: Some way to look up non-detections of a source</li>
-            <li>Transients: Fix bug where 'EachObservation' table sometimes errors if multiple pages are open in a short time span.</li>
-            <li>Transients: Fix bug where a lot of the Transients page mixes up data if multiple pages are open in a short time span.</li>
-            <li>Transients: Add some way to tell if a target is already in GEMTOM.</li>
+            <li>Transients: Add some way to look up non-detections of a source</li>
             <li>Transients: Better handle errors when querying TNS.</li>
             <li>Transients: Add the ovals for the eigenvalues.</li>
-            <li>History: Fix the error that occurs if there are no Gaia crossmatches.</li>
             <li>History: Add fields observed to the history table.</li>
             <li>Live Feed: Display the schedule, and also have the it look up which target it’s currently looking at</li>
             <li>Live Feed: Link to the Treasure Map</li>
@@ -126,20 +120,28 @@ A list of the main features that have been requested and I intend to work on.
             <li>Find a way to have certain parts of pages load after the page itself,
                 e.g. TNS queries, lightcurves, etc., to speed up loading; similar to the Transients page.</li>
             <li>Lightcurves: Click on datum to go to detection of that datum</li>
-            <li>Targets: Solve the issue where a data file that errors takes down the whole page</li>
             <li>Targets: Add finding charts</li>
             <!-- <li></li>
             <li></li>
             <li></li> -->
         </ul>
         <br>
-
-        <h5>Meta</h5>
+        <h5>Bugfixes:</h5>
         <ul>
-        <li>Solve the 'favicon not found' errors on the terminal</li>
-        <li>Fix Requirements file.</li>
-        <!-- <li><em>Currently Empty</em></li> -->
+            <li>Have the url_to_GEMTOM and name_to_GEMTOM functions redirect to the new Target pages with a message, rather than the main Target page without a message.</li>
+            <li>Data: Fix sources with plus signs being converted to spaces when created/data is saved.</li>
+            <li>Targets: Fix targets losing their BlackGEM ID when updating other values</li>
+            <li>Transients: Remove 99mag values from the lightcurves</li>
+            <li>Transients: Fix bug where 'EachObservation' table sometimes errors if multiple pages are open in a short time span.</li>
+            <li>Transients: Fix bug where a lot of the Transients page mixes up data if multiple pages are open in a short time span.</li>
+            <li>History: Fix the error that occurs if there are no Gaia crossmatches.</li>
+            <li>Targets: Solve the issue where a data file that errors takes down the whole page</li>
+            <li>Solve the 'favicon not found' errors on the terminal</li>
+            <li>Fix Requirements file.</li>
+            <!-- <li></li> -->
         </ul>
+        <br>
+
 </ul>
 
 <hr>
@@ -164,6 +166,7 @@ A list of the main features that have been requested and I intend to work on.
         <li><h6>Miscellaneous features</h6></li>
         <ul>
             <li>The <a href=https://gemtom.blackgem.org/discoveries/>Discoveries</a> page now updates every night at midnight local time!</li>
+            <li>Changed the "When was my RA/Dec last observed?" search to also include fields flagged 'Yellow', not just 'Green'.</li>
             <!-- <li></li> -->
         </ul>
     </ul>
@@ -171,7 +174,7 @@ A list of the main features that have been requested and I intend to work on.
     <br>
     <h5>Bugfixes</h5>
     <ul>
-        <!-- <li></li> -->
+        <li>Fixed an issue with the "When was my RA/Dec last observed?" search.</li>
         <!-- <li></li> -->
     </ul>
        <!-- <li></li> -->
