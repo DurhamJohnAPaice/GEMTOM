@@ -3515,6 +3515,8 @@ def BGEM_to_GEMTOM_photometry_2(df_bgem_lightcurve, df_limiting_mag=[]):
         'mjd' : df_bgem_lightcurve["i.\"mjd-obs\""],
         'mag' : df_bgem_lightcurve["x.mag_zogy"],
         'magerr' : df_bgem_lightcurve["x.magerr_zogy"],
+        'flux' : df_bgem_lightcurve["x.flux_zogy"],
+        'fluxerr' : df_bgem_lightcurve["x.fluxerr_zogy"],
         'limit' : [''] * len(df_bgem_lightcurve),
         'filter' : df_bgem_lightcurve["i.filter"],
     })
@@ -3944,6 +3946,8 @@ def BGEM_ID_View(request, bgem_id):
         "defaultStyle": {"color": "black"},
     }
 
+    df_new = df_new[df_new['mag_zogy'] != 99]
+
     ## Define the layout of the Dash app
     app.layout = html.Div([
         dag.AgGrid(
@@ -3956,18 +3960,18 @@ def BGEM_ID_View(request, bgem_id):
             #             {'headerName': '2', 'field': 'x.dec_psf_d'},
             # ],
             columnDefs=[
-                        {'headerName': 'a.xtrsrc', 'field':  'xtrsrc', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
-                        {'headerName': 'i.filter', 'field': 'filter'},
-                        {'headerName': 'i.date_obs', 'field':  'date_obs'},
-                        {'headerName': 'x.mag_zogy', 'field':  'mag_zogy',
+                        {'headerName': 'xtrsrc', 'field':  'xtrsrc', 'cellRenderer': 'markdown', "linkTarget":"_blank"},
+                        {'headerName': 'Filter', 'field': 'filter'},
+                        {'headerName': 'Obs. Date', 'field':  'date_obs'},
+                        {'headerName': 'Mag', 'field':  'mag_zogy',
                             "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
-                        {'headerName': 'x.ra_psf_d', 'field':  'ra_psf_d',
-                            "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
-                        {'headerName': 'x.dec_psf_d', 'field':  'dec_psf_d',
-                            "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
-                        {'headerName': 'x.magerr_zogy', 'field':  'magerr_zogy',
+                        {'headerName': 'dMag', 'field':  'magerr_zogy', 'maxWidth': 80,
                             "valueFormatter": {"function": "d3.format('.3f')(params.value)"}},
-                        {'headerName': 'i.mjd_obs', 'field':  'mjd',
+                        {'headerName': 'RA', 'field':  'ra_psf_d', 'maxWidth': 120,
+                            "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
+                        {'headerName': 'Dec', 'field':  'dec_psf_d', 'maxWidth': 120,
+                            "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
+                        {'headerName': 'MJD', 'field':  'mjd', 'maxWidth': 120,
                             "valueFormatter": {"function": "d3.format('.5f')(params.value)"}},
             ],
             getRowStyle=getRowStyle,

@@ -62,14 +62,17 @@ class PhotometryProcessor(DataProcessor):
         if 'mag' in data.colnames: data['mag'].name = 'magnitude'
         if 'magnitude' not in data.colnames: raise InvalidFileFormatException("No 'magnitude' column found in file; Photometry only supports magnitude.")
         ## Step 2: Error...
-        if 'mag_err' in data.colnames: data['mag_err'].name = 'error'
-        if 'magerr' in data.colnames: data['magerr'].name = 'error'
+        if 'mag_err' in data.colnames: data['mag_err'].name = 'mag_error'
+        if 'magerr' in data.colnames: data['magerr'].name = 'mag_error'
+        if 'fluxerr' in data.colnames: data['fluxerr'].name = 'flux_error'
         if 'magnitude_error' in data.colnames and 'error' not in data.colnames:
-            data['magnitude_error'].name ='error'
+            data['magnitude_error'].name ='mag_error'
+
+        print(data.colnames)
 
         ## Remove superfluous columns:
         for column_name in data.colnames:
-            if column_name not in ['time', 'mjd', 'hjd', 'jd', 'telescope', 'mag', 'magnitude', 'error', 'limit', 'source', 'filter']:
+            if column_name not in ['time', 'mjd', 'hjd', 'jd', 'telescope', 'mag', 'magnitude', 'mag_error', 'flux', 'flux_error', 'limit', 'source', 'filter']:
                 data.remove_column(column_name)
 
         print("Recognised columns:", data.colnames)
@@ -141,7 +144,7 @@ class PhotometryProcessor(DataProcessor):
                 ## If the column is masked, skip. If the magnitude value is zero, skip magnitude and error.
                 if not (np.ma.is_masked(datum[column_name])) \
                     and not (column_name == 'magnitude' and datum['magnitude'] == '0') \
-                    and not (column_name == 'error' and datum['magnitude'] == '0'):
+                    and not (column_name == 'mag_error' and datum['magnitude'] == '0'):
 
                     ## If the column is magnitude, record as a float.
                     if (column_name == 'magnitude' and datum['magnitude'] != '0'):

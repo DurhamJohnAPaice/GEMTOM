@@ -821,18 +821,24 @@ def blackgem_for_target(context, target, width=700, height=400, background=None,
 
         ## For each datum, grab the right bit of the data.
         for datum in datums:
+            # print(datum.value)
             photometry_data.setdefault('jd', []).append(datum.timestamp)
             photometry_data.setdefault('magnitude', []).append(datum.value.get('magnitude'))
+            photometry_data.setdefault('flux', []).append(datum.value.get('flux'))
             photometry_data.setdefault('limit', []).append(datum.value.get('limit'))
             photometry_data.setdefault('filter', []).append(datum.value.get('filter'))
 
             ## Deal with datums with no errors
-            if datum.value.get('error') == None:
+            if datum.value.get('mag_error') == None:
                 # print("No uncertainties!")
-                photometry_data.setdefault('error', []).append(0)
+                photometry_data.setdefault('mag_error', []).append(0)
             else:
-                # print("Uncertainties present!")
-                photometry_data.setdefault('error', []).append(float(datum.value.get('error')))
+                photometry_data.setdefault('mag_error', []).append(float(datum.value.get('mag_error')))
+                
+            if datum.value.get('flux_error') == None:
+                photometry_data.setdefault('flux_error', []).append(0)
+            else:
+                photometry_data.setdefault('flux_error', []).append(float(datum.value.get('flux_error')))
 
         # print(photometry_data)
 
@@ -847,14 +853,16 @@ def blackgem_for_target(context, target, width=700, height=400, background=None,
 
         ## Rename for compatibility
         df_lightcurve = df_lightcurve.rename(columns={
-            'filter'    : 'i.filter',
-            'magnitude' : 'x.mag_zogy',
-            'error'     : 'x.magerr_zogy',
+            'filter'        : 'i.filter',
+            'magnitude'     : 'x.mag_zogy',
+            'mag_error'     : 'x.magerr_zogy',
+            'flux'          : 'x.flux_zogy',
+            'flux_error'    : 'x.fluxerr_zogy',
         })
 
-        ## Create (empty) flux columns
-        df_lightcurve["x.flux_zogy"] = ['']*len(df_lightcurve)
-        df_lightcurve["x.fluxerr_zogy"] = ['']*len(df_lightcurve)
+        # ## Create (empty) flux columns
+        # df_lightcurve["x.flux_zogy"] = ['']*len(df_lightcurve)
+        # df_lightcurve["x.fluxerr_zogy"] = ['']*len(df_lightcurve)
 
 
         ## Create (empty) flux columns
@@ -950,7 +958,7 @@ def photometry_for_target(context, target, width=700, height=600, background=Non
         photometry_data.setdefault(datum.value['filter'], {})
         photometry_data[datum.value['filter']].setdefault('time', []).append(datum.timestamp)
         photometry_data[datum.value['filter']].setdefault('magnitude', []).append(datum.value.get('magnitude'))
-        photometry_data[datum.value['filter']].setdefault('error', []).append(datum.value.get('error'))
+        photometry_data[datum.value['filter']].setdefault('mag_error', []).append(datum.value.get('mag_error'))
         photometry_data[datum.value['filter']].setdefault('limit', []).append(datum.value.get('limit'))
 
     plot_data = []
@@ -986,13 +994,13 @@ def photometry_for_target(context, target, width=700, height=600, background=Non
                 name=filter_name,
                 error_y=dict(
                     type='data',
-                    array=filter_values['error'],
+                    array=filter_values['mag_error'],
                     visible=True
                 )
             )
             plot_data.append(series)
             mags = np.array(filter_values['magnitude'], float)  # converts None --> nan (as well as any strings)
-            errs = np.array(filter_values['error'], float)
+            errs = np.array(filter_values['mag_error'], float)
             errs[np.isnan(errs)] = 0.  # missing errors treated as zero
             all_ydata.append(mags + errs)
             all_ydata.append(mags - errs)
