@@ -1,5 +1,7 @@
 {% extends 'tom_common/base.html' %}
+{% block title %}Coming Soon{% endblock %}
 {% block content %}
+
 
 <div style="border:thin solid lightgrey; padding:30px; margin:50px;">
 <h5>Update: End of Funding</h5>
@@ -92,7 +94,6 @@ A list of the main features that have been requested and I intend to work on.
 
         <h5>Miscellaneous Features:</h5>
         <ul>
-            <li>Transients: Add some way to tell if a target is already in GEMTOM.</li>
             <li>Look into: Forced Photometry with SLURM</li>
             <li>Automatically add targets to a group if they're above some magnitude threshold</li>
             <li>Targets: Include a way to add a target to a group from the Target page itself.</li>
@@ -167,6 +168,8 @@ A list of the main features that have been requested and I intend to work on.
         <ul>
             <li>The <a href=https://gemtom.blackgem.org/discoveries/>Discoveries</a> page now updates every night at midnight local time!</li>
             <li>Changed the "When was my RA/Dec last observed?" search to also include fields flagged 'Yellow', not just 'Green'.</li>
+            <li>Target pages now report whether a BlackGEM ID is already in GEMTOM: <a href=https://gemtom.blackgem.org/transients/25030590/>Check it out</a>!</li>
+            <li>All pages now have titles that work with your browser's tabs!</li>
             <!-- <li></li> -->
         </ul>
     </ul>
