@@ -442,6 +442,16 @@ def plot_BGEM_location_on_sky(df_bgem_lightcurve, ra, dec):
 
 
 
+def ra_dec_to_galactic(ra, dec):
+    coord = SkyCoord(ra=ra*u.degree, dec=dec*u.degree, frame='icrs')
+
+    gal = coord.galactic
+
+    l = gal.l.deg
+    b = gal.b.deg
+
+    return l, b
+
 
 ## =============================================================================
 ## -------------------- Code for the Target Watchlist Page ---------------------
@@ -3390,6 +3400,40 @@ def search_BGEM_ID(request):
         return redirect(f'/transients/{user_input}')
     return redirect('/transients')  # Redirect to the original view if no input
 
+def parse_ra_dec(ra, dec):
+
+    radec = str(ra) + " " + str(dec)
+
+    radec = re.sub(' +', ' ', radec)
+    radec = radec.replace(",", "")
+
+    radec_split = radec.split(" ")
+
+
+    ## Attempt 1: Degrees?
+    try:
+        radec_split = radec.split(" ")
+        ra  = radec_split[0]
+        dec = radec_split[1]
+        if len(radec_split) == 2:
+            c = SkyCoord(ra=float(ra)*u.degree, dec=float(dec)*u.degree, frame='icrs')
+            print("Success:", c.ra.degree, c.dec.degree)
+        else:
+            raise Exception("RA/Dec Degrees failed")
+
+    ## Attempt 2: HMS
+    except Exception as e:
+        try:
+            c = SkyCoord(radec, unit=(u.hourangle, u.deg))
+            print("Success:", c.ra.degree, c.dec.degree)
+        except:
+            print("RA/Dec conversion failed!")
+
+    ra      = c.ra.degree
+    dec     = c.dec.degree
+
+    return ra, dec
+
 
 def transient_cone_search(ra, dec, radius=60):
     bg = authenticate_blackgem()
@@ -3865,6 +3909,8 @@ def BGEM_ID_View(request, bgem_id):
     ra          = source_data['ra_deg'][0]
     dec         = source_data['dec_deg'][0]
 
+    gal_l, gal_b = ra_dec_to_galactic(ra, dec)
+
     time_list.append(time.time())
 
     response = "You're looking at BlackGEM transient %s."
@@ -4060,6 +4106,8 @@ def BGEM_ID_View(request, bgem_id):
         "iau_name"              : iau_name,
         "ra"                    : ra,
         "dec"                   : dec_str,
+        "gal_l"                 : gal_l,
+        "gal_b"                 : gal_b,
         "dataframe"             : df_bgem_lightcurve,
         "columns"               : df_bgem_lightcurve.columns,
         "location_on_sky"       : location_on_sky,
@@ -4561,6 +4609,8 @@ def search_BGEM_RA_Dec(request):
     dec     = request.GET.get('dec')
     radius  = request.GET.get('radius')
 
+    ra, dec = parse_ra_dec(ra, dec)
+
     success, message = ra_dec_checker(ra, dec)
 
     try:
@@ -4709,6 +4759,8 @@ def search_skytiles_from_RA_Dec_orig(request):
 
     ra      = request.GET.get('ra')
     dec     = request.GET.get('dec')
+
+    ra, dec = parse_ra_dec(ra, dec)
 
     ## Check RA/Dec:
     success, message = ra_dec_checker(ra, dec)
