@@ -4716,7 +4716,7 @@ def search_skytiles_from_RA_Dec(ra,dec):
         message.append("but it has not yet been observed.")
         return message
 
-    if df_observations['status'].iloc[0] == "Green" or df_observations['status'].iloc[0] == "Yellow":
+    if df_observations['status'].iloc[0] == "Green":# or df_observations['status'].iloc[0] == "Yellow":
         message.append("RA/Dec was last observed on " + str(df_observations['"date-obs"'].iloc[0])[:-7])
         days_ago = (datetime.today()-df_observations['"date-obs"'].iloc[0]).days + 1
         if days_ago == 1: message.append("(Last night!)")
@@ -4724,7 +4724,7 @@ def search_skytiles_from_RA_Dec(ra,dec):
 
     else:
 
-        message.append(["RA/Dec may have been observed on " + str(df_observations['"date-obs"'].iloc[0])[:-7] + "; it may be outside the field."])
+        message.append("RA/Dec may have been observed on " + str(df_observations['"date-obs"'].iloc[0])[:-7] + "; it may be outside the field.")
 
         days_ago = (datetime.today()-df_observations['"date-obs"'].iloc[0]).days + 1
         if days_ago == 1: message.append("(Last night!)")
@@ -4733,8 +4733,8 @@ def search_skytiles_from_RA_Dec(ra,dec):
         message.append("- - -")
 
         # df_confirmed_observations = df_observations[df_observations["status"] == "Green" or df_observations["status"] == "Yellow"].reset_index(drop=True)
-        # df_confirmed_observations = df_observations[df_observations["status"] == "Green"].reset_index(drop=True)
-        df_confirmed_observations= df_observations.loc[df_observations["status"].isin(["Green","Yellow"])].reset_index(drop=True)
+        df_confirmed_observations = df_observations[df_observations["status"] == "Green"].reset_index(drop=True)
+        # df_confirmed_observations= df_observations.loc[df_observations["status"].isin(["Green","Yellow"])].reset_index(drop=True)
         if len(df_confirmed_observations) > 0:
             message.append("RA/Dec was last definitely observed on " + str(df_confirmed_observations['"date-obs"'].iloc[0])[:-7])
             days_ago = (datetime.today()-df_confirmed_observations['"date-obs"'].iloc[0]).days + 1
@@ -4811,6 +4811,7 @@ def search_skytiles_from_RA_Dec_orig(request):
 def check_blackgem_recent_transients(recent_transients):
     dates = list(recent_transients.last_obs)
     dates = [this_date[0:4] + this_date[5:7] + this_date[8:] for this_date in dates]
+
 
     ## --- Check to see if the recent history is up to date. If not, update.
     ## Get yesterday's date...
@@ -5014,6 +5015,9 @@ class UnifiedTransientsView(LoginRequiredMixin, TemplateView):
 
     ## --- Step 1: The 'Recent Transients' Table ---
     ## Uses a Dash AG Grid
+
+    # if hidden_error == "Yes":
+    #     print("I'm an error!")
 
     # Initialize the Dash app
     app = DjangoDash('RecentTransients')
