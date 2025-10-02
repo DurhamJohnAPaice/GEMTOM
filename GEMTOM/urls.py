@@ -81,7 +81,7 @@ urlpatterns = [
 
     path('discoveries/', DiscoveriesView.as_view(), name='discoveries'),
 
-    path('watchlist/', Watchlist_View, name='watchlist'),
+    path('watchlist/', WatchlistView, name='watchlist'),
 
     path('SecretOrphans/', SecretOrphans, name='SecretOrphans'),
     path('secret_rate_target/', secret_rate_target, name='secret_rate_target'),

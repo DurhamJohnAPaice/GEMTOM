@@ -458,7 +458,7 @@ def ra_dec_to_galactic(ra, dec):
 
 # class WatchlistView(TemplateView):
 @login_required
-def Watchlist_View(request):
+def WatchlistView(request):
 
     context = {
         "testing" : 'Test successful!',
@@ -493,9 +493,6 @@ def Watchlist_View(request):
 
     df_targets.to_csv("./data/target_watchlist_ids.csv", index=False)
 
-    # print(df_targets)
-    # 'number_of_discoveries': len(df_blackgem_table)
-
     app = DjangoDash("watchlist_table")
 
     print(df_targets.columns)
@@ -519,53 +516,6 @@ def Watchlist_View(request):
         targets_check = True
     else:
         print("Waiting for mags! Please run BG_Update_Watchlist.py!")
-
-        # qu = """\
-        #     SELECT runcat, mag_zogy, mjd, filter
-        #     FROM (
-        #         SELECT a.runcat,
-        #                x.mag_zogy,
-        #                i."mjd-obs" AS mjd,
-        #                i.filter AS filter,
-        #                ROW_NUMBER() OVER (PARTITION BY a.runcat ORDER BY i."mjd-obs" DESC) AS rn
-        #         FROM assoc a
-        #         JOIN extractedsource x ON a.xtrsrc = x.id
-        #         JOIN image i ON x.image = i.id
-        #        WHERE a.runcat IN %(id_list)s
-        #          AND x.mag_zogy < 99
-        #     ) sub
-        #     WHERE rn = 1;
-        # """
-        #
-        # clean_ID_list = [x for x in df_targets["BlackGEM ID"] if str(x) != 'nan']
-        # clean_ID_list = [x for x in clean_ID_list if len(x) != 0]
-        #
-        # # print(clean_ID_list)
-        #
-        # params = {'id_list' : tuple(clean_ID_list)}
-        # query = qu % (params)
-        # print("Running Query 2...")
-        # l_results = bg.run_query(query)
-        #
-        # df_targets_2 = pd.DataFrame(l_results, columns=['BlackGEM ID','latest_mag','last_obs','filter'])
-        #
-        # # print(df_targets)
-        # # print(df_targets_2)
-        # df_targets["BlackGEM ID"]   = [str(x) for x in df_targets["BlackGEM ID"]]
-        # df_targets_2["BlackGEM ID"] = [str(x) for x in df_targets_2["BlackGEM ID"]]
-        #
-        # df_targets_all = pd.merge(df_targets, df_targets_2, on="BlackGEM ID")#, how="left")
-        #
-        # df_targets_all = df_targets_all.sort_values(by=['last_obs'], ascending=False).reset_index(drop=True)
-        #
-        # df_targets_all['BlackGEM ID'] = df_targets_all['BlackGEM ID'].fillna(0)
-        #
-        # df_targets_all['GEMTOM_Link'] = df_targets_all['id'].apply(lambda x: f'[Target Page](https://gemtom.blackgem.org/targets/{str(x)}/)')
-        # df_targets_all['BGEM_ID_Link'] = df_targets_all['BlackGEM ID'].apply(
-        #     lambda x: f'[{str(x)}](https://gemtom.blackgem.org/transients/{str(x)}/)' if x != 0 else x
-        # )
-        # df_targets_all['last_obs'] = Time(df_targets_all['last_obs'], format='mjd').iso
-        # df_targets_all['last_obs'] = [x.split(" ")[0] for x in df_targets_all['last_obs']]
 
     if targets_check:
 
@@ -1587,57 +1537,6 @@ class HistoryView(LoginRequiredMixin, TemplateView):
 
     print("Navigating to history...")
 
-    # def post(self, request, **kwargs):
-    #     # date = '20240424'
-    #     obs_date  = request.POST['obs_date']
-    #
-    #     extended_date = obs_date[:4] + "-" + obs_date[4:6] + "-" + obs_date[6:]
-    #
-    #     try:
-    #         mjd = int(Time(extended_date + "T00:00:00.00", scale='utc').mjd)
-    #     except:
-    #         raise RuntimeError("Inputted date is not valid!")
-    #
-    #     print("")
-    #     print("Hello! Welcome to the BlackGEM Transient fetcher.")
-    #     print("Looking for data from ", extended_date, "...", sep="")
-    #     print("")
-    #
-    #     try:
-    #         data_length, num_in_gaia, extragalactic_sources_length, extragalactic_sources, images_urls_sorted, \
-    #             transients_filename, gaia_filename, extragalactic_filename = get_blackgem_stats(obs_date)
-    #
-    #
-    #         if data_length == "1": data_length_plural = ""; data_length_plural_2 = "s"
-    #         else: data_length_plural = "s"; data_length_plural_2 = "ve"
-    #         if extragalactic_sources_length == "1": extragalactic_sources_plural = ""
-    #         else: extragalactic_sources_plural = "s"
-    #
-    #         # extragalactic_sources_string = ""
-    #         # lightcurve_urls = []
-    #         # for source in extragalactic_sources[0]:
-    #             # extragalactic_sources_string += source + ", "
-    #
-    #
-    #         images_urls_string = ""
-    #         for this_source in images_urls_sorted:
-    #             for image in this_source:
-    #                 images_urls_string += "<a href=\"" + image + "\">" + image + "</a><br>"
-    #
-    #
-    #         # return HttpResponse("On " + extended_date + " (MJD " + str(mjd) + "), BlackGEM observed " + data_length + " transient" + data_length_plural + ", which ha" + data_length_plural_2 + " " + num_in_gaia + " crossmatches in Gaia (radius 1 arcsec). <br>" +
-    #         #  "BlackGEM recorded pictures of the following " + extragalactic_sources_length + " possible extragalactic transient" + extragalactic_sources_plural + ": <br> " +
-    #         #  extragalactic_sources_string + "<br>" +
-    #         #  images_urls_string)
-    #
-    #
-    #     except Exception as e:
-    #         if '404' in str(e):
-    #             print("No transients were recorded by BlackGEM on " + extended_date + " (MJD " + str(mjd) + ").")
-    #             return HttpResponse("No transients were recorded by BlackGEM on " + extended_date + " (MJD " + str(mjd) + ").")
-    #
-    #         else:
-    #             return HttpResponse(e)
 
     def get_context_data(self, **kwargs):
         t0 = time.time()
