@@ -2,15 +2,15 @@
 <div class="row">
   <div class="col-md-5">
     <h4>BlackGEM Lightcurve</h4>
-    <a href="{% url 'update-BlackGEM-data' %}?target_id={{ target.id }}&target={{ target }}&blackgem_id={{ target|target_extra_field:'BlackGEM ID' }}" class="btn btn-primary" title="Update Targets">Check for BlackGEM data</a>
+    {% if target|target_extra_field:"BlackGEM ID" %}
+        <a href="{% url 'update-BlackGEM-data' %}?target_id={{ target.id }}&target={{ target }}&blackgem_id={{ target|target_extra_field:'BlackGEM ID' }}" class="btn btn-primary" title="Update Targets">Check for BlackGEM data</a>
+      {% else %}
+        <em>Enter BlackGEM ID to get lightcurve</em>
+      {% endif %}
   </div>
   <div class="col-md-7" style="text-align:right">
-    {% if target|target_extra_field:"BlackGEM ID" %}
       <!-- <br> -->
       <!-- <em>Update BlackGEM ID:</em> -->
-    {% else %}
-      <em>Enter BlackGEM ID to get lightcurve</em>
-    {% endif %}
     <form method="post" action="{% url 'add_bgem_id' %}" class="image-form" style="margin-top:0px; margin-bottom:2px">
         {% csrf_token %}
         <input type="hidden" name="target_name" value="{{ target }}">
