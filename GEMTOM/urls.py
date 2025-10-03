@@ -68,6 +68,7 @@ urlpatterns = [
     path('name_to_GEMTOM/<int:bgem_id>/<str:custom_name>/', name_to_GEMTOM, name='name_to_GEMTOM'),
     # path('TNS_to_GEMTOM/<str:TNS_id>/', TNS_to_GEMTOM, name='TNS_to_GEMTOM'),
 
+
     # path('ID_to_GEMTOM/', ID_to_GEMTOM, name='ID_to_GEMTOM'),
     path('handle_input/', handle_input, name='handle_input'),
     # path('dash/', include('django_plotly_dash.urls')),
@@ -76,6 +77,7 @@ urlpatterns = [
     path('django_plotly_dash/', include('django_plotly_dash.urls')),
     path('ztf_upload/', UpdateZTFView.as_view(), name='update-ZTF-data'),
     path('blackgem_upload/', UpdateBlackGEMView.as_view(), name='update-BlackGEM-data'),
+    path('add_bgem_id/', add_bgem_id, name='add_bgem_id'),
 
     path('comingsoon/', ComingSoonView.as_view(), name='comingsoon'),
 

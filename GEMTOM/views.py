@@ -199,6 +199,57 @@ def get_lightcurve(bgem_id):
         return ""
 
 
+def add_bgem_id(request):
+
+    target_name = request.POST.get('target_name')
+    target_id = request.POST.get('target_id')
+    bgem_id = request.POST.get('bgem_id')
+
+    # get_lightcurve(id)
+
+    # all_targets = Target.objects.all()
+    # num_targets = len(list(all_targets))
+
+    # print(target_name)
+    # print(bgem_id)
+    # print(num_targets)
+
+
+    update_target_field(target_name, "BlackGEM ID", bgem_id)
+
+      # <a href="{% url 'update-BlackGEM-data' %}" class="btn btn-primary" title="Update Targets">Check for BlackGEM data</a>
+    return redirect('/blackgem_upload' + f"?&target_id={target_id}&target={target_name}&blackgem_id={bgem_id}")
+
+    # return redirect(f'/targets/{target_id}')
+
+    # ## Find the id of this target
+    # for i in range(num_targets):
+    #     if str(list(all_targets)[i]) == name:
+    #         break
+    # existing_target_id = all_targets[i].id
+    #
+    # ## If the most recent target is this target...
+    # if all_targets[len(all_targets)-1].name == name:
+    #
+    #     ## If it was made more than 10 seconds ago, it already existed.
+    #     time_created = all_targets[len(all_targets)-1].created
+    #     time_now = datetime.now(timezone.utc)
+    #     if (time_now-time_created).seconds < 2:
+    #         print("Target Created")
+    #         existing_target_id = all_targets[len(all_targets)-1].id
+    #         created = True
+    #     else:
+    #         print("Target Already Existed")
+    #         created = False
+    # else:
+    #     print("Target Already Existed")
+    #     created = False
+
+    # return
+    # return created, existing_target_id
+
+
+
 def add_to_GEMTOM(id, name, ra, dec, tns_prefix=False, tns_name=False):
 
     # get_lightcurve(id)

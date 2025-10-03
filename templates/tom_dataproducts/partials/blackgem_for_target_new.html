@@ -1,0 +1,29 @@
+{% load targets_extras %}
+<div class="row">
+  <div class="col-md-6">
+    <h4>BlackGEM Lightcurve</h4>
+  </div>
+  <div class="col-md-6" style="text-align:right">
+    {% if target|target_extra_field:"BlackGEM ID" %}
+      <a href="{% url 'update-BlackGEM-data' %}?target_id={{ target.id }}&target={{ target }}&blackgem_id={{ target|target_extra_field:'BlackGEM ID' }}" class="btn btn-primary" title="Update Targets">Check for BlackGEM data</a>
+    {% else %}
+      <em>Enter BlackGEM ID to get lightcurve</em>
+      <form method="post" action="{% url 'rate_target' %}" class="image-form">
+          {% csrf_token %}
+          <input type="hidden" name="id" value="{{ target.id }}">
+          <!-- <input type="hidden" name="yes_no" value="Real"> -->
+          <input type="text" name="bgem_id" placeholder="BGEM ID">
+          <br>
+          <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+      <!-- <form method="po
+    {% endif %}
+  </div>
+</div>
+<div class="light-curve">
+  {{ plot|safe }}
+</div>
+
+<!-- {% if target|target_extra_field:"BlackGEM ID" %}
+    <p>BARKBARKBARKBARKBARK!</p>
+{% endif %} -->

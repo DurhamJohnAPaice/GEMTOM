@@ -1,0 +1,20 @@
+{% load targets_extras %}
+<div class="row">
+  <div class="col-md-6">
+    <h4>BlackGEM Lightcurve</h4>
+  </div>
+  <div class="col-md-6" style="text-align:right">
+    {% if target|target_extra_field:"BlackGEM ID" %}
+      <a href="{% url 'update-BlackGEM-data' %}?target_id={{ target.id }}&target={{ target }}&blackgem_id={{ target|target_extra_field:'BlackGEM ID' }}" class="btn btn-primary" title="Update Targets">Check for BlackGEM data</a>
+    {% else %}
+      <em>Enter BlackGEM ID to get lightcurve</em>
+    {% endif %}
+  </div>
+</div>
+<div class="light-curve">
+  {{ plot|safe }}
+</div>
+
+<!-- {% if target|target_extra_field:"BlackGEM ID" %}
+    <p>BARKBARKBARKBARKBARK!</p>
+{% endif %} -->

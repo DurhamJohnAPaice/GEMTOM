@@ -106,6 +106,8 @@ X_FRAME_OPTIONS = 'SAMEORIGIN'  ## For django-plotly-dash
 
 ROOT_URLCONF = 'GEMTOM.urls'
 
+# TARGET_MODEL_CLASS = 'GEMTOM.models.UserDefinedTarget'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
